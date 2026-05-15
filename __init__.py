@@ -18,7 +18,6 @@ from .gshpb_stc_tank import GSHPB_STC_tank
 from .heat_transfer import *
 from .refrigerant import *
 from .subsystems import *
-from .tank_stratification_model import *
 from .thermodynamics import *
 from .visualization import *
 from .weather import *

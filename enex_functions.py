@@ -80,12 +80,7 @@ from .hx_fan import (
 from .hx_fan import (
     calc_UA_from_dV_fan as calc_UA_from_dV_fan,
 )
-from .tdma import (
-    TDMA as TDMA,
-)
-from .tdma import (
-    _add_loop_advection_terms as _add_loop_advection_terms,
-)
+
 from .thermodynamics import (
     calc_energy_flow,
     calc_exergy_flow,
