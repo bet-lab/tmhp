@@ -84,18 +84,22 @@ This library solves these limitations by directly computing:
 from enex_analysis import AirSourceHeatPumpBoiler
 
 # Initialize model with R32 refrigerant
-ashpb = AirSourceHeatPumpBoiler(refrigerant="R32")
+ashpb = AirSourceHeatPumpBoiler(ref="R32")
 
-# Set operating conditions
-ashpb.T_amb = -10       # Outdoor temperature [°C]
-ashpb.T_w_tank = 65     # Target LWT [°C]
+# Run a steady-state operating point:
+#   tank water at 55 °C, outdoor air at 5 °C, target condenser heat 8 kW
+result = ashpb.analyze_steady(T_tank_w=55.0, T0=5.0, Q_ref_cond=8_000.0)
 
-# Run one time step
-result = ashpb.step(dt=60)  # 60-second step
-
-print(f"COP: {result.COP:.2f}")
-print(f"Heating capacity: {result.Q_cond:.2f} kW")
+print(f"COP (refrigerant)  : {result['cop_ref [-]']:.2f}")
+print(f"COP (system)       : {result['cop_sys [-]']:.2f}")
+print(f"Heating capacity   : {result['Q_ref_cond [W]'] / 1e3:.2f} kW")
+print(f"Compressor power   : {result['E_cmp [W]'] / 1e3:.2f} kW")
+print(f"Evap sat. temp.    : {result['T_ref_evap_sat [°C]']:.1f} °C")
+print(f"Cond sat. temp.    : {result['T_ref_cond_sat_v [°C]']:.1f} °C")
 ```
+
+For a full time-stepping simulation use `analyze_dynamic(...)` instead — it takes
+a weather/load DataFrame and returns a per-step DataFrame of the same keys.
 
 ### As a standalone package
 
