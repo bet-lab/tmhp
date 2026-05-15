@@ -693,12 +693,30 @@ class AirSourceHeatPumpBoiler:
                     flow_state=flow_state,
                 )
 
+            # Diagnose what (if anything) went wrong. failure_reason is a
+            # *report*; the fallback trigger condition is preserved as
+            # `result is None or not isinstance(result, dict)` to match
+            # the historical behaviour of this branch.
+            opt_success = bool(getattr(opt_result, "success", False))
+            if result is None or not isinstance(result, dict):
+                failure_reason = "cycle_invalid"
+            elif not result.get("converged", False):
+                failure_reason = "hx_not_converged"
+            elif not opt_success:
+                failure_reason = "optimizer_failed"
+            else:
+                failure_reason = "none"
+
             if result is None or not isinstance(result, dict):
                 warnings.warn(
-                    f"analyze_steady: optimization failed "
-                    f"(T_tank_w={T_tank_w:.1f}°C, T0={T0:.1f}°C, "
-                    f"Q_ref_cond={Q_ref_cond:.0f}W). "
-                    "Returning HP-off state.",
+                    f"analyze_steady: fell back to HP-off state "
+                    f"(reason={failure_reason!r}, "
+                    f"T_tank_w={T_tank_w:.1f}°C, T0={T0:.1f}°C, "
+                    f"Q_ref_cond={Q_ref_cond:.0f}W, "
+                    f"opt_success={opt_success}, "
+                    f"opt_x={float(getattr(opt_result, 'x', float('nan'))):.2f}, "
+                    f"opt_fun={float(getattr(opt_result, 'fun', float('nan'))):.3g}). "
+                    "Consider increasing UA_design or fan-flow design.",
                     RuntimeWarning,
                     stacklevel=2,
                 )
@@ -711,9 +729,13 @@ class AirSourceHeatPumpBoiler:
                         flow_state=flow_state,
                     )
                 except Exception:
+                    # `dict[str, object]` so the later string-valued
+                    # `failure_reason` assignment doesn't violate inferred
+                    # `dict[str, bool | float]`.
                     result = {
                         "hp_is_on": False,
                         "converged": False,
+                        "failure_reason": failure_reason,
                         "Q_ref_cond [W]": 0.0,
                         "Q_ref_evap [W]": 0.0,
                         "E_cmp [W]": 0.0,
@@ -722,13 +744,15 @@ class AirSourceHeatPumpBoiler:
                         "T_tank_w [°C]": T_tank_w,
                         "T0 [°C]": T0,
                     }
-
-            if (
-                result is not None
-                and isinstance(result, dict)
-                and "opt_result" in locals()
-            ):
-                result["converged"] = getattr(opt_result, "success", False)
+                if isinstance(result, dict):
+                    result["converged"] = False
+                    result["failure_reason"] = failure_reason
+            else:
+                # `result` is a valid dict — keep it, but tag the diagnostic
+                # so callers can branch on `failure_reason` even when the
+                # cycle / HX returned a usable answer.
+                result["converged"] = opt_success and result.get("converged", True)
+                result["failure_reason"] = failure_reason
 
         if result is None or not isinstance(result, dict):
             raise RuntimeError("Simulation failed to produce a valid result dictionary.")

@@ -22,6 +22,14 @@ def test_ashpb_analyze_steady():
     assert result["E_cmp [W]"] > 0
     assert result["Q_ref_cond [W]"] > 0
     assert result["cop_sys [-]"] > 1.0
+    # failure_reason is a diagnostic, not a pass/fail gate — it may say
+    # "hx_not_converged" or "optimizer_failed" even when the returned
+    # numbers (E_cmp, COP) are usable. Just assert it surfaces.
+    assert result["failure_reason"] in {
+        "none",
+        "hx_not_converged",
+        "optimizer_failed",
+    }
 
 
 def test_gshpb_analyze_steady():
@@ -32,6 +40,14 @@ def test_gshpb_analyze_steady():
     assert isinstance(result, dict)
     assert result["E_cmp [W]"] > 0
     assert result["cop_sys [-]"] > 1.0
+    # failure_reason is a diagnostic, not a pass/fail gate — it may say
+    # "hx_not_converged" or "optimizer_failed" even when the returned
+    # numbers (E_cmp, COP) are usable. Just assert it surfaces.
+    assert result["failure_reason"] in {
+        "none",
+        "hx_not_converged",
+        "optimizer_failed",
+    }
 
 
 def test_wshpb_analyze_steady():
@@ -44,6 +60,14 @@ def test_wshpb_analyze_steady():
     assert result["Q_ref_cond [W]"] > 0
     assert result["cop_ref [-]"] > 1.0
     assert result["cop_sys [-]"] > 1.0
+    # failure_reason is a diagnostic, not a pass/fail gate — it may say
+    # "hx_not_converged" or "optimizer_failed" even when the returned
+    # numbers (E_cmp, COP) are usable. Just assert it surfaces.
+    assert result["failure_reason"] in {
+        "none",
+        "hx_not_converged",
+        "optimizer_failed",
+    }
 
 
 def test_ashp_heating_analyze_steady():
@@ -64,6 +88,14 @@ def test_ashp_heating_analyze_steady():
     assert isinstance(result, dict)
     assert result["E_cmp [W]"] > 0
     assert result["cop_sys [-]"] > 1.0
+    # failure_reason is a diagnostic, not a pass/fail gate — it may say
+    # "hx_not_converged" or "optimizer_failed" even when the returned
+    # numbers (E_cmp, COP) are usable. Just assert it surfaces.
+    assert result["failure_reason"] in {
+        "none",
+        "hx_not_converged",
+        "optimizer_failed",
+    }
 
 
 def test_gshp_heating_analyze_steady():
@@ -78,3 +110,37 @@ def test_gshp_heating_analyze_steady():
     assert isinstance(result, dict)
     assert result["E_cmp [W]"] > 0
     assert result["cop_sys [-]"] > 1.0
+    # failure_reason is a diagnostic, not a pass/fail gate — it may say
+    # "hx_not_converged" or "optimizer_failed" even when the returned
+    # numbers (E_cmp, COP) are usable. Just assert it surfaces.
+    assert result["failure_reason"] in {
+        "none",
+        "hx_not_converged",
+        "optimizer_failed",
+    }
+
+
+def test_ashp_off_mode_failure_reason_is_diagnostic():
+    # Deliberately tiny UA so the inner HX optimisation cannot converge.
+    # The model is expected to fall back to off-mode AND surface a
+    # specific failure_reason so callers can branch on it.
+    ashp = AirSourceHeatPump(
+        ref="R32",
+        UA_evap_design=2000.0,
+        UA_cond_design=2000.0,
+        dV_iu_fan_a_design=0.5,
+        dV_ou_fan_a_design=0.5,
+        A_cross_iu=0.5,
+        A_cross_ou=0.5,
+    )
+    result = ashp.analyze_steady(
+        Q_r_iu=-3_000.0, T0=5.0, T_a_room=20.0, verbose=False
+    )
+    assert isinstance(result, dict)
+    assert result["mode"] == "off"
+    assert result["converged"] is False
+    assert result["failure_reason"] in {
+        "cycle_invalid",
+        "hx_not_converged",
+        "optimizer_failed",
+    }

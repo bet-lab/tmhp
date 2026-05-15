@@ -1052,12 +1052,28 @@ class GroundSourceHeatPumpBoiler:
                     flow_state=flow_state,
                 )
 
+            # Diagnose; the fallback trigger condition is unchanged from the
+            # historical behaviour (`result is None or not isinstance(...)`).
+            opt_success = bool(getattr(opt_result, "success", False))
+            if result is None or not isinstance(result, dict):
+                failure_reason = "cycle_invalid"
+            elif not result.get("converged", False):
+                failure_reason = "hx_not_converged"
+            elif not opt_success:
+                failure_reason = "optimizer_failed"
+            else:
+                failure_reason = "none"
+
             if result is None or not isinstance(result, dict):
                 warnings.warn(
-                    f"analyze_steady: optimization failed "
-                    f"(T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, "
-                    f"Q_ref_cond={Q_ref_cond:.0f}W). "
-                    "Returning HP-off state.",
+                    f"analyze_steady: fell back to HP-off state "
+                    f"(reason={failure_reason!r}, "
+                    f"T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, "
+                    f"Q_ref_cond={Q_ref_cond:.0f}W, "
+                    f"opt_success={opt_success}, "
+                    f"opt_x={float(getattr(opt_result, 'x', float('nan'))):.2f}, "
+                    f"opt_fun={float(getattr(opt_result, 'fun', float('nan'))):.3g}). "
+                    "Consider increasing UA_design or fan-flow design.",
                     RuntimeWarning,
                     stacklevel=2,
                 )
@@ -1075,6 +1091,13 @@ class GroundSourceHeatPumpBoiler:
                         T0=T0,
                         flow_state=flow_state,
                     )
+                if isinstance(result, dict):
+                    result["converged"] = False
+                    result["failure_reason"] = failure_reason
+            else:
+                # `result` is a valid dict — keep it, attach the diagnostic.
+                result["converged"] = opt_success and result.get("converged", True)
+                result["failure_reason"] = failure_reason
 
             if (
                 result is not None

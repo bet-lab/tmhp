@@ -492,21 +492,65 @@ class GroundSourceHeatPump:
 
         if Q_r_iu == 0:
             result = self._calc_state(5.0, 5.0, 0.0, T0, T_a_room)
+            if result is None:
+                result = {
+                    "hp_is_on": False,
+                    "converged": False,
+                    "failure_reason": "cycle_invalid",
+                    "Q_r_iu [W]": 0.0,
+                    "T0 [°C]": T0,
+                    "T_a_room [°C]": T_a_room,
+                }
+            else:
+                result["failure_reason"] = "none"
         else:
             opt = self._optimize_operation(Q_r_iu, T0, T_a_room)
             result = None
             with contextlib.suppress(Exception):
                 result = self._calc_state(opt.x[0], opt.x[1], Q_r_iu, T0, T_a_room)
 
+            # Diagnose; the fallback trigger condition stays `result is None`
+            # to match the historical behaviour of this branch (a converged
+            # cycle with `result["converged"] == False` is still returned).
+            opt_success = bool(getattr(opt, "success", False))
+            if result is None:
+                failure_reason = "cycle_invalid"
+            elif not result.get("converged", False):
+                failure_reason = "hx_not_converged"
+            elif not opt_success:
+                failure_reason = "optimizer_failed"
+            else:
+                failure_reason = "none"
+
             if result is None:
                 warnings.warn(
-                    f"analyze_steady: optimization failed (Q_r_iu={Q_r_iu:.0f}W). "
-                    "Returning HP-off state.",
-                    RuntimeWarning, stacklevel=2,
+                    f"analyze_steady: fell back to HP-off state "
+                    f"(reason={failure_reason!r}, Q_r_iu={Q_r_iu:.0f}W, "
+                    f"T0={T0:.1f}°C, T_a_room={T_a_room:.1f}°C, "
+                    f"opt_success={opt_success}, "
+                    f"opt_x=({opt.x[0]:.2f}, {opt.x[1]:.2f}), "
+                    f"opt_fun={float(getattr(opt, 'fun', float('nan'))):.3g}). "
+                    "Consider increasing UA_design or fan-flow design.",
+                    RuntimeWarning,
+                    stacklevel=2,
                 )
                 result = self._calc_state(5.0, 5.0, 0.0, T0, T_a_room)
-                if result is not None:
+                if result is None:
+                    result = {
+                        "hp_is_on": False,
+                        "converged": False,
+                        "failure_reason": failure_reason,
+                        "Q_r_iu [W]": Q_r_iu,
+                        "T0 [°C]": T0,
+                        "T_a_room [°C]": T_a_room,
+                    }
+                else:
                     result["converged"] = False
+                    result["failure_reason"] = failure_reason
+            else:
+                # `result` is a valid dict — keep it, attach the diagnostic.
+                result["converged"] = opt_success and result.get("converged", True)
+                result["failure_reason"] = failure_reason
 
         if return_dict:
             return result
