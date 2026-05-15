@@ -82,3 +82,9 @@ docs/source/api/generated/
 *~
 .DS_Store
 Thumbs.db
+
+# ===========================
+# AI agent playbook (managed in a separate git repo)
+# ===========================
+.agents/
+.claude
