@@ -1,4 +1,11 @@
-"""Energy and Exergy Analysis Engine package init for Heat Pumps."""
+"""Energy and Exergy Analysis Engine package init for Heat Pumps.
+
+This __init__.py re-exports all heat pump model classes and utilities.
+When used as a git submodule of ``enex_analysis_engine``, the parent
+imports from this file via ``from .heat_pumps import ...``.
+
+All source files live at this directory level (flat layout).
+"""
 
 from .air_source_heat_pump import AirSourceHeatPump
 from .air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
@@ -20,4 +27,5 @@ from .refrigerant import *
 from .subsystems import *
 from .thermodynamics import *
 from .visualization import *
+from .water_source_heat_pump_boiler import WaterSourceHeatPumpBoiler
 from .weather import *

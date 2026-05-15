@@ -1,59 +1,50 @@
-"""Physics-Based Heat Pump Models (physics_hp).
+"""Physics-Based Heat Pump Models — standalone package entry point.
 
-A standalone Python library providing first-principles physics-based models
-for air-source, ground-source, and water-source heat pump systems.
-
-When installed as a standalone package (``pip install physics-hp-models``),
+When installed as a standalone package (``uv pip install -e .``),
 import as::
 
     from physics_hp import AirSourceHeatPumpBoiler
 
-When used as a git submodule of ``enex_analysis_engine``, the parent package
-imports directly from the submodule root (backward-compatible path).
+When used as a git submodule of ``enex_analysis_engine``, the parent
+imports directly from the submodule root (this ``src/physics_hp/``
+package is NOT used in that case — it is only for standalone use).
 
-Modules
--------
-- :mod:`physics_hp.air_source_heat_pump_boiler` — Dynamic ASHPB model
-- :mod:`physics_hp.ground_source_heat_pump_boiler` — Dynamic GSHPB model
-- :mod:`physics_hp.water_source_heat_pump_boiler` — WSHPB model
-- :mod:`physics_hp.refrigerant` — Thermodynamic refrigerant state functions
-- :mod:`physics_hp.thermodynamics` — Cycle analysis utilities
-- :mod:`physics_hp.heat_transfer` — ε-NTU heat exchanger methods
+The actual source ``.py`` files live at the submodule root
+(``heat_pumps/*.py``), not inside this directory.  We add the submodule
+root to ``sys.path`` so that all absolute imports resolve correctly.
 """
 
-import sys
 import os
+import sys
 
-# Allow importing the flat-layout modules from the repo root.
-# When installed via pyproject.toml with packages=["src/physics_hp"],
-# this file lives at <root>/src/physics_hp/__init__.py.
-# The actual source files live at <root>/ (repo root = submodule root).
-_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
+# Add the submodule root (where the .py source files live) to sys.path
+_submodule_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _submodule_root not in sys.path:
+    sys.path.insert(0, _submodule_root)
 
-from air_source_heat_pump import AirSourceHeatPump  # noqa: E402
-from air_source_heat_pump_boiler import AirSourceHeatPumpBoiler  # noqa: E402
-from ashpb_pv_ess import ASHPB_PV_ESS  # noqa: E402
-from ashpb_stc_preheat import ASHPB_STC_preheat  # noqa: E402
-from ashpb_stc_tank import ASHPB_STC_tank  # noqa: E402
-from calc_util import *  # noqa: F401, E402
-from constants import *  # noqa: F401, E402
-from dhw import *  # noqa: F401, E402
-from dynamic_context import *  # noqa: F401, E402
-from enex_functions import *  # noqa: F401, E402
-from ground_source_heat_pump import GroundSourceHeatPump  # noqa: E402
-from ground_source_heat_pump_boiler import GroundSourceHeatPumpBoiler  # noqa: E402
-from gshpb_pv_ess import GSHPB_PV_ESS  # noqa: E402
-from gshpb_stc_preheat import GSHPB_STC_preheat  # noqa: E402
-from gshpb_stc_tank import GSHPB_STC_tank  # noqa: E402
-from heat_transfer import *  # noqa: F401, E402
-from refrigerant import *  # noqa: F401, E402
-from subsystems import *  # noqa: F401, E402
-from thermodynamics import *  # noqa: F401, E402
-from visualization import *  # noqa: F401, E402
-from water_source_heat_pump_boiler import WaterSourceHeatPumpBoiler  # noqa: E402
-from weather import *  # noqa: F401, E402
+# Re-export everything so ``from physics_hp import X`` works
+from air_source_heat_pump import AirSourceHeatPump  # noqa: E402, F401
+from air_source_heat_pump_boiler import AirSourceHeatPumpBoiler  # noqa: E402, F401
+from ashpb_pv_ess import ASHPB_PV_ESS  # noqa: E402, F401
+from ashpb_stc_preheat import ASHPB_STC_preheat  # noqa: E402, F401
+from ashpb_stc_tank import ASHPB_STC_tank  # noqa: E402, F401
+from calc_util import *  # noqa: E402, F401
+from constants import *  # noqa: E402, F401
+from dhw import *  # noqa: E402, F401
+from dynamic_context import *  # noqa: E402, F401
+from enex_functions import *  # noqa: E402, F401
+from ground_source_heat_pump import GroundSourceHeatPump  # noqa: E402, F401
+from ground_source_heat_pump_boiler import GroundSourceHeatPumpBoiler  # noqa: E402, F401
+from gshpb_pv_ess import GSHPB_PV_ESS  # noqa: E402, F401
+from gshpb_stc_preheat import GSHPB_STC_preheat  # noqa: E402, F401
+from gshpb_stc_tank import GSHPB_STC_tank  # noqa: E402, F401
+from heat_transfer import *  # noqa: E402, F401
+from refrigerant import *  # noqa: E402, F401
+from subsystems import *  # noqa: E402, F401
+from thermodynamics import *  # noqa: E402, F401
+from visualization import *  # noqa: E402, F401
+from water_source_heat_pump_boiler import WaterSourceHeatPumpBoiler  # noqa: E402, F401
+from weather import *  # noqa: E402, F401
 
 __all__ = [
     "AirSourceHeatPump",
