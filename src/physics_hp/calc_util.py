@@ -1,24 +1,27 @@
-"""
-Unit conversion utilities and conversion constants.
+"""Unit conversion utilities and conversion constants.
 
 This module provides temperature conversion functions and a comprehensive
 set of unit conversion multipliers organized by physical dimension.
 
-Categories:
-    1. Temperature Conversion Functions — K2C, C2K, F2C, C2F
-    2. Time Conversion Constants
-    3. Length Conversion Constants
-    4. Area Conversion Constants
-    5. Volume Conversion Constants
-    6. Mass Conversion Constants
-    7. Energy Conversion Constants
-    8. Power Conversion Constants
-    9. Pressure Conversion Constants
-   10. Angle Conversion Constants
+Categories
+----------
 
-Usage:
-    All constants follow the naming pattern ``<from_unit>2<to_unit>``,
-    e.g. ``h2s = 3600`` converts hours to seconds.
+- Temperature conversion functions — ``K2C``, ``C2K``, ``F2C``, ``C2F``
+- Time conversion constants
+- Length conversion constants
+- Area conversion constants
+- Volume conversion constants
+- Mass conversion constants
+- Energy conversion constants
+- Power conversion constants
+- Pressure conversion constants
+- Angle conversion constants
+
+Usage
+-----
+
+All constants follow the naming pattern ``<from_unit>2<to_unit>``,
+e.g. ``h2s = 3600`` converts hours to seconds.
 """
 
 import math

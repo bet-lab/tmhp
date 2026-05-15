@@ -189,16 +189,14 @@ class Subsystem(Protocol):
         Returns
         -------
         dict
-            Must include at least:
-            - ``'Q_contribution'`` (float):
-                Net energy contribution to tank [W].
-            - ``'E_subsystem'`` (float):
-                Electrical power consumed [W].
-            - ``'T_tank_w_in_override_K'`` (float | None):
-                If the subsystem modifies the tank inlet
-                temperature (e.g. mains preheat), provide
-                the heated temperature [K].
-                ``None`` means no modification.
+            Must include at least the following keys:
+
+            - ``'Q_contribution'`` (float) — net energy contribution to the
+              tank [W].
+            - ``'E_subsystem'`` (float) — electrical power consumed [W].
+            - ``'T_tank_w_in_override_K'`` (float | None) — heated tank-inlet
+              temperature [K] if the subsystem modifies the inlet (e.g. mains
+              preheat); ``None`` if there is no modification.
         """
         ...
 

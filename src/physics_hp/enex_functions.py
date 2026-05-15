@@ -317,12 +317,13 @@ def calc_Orifice_flow_coefficient(D0, D1):
     """
     Calculate the orifice flow coefficient based on diameters.
 
-    Flow configuration:
-    ---------------
-     ->      |
-     D0     D1 ->
-     ->      |
-    ---------------
+    Flow configuration::
+
+         ---------------
+          ->      |
+          D0     D1 ->
+          ->      |
+         ---------------
 
     Parameters
     ----------
@@ -453,14 +454,16 @@ def calc_HX_perf_for_target_heat(
     Returns
     -------
     dict
-        Dictionary containing:
-            - dV_fan : Required air-side flow rate [m3/s]
-            - UA : Actual heat exchanger overall heat transfer coefficient at solution point [W/K]
-            - T_a_mid_C : air temperature between heat exchanger and fan [°C]
-            - Q_air : Heat transfer rate at operating point [W]
-            - epsilon : Effectiveness at operating point [–]
-            - converged : Whether the solver converged
-        Returns dict with all values as np.nan if is_active=False
+        Dictionary with the following keys:
+
+        - ``dV_fan`` — required air-side flow rate [m³/s]
+        - ``UA`` — overall heat-transfer coefficient at the solution point [W/K]
+        - ``T_a_mid_C`` — air temperature between the heat exchanger and the fan [°C]
+        - ``Q_air`` — heat-transfer rate at the operating point [W]
+        - ``epsilon`` — effectiveness at the operating point [–]
+        - ``converged`` — whether the solver converged
+
+        All numeric values are ``np.nan`` when ``is_active=False``.
     """
     # ── Legacy alias 하위호환 ──
     if T_a_in_C is None:

@@ -83,19 +83,21 @@ def calc_ASHP_heating_COP(T0, Q_r_int, Q_r_max):
 
 
 def calc_GSHP_COP(T_a_iu_in_K, T_f_out_K, dV_a_ratio, mode):
-    """
-    Calculate COP for a Ground Source Heat Pump using the EnergyPlus
-    Coil:*:WaterToAir:EquationFit model (Equation-Fit Method).
+    """Calculate COP for a Ground Source Heat Pump.
 
-    Reference:
-        EnergyPlus Engineering Reference, Ch.16.5.10.2
-        (Eq. 16.412-16.418, Tang 2005)
-        Dataset: TCH072_GLHP (ClimateMaster 6-ton, **Ground Loop** HP)
-        Source: EnergyPlus/datasets/WaterToAirHeatPumps.idf
+    Uses the EnergyPlus ``Coil:*:WaterToAir:EquationFit`` model
+    (Equation-Fit Method).
+
+    References
+    ----------
+    EnergyPlus Engineering Reference, Ch. 16.5.10.2 (Eq. 16.412–16.418,
+    Tang 2005). Dataset: TCH072_GLHP (ClimateMaster 6-ton, Ground Loop
+    HP), source: ``EnergyPlus/datasets/WaterToAirHeatPumps.idf``.
 
     Rated conditions (from IDF comment, 15% methanol antifreeze):
-        Cooling: 70.29 kBtu/h @ 77°F (25°C) entering water, EER=14.35
-        Heating: 56.14 kBtu/h @ 32°F (0°C) entering water, COP=3.42
+
+    - Cooling: 70.29 kBtu/h @ 77 °F (25 °C) entering water, EER = 14.35
+    - Heating: 56.14 kBtu/h @ 32 °F (0 °C) entering water, COP = 3.42
 
     Parameters
     ----------
@@ -104,9 +106,8 @@ def calc_GSHP_COP(T_a_iu_in_K, T_f_out_K, dV_a_ratio, mode):
         For cooling, internally converted to wet-bulb (T_wb) via CoolProp
         assuming RH = 50%.
     T_f_out_K : float
-        Source-side inlet water temperature [K]
-        = T_f_out (water returning from borehole TO the heat pump,
-          i.e., T_w,in in EnergyPlus notation).
+        Source-side inlet water temperature [K] — water returning from the
+        borehole *to* the heat pump (``T_w,in`` in EnergyPlus notation).
     dV_a_ratio : float
         Load-side air volumetric flow ratio: V_a / V_a_ref  [-]
         V_a_ref = Q_rated / (rho_a * c_a * 10K)  [m³/s]
