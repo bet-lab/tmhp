@@ -31,7 +31,7 @@ from scipy.optimize import minimize, root_scalar
 from tqdm import tqdm
 
 from . import calc_util as cu
-from .constants import c_a, c_w as c_f, rho_a, rho_w as rho_f
+from .constants import c_a, c_w, rho_a, rho_w
 from .enex_functions import (
     calc_exergy_flow,
     calc_fan_power_from_dV_fan,
@@ -224,8 +224,6 @@ class GroundSourceHeatPump:
             self.dT_r_iu = 15 # Indoor unit refrigerant - Indoor unit inlet air [K]
             self.T_r_iu = self.T_a_room + self.dT_r_iu # Indoor unit refrigerant [°C]
             dT_a_iu = 10 # Indoor unit outlet air - Room air [K]
-            dV_f_m3s_active = dV_f_m3s
-            E_pmp_active = self.E_pmp  # Pump power input [W]
             T_source_K = T_bhe_f_out_K + (self.E_pmp / m_dot_cp_b)
             T_evap_sat_K = T_source_K - dT_ref_evap
             T_cond_sat_K = T_a_room_K + dT_ref_cond
@@ -237,8 +235,6 @@ class GroundSourceHeatPump:
             self.dT_r_ghx = -3 # GHX refrigerant - GHX outlet water [K]
             self.dT_r_iu = 15 # Indoor unit refrigerant - Indoor unit inlet air [K]
             dT_a_iu = 10 # Indoor unit outlet air - Room air [K]
-            E_pmp_active = self.E_pmp  # Pump power input [W]
-            dV_f_m3s_active = dV_f_m3s
             T_source_K = T_bhe_f_out_K + (self.E_pmp / m_dot_cp_b)
             T_evap_sat_K = T_a_room_K - dT_ref_evap
             T_cond_sat_K = T_source_K + dT_ref_cond
