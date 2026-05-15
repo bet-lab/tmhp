@@ -4,10 +4,9 @@
 import os
 import sys
 
-# Add the repo root to sys.path so autodoc can find the flat-layout modules.
-# The source files (air_source_heat_pump_boiler.py, etc.) live at the repo root.
-repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-sys.path.insert(0, repo_root)
+# Add the src directory to sys.path so autodoc can find the physics_hp package.
+src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+sys.path.insert(0, src_path)
 
 # -- Project information -------------------------------------------------------
 
