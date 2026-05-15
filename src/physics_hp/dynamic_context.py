@@ -16,6 +16,17 @@ from .constants import c_w, rho_w
 if TYPE_CHECKING:
     import pandas as pd
 
+__all__ = [
+    "ControlState",
+    "StepContext",
+    "Subsystem",
+    "SubsystemExergy",
+    "check_hp_schedule_active",
+    "determine_heat_source_on_off",
+    "determine_tank_refill_flow",
+    "tank_mass_energy_residual",
+]
+
 
 # ------------------------------------------------------------------
 # Per-timestep immutable context

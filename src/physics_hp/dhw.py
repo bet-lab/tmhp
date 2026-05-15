@@ -7,6 +7,13 @@ import pandas as pd
 
 from . import calc_util as cu
 
+__all__ = [
+    "build_dhw_usage_ratio",
+    "calc_cold_water_temp",
+    "calc_total_water_use_from_schedule",
+    "make_dhw_schedule_from_Annex_42_profile",
+]
+
 
 def make_dhw_schedule_from_Annex_42_profile(
     flow_rate_array: np.ndarray, df_time_step: int, simulation_time_step: int

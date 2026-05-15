@@ -6,6 +6,16 @@ import math
 
 import numpy as np
 
+__all__ = [
+    "TRIDIAG_MATRIX_ALGORITHM",
+    "calc_LMTD_counter_flow",
+    "calc_LMTD_parallel_flow",
+    "calc_UA_tank_arr",
+    "calc_h_vertical_plate",
+    "calc_simple_tank_UA",
+    "darcy_friction_factor",
+]
+
 
 def darcy_friction_factor(Re: float, e: float, d: float, is_active: bool = True) -> float:
     """Calculate the Darcy friction factor.

@@ -30,6 +30,13 @@ if TYPE_CHECKING:
 
     from .dynamic_context import ControlState, StepContext, SubsystemExergy
 
+__all__ = [
+    "EnergyStorageSystem",
+    "PhotovoltaicSystem",
+    "SolarThermalCollector",
+    "UVLamp",
+]
+
 
 # ------------------------------------------------------------------
 # Default subsystem step() return — STC absent/inactive

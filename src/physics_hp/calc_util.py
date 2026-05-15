@@ -23,6 +23,34 @@ Usage:
 
 import math
 
+__all__ = [
+    # Temperature conversion functions
+    "K2C", "C2K", "F2C", "C2F",
+    # Time
+    "h2s", "s2h", "h2m", "m2h", "d2s", "s2d", "d2h", "h2d", "d2m", "m2d",
+    "d2y", "y2d",
+    # Length
+    "cm2m", "m2cm", "mm2m", "m2mm", "cm2mm", "mm2cm", "km2m", "m2km",
+    "in2cm", "cm2in", "ft2m", "m2ft",
+    # Area
+    "cm22m2", "m22cm2", "mm22m2", "m22mm2",
+    # Volume
+    "L2m3", "m32L", "cm32m3", "m32cm3",
+    # Mass
+    "kg2g", "g2kg", "mg2kg", "kg2mg", "kg2t", "t2kg",
+    # Energy
+    "J2kJ", "kJ2J", "J2MJ", "MJ2J", "J2GJ", "GJ2J",
+    "J2kWh", "kWh2J", "J2Btu", "Btu2J",
+    # Power
+    "W2kW", "kW2W", "W2MW", "MW2W", "W2GW", "W2mW", "mW2W",
+    # Pressure
+    "Pa2kPa", "kPa2Pa", "Pa2MPa", "MPa2Pa", "Pa2bar", "bar2Pa", "Pa2atm", "atm2Pa",
+    # Angle
+    "d2r", "r2d",
+    # Time aggregates
+    "m2s", "s2m",
+]
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. Temperature Conversion Functions
 # ═══════════════════════════════════════════════════════════════════════════════

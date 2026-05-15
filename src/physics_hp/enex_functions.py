@@ -112,6 +112,42 @@ except ImportError:
     dm = None
 
 
+__all__ = [
+    # Locally defined helpers
+    "calc_HX_perf_for_target_heat",
+    "calc_Orifice_flow_coefficient",
+    "calc_boussinessq_mixing_flow",
+    "calc_mixing_valve_flows",
+    "calc_mixing_valve_temp",
+    "calc_stc_performance",
+    "cubic_function",
+    "linear_function",
+    "print_balance",
+    "quadratic_function",
+    "quartic_function",
+    "update_tank_temperature",
+    # Re-exports (facade)
+    "G_FLS",
+    "air_dynamic_viscosity",
+    "air_prandtl_number",
+    "calc_ASHP_cooling_COP",
+    "calc_ASHP_heating_COP",
+    "calc_energy_flow",
+    "calc_exergy_flow",
+    "calc_fan_power_from_dV_fan",
+    "calc_GSHP_COP",
+    "calc_refrigerant_exergy",
+    "calc_UA_from_dV_fan",
+    "calc_uv_exposure_time",
+    "calc_uv_lamp_power",
+    "chi",
+    "convert_electricity_to_exergy",
+    "f",
+    "generate_entropy_exergy_term",
+    "get_uv_params_from_turbidity",
+]
+
+
 def linear_function(x, a, b):
     """Linear function: y = a*x + b"""
     return a * x + b
