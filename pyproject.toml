@@ -64,9 +64,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bet-lab/physics_hp_models"
-Repository = "https://github.com/bet-lab/physics_hp_models"
-Documentation = "https://bet-lab.github.io/physics_hp_models/"
+Homepage = "https://github.com/bet-lab/physics-heatpump-models"
+Repository = "https://github.com/bet-lab/physics-heatpump-models"
+Documentation = "https://bet-lab.github.io/physics-heatpump-models/"
 
 # ---------------------------------------------------------------------------
 # Tool configuration

@@ -59,10 +59,10 @@ myst_enable_extensions = [
 html_theme = "shibuya"
 html_title = "Physics-Based Heat Pump Models"
 html_static_path = ["_static"]
-html_baseurl = "https://bet-lab.github.io/physics_hp_models/"
+html_baseurl = "https://bet-lab.github.io/physics-heatpump-models/"
 
 html_theme_options = {
-    "github_url": "https://github.com/bet-lab/physics_hp_models",
+    "github_url": "https://github.com/bet-lab/physics-heatpump-models",
     "nav_links": [
         {"title": "Getting Started", "url": "getting-started/index"},
         {"title": "API Reference", "url": "api/index"},

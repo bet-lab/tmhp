@@ -4,7 +4,7 @@
 
 A Python library that provides physics-based dynamic models for heat pump systems used in domestic hot water (DHW) and building heating applications. Unlike conventional empirical curve-fit approaches, this library solves the thermodynamic refrigerant cycle at every time step using CoolProp, enabling system evaluation across a broad range of refrigerants and operating conditions without proprietary manufacturer data.
 
-> **Repository**: [bet-lab/physics_hp_models](https://github.com/bet-lab/physics_hp_models)
+> **Repository**: [bet-lab/physics-heatpump-models](https://github.com/bet-lab/physics-heatpump-models)
 > **Part of**: [enex_analysis_engine](https://github.com/bet-lab/enex_analysis_engine) ecosystem (git submodule)
 
 ---
@@ -100,8 +100,8 @@ print(f"Heating capacity: {result.Q_cond:.2f} kW")
 ### As a standalone package
 
 ```bash
-git clone https://github.com/bet-lab/physics_hp_models.git
-cd physics_hp_models
+git clone https://github.com/bet-lab/physics-heatpump-models.git
+cd physics-heatpump-models
 uv sync
 ```
 
@@ -140,8 +140,8 @@ See the associated paper: *"Thermodynamic Modeling of Refrigerant Cycle in an Ai
 git submodule update --init --recursive
 
 # Or clone standalone
-git clone https://github.com/bet-lab/physics_hp_models.git
-cd physics_hp_models
+git clone https://github.com/bet-lab/physics-heatpump-models.git
+cd physics-heatpump-models
 uv sync
 ```
 
@@ -149,7 +149,7 @@ uv sync
 
 ## Documentation
 
-- **[📚 Online Documentation](https://bet-lab.github.io/physics_hp_models/)**: Full API reference (Sphinx-generated)
+- **[📚 Online Documentation](https://bet-lab.github.io/physics-heatpump-models/)**: Full API reference (Sphinx-generated)
 - **[enex_analysis_engine docs](https://bet-lab.github.io/enex_analysis_engine/)**: Parent library documentation
 
 ---
@@ -157,7 +157,7 @@ uv sync
 ## Project Structure
 
 ```
-physics_hp_models/
+physics-heatpump-models/
 ├── src/
 │   └── physics_hp/
 │       └── __init__.py       # Standalone package entry point
