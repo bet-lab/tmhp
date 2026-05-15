@@ -219,7 +219,6 @@ class GroundSourceHeatPump:
             self.dT_r_ghx = 3 # GHX refrigerant - GHX outlet water [K]
             self.dT_r_iu = 15 # Indoor unit refrigerant - Indoor unit inlet air [K]
             self.T_r_iu = self.T_a_room + self.dT_r_iu # Indoor unit refrigerant [°C]
-            dT_a_iu = 10 # Indoor unit outlet air - Room air [K]
             T_source_K = T_bhe_f_out_K + (self.E_pmp / m_dot_cp_b)
             T_evap_sat_K = T_source_K - dT_ref_evap
             T_cond_sat_K = T_a_room_K + dT_ref_cond
@@ -230,7 +229,6 @@ class GroundSourceHeatPump:
             self.T_a_room = 21  # Room air temperature [°C]
             self.dT_r_ghx = -3 # GHX refrigerant - GHX outlet water [K]
             self.dT_r_iu = 15 # Indoor unit refrigerant - Indoor unit inlet air [K]
-            dT_a_iu = 10 # Indoor unit outlet air - Room air [K]
             T_source_K = T_bhe_f_out_K + (self.E_pmp / m_dot_cp_b)
             T_evap_sat_K = T_a_room_K - dT_ref_evap
             T_cond_sat_K = T_source_K + dT_ref_cond
@@ -244,15 +242,6 @@ class GroundSourceHeatPump:
 
         if is_active and (T_cond_sat_K - T_evap_sat_K) < self.min_lift_K:
             return None
-
-        # Temperatures in Kelvin
-        self.T0_K = cu.C2K(self.T0)
-        self.T_a_room_K = cu.C2K(self.T_a_room)
-
-        self.T_a_iu_out_K = self.T_a_room_K + dT_a_iu
-
-        self.T_r_iu_K = cu.C2K(self.T_r_iu)
-        self.T_g_K = cu.C2K(self.T_g)
 
         # Always mode="heating" for calc_ref_state (avoids key swap)
         cycle_states = calc_ref_state(
