@@ -332,6 +332,8 @@ class WaterSourceHeatPumpBoiler:
             "E_tot [W]": 0.0,
             "m_dot_ref [kg/s]": 0.0,
             "cmp_rpm [rpm]": 0.0,
+            "cop_ref [-]": np.nan,
+            "cop_sys [-]": np.nan,
         }
 
     def _calc_state(
@@ -456,6 +458,12 @@ class WaterSourceHeatPumpBoiler:
                 "E_cmp [W]": E_cmp,
                 "E_pmp [W]": self.E_pmp,
                 "E_tot [W]": E_cmp + self.E_pmp,
+                "cop_ref [-]": (Q_ref_cond / E_cmp) if E_cmp > 0 else np.nan,
+                "cop_sys [-]": (
+                    Q_ref_cond / (E_cmp + self.E_pmp)
+                    if (E_cmp + self.E_pmp) > 0
+                    else np.nan
+                ),
             }
         )
         return result

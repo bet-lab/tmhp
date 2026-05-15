@@ -42,6 +42,8 @@ def test_wshpb_analyze_steady():
     assert isinstance(result, dict)
     assert result["E_cmp [W]"] > 0
     assert result["Q_ref_cond [W]"] > 0
+    assert result["cop_ref [-]"] > 1.0
+    assert result["cop_sys [-]"] > 1.0
 
 
 def test_ashp_heating_analyze_steady():
