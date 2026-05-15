@@ -1,0 +1,105 @@
+[project]
+name = "physics-hp-models"
+version = "0.1.0"
+description = "Physics-based dynamic models for air-source, ground-source, and water-source heat pump systems"
+readme = "README.md"
+authors = [
+    { name = "Habin Jo", email = "habinjo0608@gmail.com" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = [
+    "heat pump",
+    "thermodynamics",
+    "building energy",
+    "domestic hot water",
+    "physics-based model",
+    "refrigerant cycle",
+    "CoolProp",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "coolprop>=7.2.0",
+    "numpy>=2.2.3",
+    "scipy>=1.15.2",
+    "pandas>=2.2.3",
+    "matplotlib>=3.10.0",
+    "pvlib>=0.15.0",
+    "pygfunction>=2.3.1",
+    "tqdm>=4.67.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# The actual source files live at the repo root (flat layout, for submodule compatibility).
+# The src/physics_hp/__init__.py acts as a thin standalone entry point.
+packages = ["src/physics_hp"]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.5",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "shibuya>=2024.5.2",
+    "sphinx-autodoc-typehints>=1.24.0",
+    "sphinx-design>=0.5.0",
+    "sphinx-copybutton>=0.5.2",
+    "myst-parser>=3.0.1",
+    "sphinx-click>=6.0.0",
+    "linkify-it-py>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/bet-lab/physics_hp_models"
+Repository = "https://github.com/bet-lab/physics_hp_models"
+Documentation = "https://bet-lab.github.io/physics_hp_models/"
+
+# ---------------------------------------------------------------------------
+# Tool configuration
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["."]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E741",   # ambiguous variable name (physics code uses single letters)
+    "B006",   # mutable default argument (dataclass patterns)
+    "E501",   # line too long (physics code often has long equations)
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

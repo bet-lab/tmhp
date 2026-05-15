@@ -1,3 +1,84 @@
+# ===========================
+# Python
+# ===========================
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+.installed.cfg
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.manifest
+*.spec
+
+# ===========================
+# Virtual environments
+# ===========================
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# ===========================
+# uv
+# ===========================
+.python-version
+
+# ===========================
+# Type checking / linting
+# ===========================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pytype/
+
+# ===========================
+# Testing
+# ===========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+nosetests.xml
+test-results/
+
+# ===========================
+# Sphinx documentation
+# ===========================
+docs/build/
+docs/source/_build/
+docs/source/api/generated/
+
+# ===========================
+# Jupyter Notebooks
+# ===========================
+.ipynb_checkpoints/
+*.ipynb
+
+# ===========================
+# IDE / Editors
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
