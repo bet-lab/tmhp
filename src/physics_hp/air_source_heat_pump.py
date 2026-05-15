@@ -576,6 +576,8 @@ class AirSourceHeatPump:
                 T0=T0,
                 T_a_room=T_a_room,
             )
+            if result is not None:
+                result["failure_reason"] = "none"
         else:
             opt_result = self._optimize_operation(
                 Q_r_iu=Q_r_iu,
@@ -592,13 +594,27 @@ class AirSourceHeatPump:
                     T_a_room=T_a_room,
                 )
 
-            if result is None or not result.get("converged", False):
+            opt_success = bool(getattr(opt_result, "success", False))
+            if result is None:
+                failure_reason = "cycle_invalid"
+            elif not result.get("converged", False):
+                failure_reason = "hx_not_converged"
+            elif not opt_success:
+                failure_reason = "optimizer_failed"
+            else:
+                failure_reason = "none"
+
+            if failure_reason != "none":
                 if verbose:
                     warnings.warn(
-                        f"analyze_steady: optimization or HX calculation failed "
-                        f"(Q_r_iu={Q_r_iu:.0f}W, T0={T0:.1f}°C, "
-                        f"T_a_room={T_a_room:.1f}°C). "
-                        "Returning HP-off state.",
+                        f"analyze_steady: fell back to HP-off state "
+                        f"(reason={failure_reason!r}, "
+                        f"Q_r_iu={Q_r_iu:.0f}W, T0={T0:.1f}°C, "
+                        f"T_a_room={T_a_room:.1f}°C, "
+                        f"opt_success={opt_success}, "
+                        f"opt_x=({opt_result.x[0]:.2f}, {opt_result.x[1]:.2f}), "
+                        f"opt_fun={float(getattr(opt_result, 'fun', float('nan'))):.3g}). "
+                        "Consider increasing UA_design or fan-flow design.",
                         RuntimeWarning,
                         stacklevel=2,
                     )
@@ -611,10 +627,12 @@ class AirSourceHeatPump:
                 )
                 if result is not None:
                     result["converged"] = False
+                    result["failure_reason"] = failure_reason
             else:
-                # Both _calc_state valid and HX converged. Check opt success.
-                opt_success = getattr(opt_result, "success", False)
-                result["converged"] = opt_success and result.get("converged", True)
+                # By construction (failure_reason == "none") result is a dict.
+                assert result is not None
+                result["converged"] = True
+                result["failure_reason"] = "none"
 
         if result is None:
             result = {}
