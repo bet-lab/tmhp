@@ -312,4 +312,4 @@ def TRIDIAG_MATRIX_ALGORITHM(
     for i in range(n - 2, -1, -1):
         phi[i] = c_star[i] * phi[i + 1] + d_star[i]
 
-    return phi.tolist()
+    return [float(x) for x in phi]

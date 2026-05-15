@@ -102,3 +102,8 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+# Several `analyze_steady` / `_calc_state` paths split on a flag and define
+# the same names (e.g. `cs`, `result`, `dV_tank_w_out`) once per branch with
+# matching annotations. mypy still flags this as redefinition unless we
+# explicitly allow it.
+allow_redefinition = true

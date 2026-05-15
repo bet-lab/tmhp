@@ -99,7 +99,7 @@ class GroundSourceHeatPump:
         # --- 1. Refrigerant / cycle / compressor ---
         self.ref: str = ref
         self.V_disp_cmp: float = V_disp_cmp
-        self.eta_cmp_isen: float = eta_cmp_isen
+        self.eta_cmp_isen: float | Callable = eta_cmp_isen
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
         self.min_lift_K: float = self.dT_subcool
@@ -574,10 +574,19 @@ class GroundSourceHeatPump:
 
             if hp_result is None or not hp_result.get("converged", False):
                 hp_result = self._calc_state(5.0, 5.0, 0.0, T0_n, T_a_room_n)
-                if hp_result is not None:
+                if hp_result is None:
+                    # Off-mode cycle itself failed — fall back to an inert
+                    # row so downstream BHE superposition / DataFrame
+                    # assembly don't see a None.
+                    hp_result = {
+                        "hp_is_on": False,
+                        "converged": False,
+                        "Q_bhe [W]": 0.0,
+                    }
+                else:
                     hp_result["converged"] = False
 
-            hp_is_on = hp_result.get("hp_is_on", False)
+            hp_is_on = bool(hp_result.get("hp_is_on", False))
 
             # BHE superposition
             Q_bhe_unit_old = self._compute_bhe_superposition(

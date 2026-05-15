@@ -536,7 +536,7 @@ def calc_effective_borehole_thermal_resistance(
         eta = (H / (m_flow_pipe * cp_f)) * (1.0 / (2.0 * R_b)) * np.sqrt(1.0 + (4.0 * R_b) / R_a)
         if eta < 1e-6:
             return R_b
-        return R_b * eta / np.tanh(eta)
+        return float(R_b * eta / np.tanh(eta))
 
     elif boundary_condition == "uniform_heat_flux":
         # Hellström approximation for uniform heat flux
@@ -645,4 +645,4 @@ def calc_submerged_coil_thermal_resistance(
     pos = [(-D_s, 0.0), (D_s, 0.0)]
     pipe = gt.pipes.SingleUTube(pos, r_in, r_out, borehole, k_s_trick, k_g_trick, R_fp_total)
 
-    return pipe.local_borehole_thermal_resistance()
+    return float(pipe.local_borehole_thermal_resistance())

@@ -80,7 +80,7 @@ def get_uv_params_from_turbidity(turbidity_ntu: float) -> dict:
 
     turbidity_values = [row[0] for row in turbidity_table]
 
-    def _row_to_dict(row):
+    def _row_to_dict(row) -> dict[str, float]:
         return {
             "uv_absorbance": row[2],
             "uv_transmittance_percent": row[1],

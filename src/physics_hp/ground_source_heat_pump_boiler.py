@@ -616,9 +616,12 @@ class GroundSourceHeatPumpBoiler:
             opt_res = self._optimize_operation(T_tank_w, Q_cond_load, cu.K2C(ctx.T0_K), flow_state=flow_state)
             if opt_res.success:
                 opt_x = float(getattr(opt_res, "x", 0.0))
-                perf = self._calc_state(opt_x, T_tank_w, Q_cond_load, cu.K2C(ctx.T0_K), flow_state=flow_state)
-                if perf is None:
-                    perf = self._calc_off_state(T_tank_w, cu.K2C(ctx.T0_K), flow_state=flow_state)
+                perf_opt = self._calc_state(opt_x, T_tank_w, Q_cond_load, cu.K2C(ctx.T0_K), flow_state=flow_state)
+                perf = (
+                    perf_opt
+                    if perf_opt is not None
+                    else self._calc_off_state(T_tank_w, cu.K2C(ctx.T0_K), flow_state=flow_state)
+                )
             else:
                 perf = self._calc_off_state(T_tank_w, cu.K2C(ctx.T0_K), flow_state=flow_state)
 

@@ -403,7 +403,10 @@ class AirSourceHeatPumpBoiler:
                 return eff(r_p)
             return float(eff)
 
-        cs: dict = calc_ref_state(
+        # Same name (`cs`) is annotated up in the inactive branch (~L339);
+        # re-annotating here triggers mypy [no-redef] even though the
+        # inactive branch returns unconditionally. Use plain assignment.
+        cs = calc_ref_state(
             T_evap_K=T_evap_sat_K,
             T_cond_K=T_cond_sat_K,
             refrigerant=self.ref,
@@ -501,16 +504,20 @@ class AirSourceHeatPumpBoiler:
         T_ou_a_out: float = T_ou_a_mid + E_ou_fan / (c_a * rho_a * dV_ou_a)
 
         # --- Flow state (explicit parameter, no side-effect reads) ---
-        dV_tank_w_out: float = flow_state["dV_tank_w_out [m3/s]"]
-        dV_tank_w_in: float = flow_state["dV_tank_w_in [m3/s]"]
-        dV_mix_sup_w_in: float = flow_state["dV_mix_sup_w_in [m3/s]"]
-        dV_mix_w_out_val: float = flow_state["dV_mix_w_out [m3/s]"]
+        # No type annotations here on purpose: the inactive branch above
+        # (around L316) already binds these names; redeclaring with
+        # `name: float = ...` triggers mypy [no-redef] even though the
+        # earlier branch returns unconditionally.
+        dV_tank_w_out = flow_state["dV_tank_w_out [m3/s]"]
+        dV_tank_w_in = flow_state["dV_tank_w_in [m3/s]"]
+        dV_mix_sup_w_in = flow_state["dV_mix_sup_w_in [m3/s]"]
+        dV_mix_w_out_val = flow_state["dV_mix_w_out [m3/s]"]
 
         if dV_mix_w_out_val == 0:
-            T_mix_w_out_val: float = np.nan
-            T_mix_w_out_val_K: float = np.nan
+            T_mix_w_out_val = np.nan
+            T_mix_w_out_val_K = np.nan
         else:
-            mix: dict = calc_mixing_valve_temp(
+            mix = calc_mixing_valve_temp(
                 T_tank_w_K,
                 self.T_sup_w_K,
                 self.T_mix_w_out_K,
@@ -519,12 +526,12 @@ class AirSourceHeatPumpBoiler:
             T_mix_w_out_val_K = mix["T_mix_w_out_K"]
 
         # Energy balance: Q_tank_w_in + Q_ref_cond = Q_tank_w_out + Q_tank_loss + dU_tank/dt
-        Q_tank_w_in: float = calc_energy_flow(G=c_w * rho_w * dV_tank_w_in, T=self.T_tank_w_in_K, T0=T0_K)
-        Q_tank_w_out: float = calc_energy_flow(G=c_w * rho_w * dV_tank_w_out, T=T_tank_w_K, T0=T0_K)
-        Q_mix_sup_w_in: float = calc_energy_flow(G=c_w * rho_w * dV_mix_sup_w_in, T=self.T_sup_w_K, T0=T0_K)
-        Q_mix_w_out: float = calc_energy_flow(G=c_w * rho_w * dV_mix_w_out_val, T=T_mix_w_out_val_K, T0=T0_K)
+        Q_tank_w_in = calc_energy_flow(G=c_w * rho_w * dV_tank_w_in, T=self.T_tank_w_in_K, T0=T0_K)
+        Q_tank_w_out = calc_energy_flow(G=c_w * rho_w * dV_tank_w_out, T=T_tank_w_K, T0=T0_K)
+        Q_mix_sup_w_in = calc_energy_flow(G=c_w * rho_w * dV_mix_sup_w_in, T=self.T_sup_w_K, T0=T0_K)
+        Q_mix_w_out = calc_energy_flow(G=c_w * rho_w * dV_mix_w_out_val, T=T_mix_w_out_val_K, T0=T0_K)
 
-        result: dict = cs.copy()
+        result = cs.copy()
 
         result.update(
             {

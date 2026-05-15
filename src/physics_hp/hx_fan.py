@@ -47,7 +47,7 @@ def calc_UA_from_dV_fan(
     """
     v = dV_fan / A_cross if A_cross > 0 else 0
     v_design = dV_fan_design / A_cross if A_cross > 0 else 0
-    return UA * (v / v_design) ** exponent
+    return float(UA * (v / v_design) ** exponent)
 
 
 def calc_fan_power_from_dV_fan(
@@ -96,4 +96,4 @@ def calc_fan_power_from_dV_fan(
     PLR = c1 + c2 * x + c3 * x**2 + c4 * x**3 + c5 * x**4
     PLR = max(0.0, PLR)
 
-    return fan_design_power * PLR
+    return float(fan_design_power * PLR)

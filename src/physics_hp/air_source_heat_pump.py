@@ -207,7 +207,7 @@ class AirSourceHeatPump:
                 T_evap_K=T0_K,
                 T_cond_K=T0_K,
                 refrigerant=self.ref,
-                eta_cmp_isen=self.eta_cmp_isen,
+                eta_cmp_isen=self.eta_cmp_isen if self.eta_cmp_isen is not None else 1.0,
                 mode="off",
                 dT_superheat=self.dT_superheat,
                 dT_subcool=self.dT_subcool,
@@ -275,7 +275,10 @@ class AirSourceHeatPump:
                 return float(eff(r_p))
             return float(eff)
 
-        cs: dict = calc_ref_state(
+        # Same name (`cs`) is annotated up in the inactive branch (~L206);
+        # re-annotating here triggers mypy [no-redef] even though the
+        # inactive branch returns unconditionally. Use plain assignment.
+        cs = calc_ref_state(
             T_evap_K=T_evap_sat_K,
             T_cond_K=T_cond_sat_K,
             refrigerant=self.ref,
@@ -439,7 +442,9 @@ class AirSourceHeatPump:
         is_converged = ou_hx.get("converged", True) and iu_hx.get("converged", True) and converged_rps
         E_tot: float = E_cmp + E_ou_fan + E_iu_fan
 
-        result: dict = cs.copy()
+        # Same name (`result`) is annotated up in the inactive branch (~L216);
+        # plain assignment to avoid the mypy [no-redef] false positive.
+        result = cs.copy()
         result.update(
             {
                 "hp_is_on": True,
