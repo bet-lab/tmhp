@@ -54,7 +54,7 @@ class WaterSourceHeatPumpBoiler:
     def __init__(
         self,
         # 1. Refrigerant / cycle / compressor
-        refrigerant: str = "R410A",
+        ref: str = "R410A",
         V_disp_cmp: float = 0.0005,
         eta_cmp_isen: float = 0.7,
         # 2. Heat exchanger UA
@@ -114,7 +114,20 @@ class WaterSourceHeatPumpBoiler:
         # 10. Simulation scope (for precomputing g-functions)
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
+        *,
+        # Deprecated alias for `ref`; kept for backward compatibility.
+        refrigerant: str | None = None,
     ) -> None:
+        if refrigerant is not None:
+            import warnings
+
+            warnings.warn(
+                "WaterSourceHeatPumpBoiler(refrigerant=...) is deprecated; "
+                "use ref=... instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            ref = refrigerant
 
         self.tank_physical = {
             "r0": r0,
@@ -129,7 +142,7 @@ class WaterSourceHeatPumpBoiler:
         self.V_tank_full: float = math.pi * r0**2 * H
         self.C_tank = c_w * rho_w * self.V_tank_full
 
-        self.ref = refrigerant
+        self.ref = ref
         self.V_disp_cmp = V_disp_cmp
         self.eta_cmp_isen = eta_cmp_isen
 

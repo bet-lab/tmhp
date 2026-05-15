@@ -25,7 +25,7 @@ def test_ashpb_analyze_steady():
 
 
 def test_gshpb_analyze_steady():
-    gshpb = GroundSourceHeatPumpBoiler(refrigerant="R32")
+    gshpb = GroundSourceHeatPumpBoiler(ref="R32")
     result = gshpb.analyze_steady(
         T_tank_w=55.0, T_source=12.0, Q_ref_cond=8_000.0, T0=15.0
     )
@@ -35,7 +35,7 @@ def test_gshpb_analyze_steady():
 
 
 def test_wshpb_analyze_steady():
-    wshpb = WaterSourceHeatPumpBoiler(refrigerant="R32")
+    wshpb = WaterSourceHeatPumpBoiler(ref="R32")
     result = wshpb.analyze_steady(
         T_tank_w=55.0, T_source=12.0, Q_ref_cond=8_000.0, T0=15.0
     )
