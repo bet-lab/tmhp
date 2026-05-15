@@ -27,13 +27,13 @@ def f(x):
     """
     Helper function for G-function calculation.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     x : float
         Input value
 
-    Returns:
-    --------
+    Returns
+    -------
     float
         f(x) = x*erf(x) - (1-exp(-x²))/√π
     """
@@ -44,8 +44,8 @@ def chi(s, rb, H, z0=0):
     """
     Helper function for G-function calculation.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     s : float
         Integration variable
     rb : float
@@ -55,8 +55,8 @@ def chi(s, rb, H, z0=0):
     z0 : float, optional
         Reference depth [m] (default: 0)
 
-    Returns:
-    --------
+    Returns
+    -------
     float
         chi function value
     """
@@ -79,8 +79,8 @@ def G_FLS(t, ks, as_, rb, H):
     This function calculates the g-function used in ground source heat pump
     analysis. Results are cached for performance.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     t : float
         Time [s]
     ks : float
@@ -92,8 +92,8 @@ def G_FLS(t, ks, as_, rb, H):
     H : float
         Borehole height [m]
 
-    Returns:
-    --------
+    Returns
+    -------
     float or array
         g-function value [mK/W]. Returns scalar for single time value,
         array for multiple time values.
@@ -354,13 +354,13 @@ def air_dynamic_viscosity(T_K):
     """
     Calculate air dynamic viscosity using Sutherland's formula.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     T_K : float
         Temperature [K]
 
-    Returns:
-    --------
+    Returns
+    -------
     float
         Dynamic viscosity [Pa·s]
 
@@ -380,13 +380,13 @@ def air_prandtl_number(T_K):
     """
     Calculate air Prandtl number.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     T_K : float
         Temperature [K]
 
-    Returns:
-    --------
+    Returns
+    -------
     float
         Prandtl number [-]
 
@@ -519,14 +519,14 @@ def calc_effective_borehole_thermal_resistance(
 
     References
     ----------
-    .. [1] Hellström, G. (1991). Ground Heat Storage: Thermal Analyses of Duct Storage Systems
-           (Ph.D. thesis). University of Lund, Sweden.
-    .. [2] Lamarche, L., Kajl, S., & Beauchamp, B. (2010). A review of methods to evaluate
-           borehole thermal resistances in geothermal heat-pump systems. Geothermics, 39(2), 187-200.
-           DOI: 10.1016/j.geothermics.2010.03.003
-    .. [3] Javed, S., & Spitler, J. D. (2016). Accuracy of borehole thermal resistance
-           calculation methods for grouted single U-tube ground heat exchangers.
-           Applied Energy, 182, 161-176. DOI: 10.1016/j.apenergy.2016.08.054
+    1. Hellström, G. (1991). Ground Heat Storage: Thermal Analyses of Duct Storage Systems
+       (Ph.D. thesis). University of Lund, Sweden.
+    2. Lamarche, L., Kajl, S., & Beauchamp, B. (2010). A review of methods to evaluate
+       borehole thermal resistances in geothermal heat-pump systems. Geothermics, 39(2), 187-200.
+       DOI: 10.1016/j.geothermics.2010.03.003
+    3. Javed, S., & Spitler, J. D. (2016). Accuracy of borehole thermal resistance
+       calculation methods for grouted single U-tube ground heat exchangers.
+       Applied Energy, 182, 161-176. DOI: 10.1016/j.apenergy.2016.08.054
     """
     if m_flow_pipe <= 0:
         return R_b

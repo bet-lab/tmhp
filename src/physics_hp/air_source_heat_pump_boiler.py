@@ -27,8 +27,8 @@ At each time step, the model finds the minimum-power operating point
 the evaporator approach temperature difference.
 
 .. note::
-   이 통합 시스템의 작동 원리와 개별 서브 컴포넌트 모델링에 대한 상세 이론적 배경은
-   :doc:`/theory/systems/ashp_boiler` 및 :doc:`/theory/components/index` 를 참조하세요.
+   See the project paper (KJACR 2025) for the underlying refrigerant-cycle
+   theory and component-level modelling assumptions of this system.
 
 Optional sub-components (injected via constructor):
 - ``SolarThermalCollector`` — tank-circuit or mains-preheat placement

@@ -31,8 +31,8 @@ optimization over the evaporator approach temperature difference, while the
 condenser temperature is solved analytically.
 
 .. note::
-   이 통합 시스템의 작동 원리와 개별 서브 컴포넌트 모델링에 대한 상세 이론적 배경은
-   :doc:`/theory/systems/gshp_boiler` 및 :doc:`/theory/components/index` 를 참조하세요.
+   See the project paper for the underlying refrigerant-cycle theory and the
+   pygfunction-based borehole heat-exchanger model used here.
 """
 
 from __future__ import annotations

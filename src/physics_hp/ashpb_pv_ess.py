@@ -10,8 +10,8 @@ Energy routing (all logic lives here, subsystems are pure physics):
 4. Grid import covers any remaining AC shortfall
 
 .. note::
-   Theoretical overview, system boundaries, and orchestration logic for
-   hybrid systems are detailed in :doc:`/theory/systems/hybrid_systems`.
+   See the project paper for the orchestration logic and energy/exergy
+   boundaries used by hybrid (PV + ESS + HP) systems.
 """
 
 from __future__ import annotations
