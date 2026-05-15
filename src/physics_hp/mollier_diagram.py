@@ -3,14 +3,12 @@ Mollier diagram visualization functions.
 """
 
 from functools import lru_cache
+from typing import Any, cast
 
 import CoolProp.CoolProp as CP
 import matplotlib.axes as maxes
 import matplotlib.figure as mfigure
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-from typing import Any, cast
 
 from . import calc_util as cu
 

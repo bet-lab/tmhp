@@ -208,8 +208,8 @@ def precompute_gfunction(
 def chi_mfls(s, r, H, x_prime, U, alpha_s, z0=0):
     """
     Helper function for MFLS (Moving Finite Line Source) G-function calculation.
-    
-    Ref: Molina-Giraldo et al. (2011), "A moving finite line source model 
+
+    Ref: Molina-Giraldo et al. (2011), "A moving finite line source model
     to simulate borehole heat exchangers with groundwater advection"
     """
     if s == 0:

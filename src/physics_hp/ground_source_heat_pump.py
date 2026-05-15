@@ -20,14 +20,11 @@ from __future__ import annotations
 
 import math
 import warnings
-from typing import Any, Callable
-
-import CoolProp.CoolProp as CP
-from dataclasses import dataclass
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize, root_scalar
+from scipy.optimize import minimize
 from tqdm import tqdm
 
 from . import calc_util as cu
@@ -37,11 +34,10 @@ from .enex_functions import (
     calc_fan_power_from_dV_fan,
     calc_HX_perf_for_target_heat,
 )
+from .g_function import precompute_gfunction
 from .refrigerant import (
     calc_ref_state,
 )
-from .g_function import precompute_gfunction
-from .hx_fan import calc_UA_from_dV_fan
 
 
 class GroundSourceHeatPump:
@@ -219,7 +215,7 @@ class GroundSourceHeatPump:
         if Q_r_iu < 0:
             # Heating: BHE = evaporator (absorb from ground), IU = condenser (heat room)
             mode = "heating"
-            self.T_a_room = 27 
+            self.T_a_room = 27
             self.dT_r_ghx = 3 # GHX refrigerant - GHX outlet water [K]
             self.dT_r_iu = 15 # Indoor unit refrigerant - Indoor unit inlet air [K]
             self.T_r_iu = self.T_a_room + self.dT_r_iu # Indoor unit refrigerant [°C]

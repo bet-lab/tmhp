@@ -66,8 +66,8 @@ from .enex_functions import (
 from .heat_transfer import calc_simple_tank_UA
 from .hx_fan import calc_fan_power_from_dV_fan
 from .refrigerant import calc_ref_state
-from .thermodynamics import calc_energy_flow
 from .subsystems import PhotovoltaicSystem, SolarThermalCollector
+from .thermodynamics import calc_energy_flow
 
 
 @dataclass
@@ -346,7 +346,7 @@ class AirSourceHeatPumpBoiler:
                 dT_subcool=0.0,
                 is_active=False,
             )
-            
+
             result: dict = cs.copy()
             result.update(
                 {
@@ -420,21 +420,21 @@ class AirSourceHeatPumpBoiler:
         s_cmp_in = cs["s_ref_cmp_in [J/(kg·K)]"]
         h_cmp_in = cs["h_ref_cmp_in [J/kg]"]
         h_exp_in = cs["h_ref_exp_in [J/kg]"]
-        
+
         # Compute isentropic enthalpy once before loop
         try:
             import CoolProp.CoolProp as CP
             h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
         except ValueError:
             h2_isen = h_cmp_in
-        
+
         def _residual_rps(rps):
             val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
             val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
-            
+
             h_cmp_out = h_cmp_in + (h2_isen - h_cmp_in) / val_eta_isen
             dh_cond_local = h_cmp_out - h_exp_in
-            
+
             m_dot = self.V_disp_cmp * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * rps
             return (m_dot * dh_cond_local) - Q_ref_cond
 

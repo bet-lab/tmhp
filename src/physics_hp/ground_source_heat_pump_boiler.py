@@ -15,15 +15,15 @@ integrated model, its physical calculations represent the behavior of:
    refrigerant from the condensing pressure down to the evaporating pressure.
 4. **Heat Exchangers (Condenser & Evaporator):**
 
-   - **Condenser:** Placed inside the hot-water tank (hydronic), utilizing a static 
+   - **Condenser:** Placed inside the hot-water tank (hydronic), utilizing a static
      overall heat transfer coefficient (UA_cond_design).
    - **Evaporator:** Coupled to a borehole heat exchanger (BHE) fluid loop, acting as
      a secondary heat exchanger to absorb heat from the circulating ground fluid.
 5. **Thermal Storage Tank:**
    Modeled with lumped-capacitance and DHW mixing logic.
 6. **Ground Source Heat Exchanger (Borefield):**
-   A dynamic multi-borehole simulation using pygfunction-based g-functions. It tracks 
-   the transient thermal response of the ground, enabling robust modeling of long-term 
+   A dynamic multi-borehole simulation using pygfunction-based g-functions. It tracks
+   the transient thermal response of the ground, enabling robust modeling of long-term
    ground temperature drift due to continuous heat extraction.
 
 At each time step the model finds the minimum-power operating point via 1D Brent
@@ -38,7 +38,8 @@ condenser temperature is solved analytically.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import CoolProp.CoolProp as CP
 import numpy as np
@@ -58,10 +59,10 @@ from .enex_functions import (
     calc_mixing_valve_flows,
     calc_mixing_valve_temp,
 )
+from .g_function import precompute_gfunction
 from .heat_transfer import calc_simple_tank_UA
 from .refrigerant import calc_ref_state
 from .thermodynamics import calc_exergy_flow
-from .g_function import precompute_gfunction
 
 if TYPE_CHECKING:
     from .subsystems import SolarThermalCollector
@@ -205,7 +206,7 @@ class GroundSourceHeatPumpBoiler:
         self.dV_b_f_m3s = dV_b_f_lpm * cu.L2m3 / cu.m2s
 
         if R_b is None:
-            from .g_function import calc_local_borehole_thermal_resistance, calc_effective_borehole_thermal_resistance
+            from .g_function import calc_effective_borehole_thermal_resistance, calc_local_borehole_thermal_resistance
 
             n_boreholes = max(1, self.N_1 * self.N_2)
             m_flow_total = self.dV_b_f_m3s * rho_w
@@ -370,7 +371,7 @@ class GroundSourceHeatPumpBoiler:
     ) -> dict | None:
         if Q_cond_load <= 0:
             return self._calc_off_state(T_tank_w, T0, flow_state)
-        
+
         import inspect
         def _eval_eff(eff, r_p, rps) -> float:
             if eff is None:
@@ -998,8 +999,8 @@ class GroundSourceHeatPumpBoiler:
         -------
         dict | pd.DataFrame
         """
-        import warnings
         import contextlib
+        import warnings
 
         # Empty flow state as steady state ignores dynamic withdrawal/refill
         flow_state = {

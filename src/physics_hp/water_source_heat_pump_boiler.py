@@ -897,8 +897,8 @@ class WaterSourceHeatPumpBoiler:
         -------
         dict | pd.DataFrame
         """
-        import warnings
         import contextlib
+        import warnings
 
         # Empty flow state as steady state ignores dynamic withdrawal/refill
         flow_state = {

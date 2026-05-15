@@ -17,23 +17,22 @@ heat exchange at the indoor unit.
 """
 
 import contextlib
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize, root_scalar
+from scipy.optimize import minimize
 from tqdm import tqdm
 
 from . import calc_util as cu
 from .constants import c_a, rho_a
 from .enex_functions import (
-    calc_HX_perf_for_target_heat,
     calc_fan_power_from_dV_fan,
+    calc_HX_perf_for_target_heat,
 )
 from .refrigerant import (
     calc_ref_state,
 )
-from .hx_fan import calc_UA_from_dV_fan
 
 
 class AirSourceHeatPump:
@@ -295,7 +294,7 @@ class AirSourceHeatPump:
         rho_in: float = cs["rho_ref_cmp_in [kg/m3]"]
         P_evap = cs["P_ref_cmp_in [Pa]"]
         P_cond = cs["P_ref_cmp_out [Pa]"]
-        
+
         ratio_P_cmp = P_cond / P_evap if P_evap > 0 else 1.0
 
         try:
@@ -309,10 +308,10 @@ class AirSourceHeatPump:
             val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
             val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
             h_cmp_out_local = h_cmp_in + (h2_isen - h_cmp_in) / val_eta_isen
-            
+
             dh_cond_local = h_cmp_out_local - h_exp_in
             dh_evap_local = h_cmp_in - h_exp_out
-            
+
             m_dot = self.V_disp_cmp * rho_in * val_eta_vol * rps
             if mode == "cooling":
                 return (m_dot * dh_evap_local) - abs(Q_r_iu)
