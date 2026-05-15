@@ -106,9 +106,7 @@ uv sync
 ```
 
 ```python
-import sys
-sys.path.insert(0, ".")  # Add repo root to path
-from air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
+from physics_hp import AirSourceHeatPumpBoiler
 ```
 
 ---
@@ -159,9 +157,37 @@ uv sync
 ```
 physics-heatpump-models/
 ├── src/
-│   └── physics_hp/
-│       └── __init__.py       # Standalone package entry point
-├── docs/                     # Sphinx documentation
+│   └── physics_hp/                       # Importable package (`from physics_hp import ...`)
+│       ├── __init__.py                   # Re-exports the public model classes
+│       ├── air_source_heat_pump.py       # ASHP (space conditioning)
+│       ├── air_source_heat_pump_boiler.py  # ASHPB core model
+│       ├── ashpb_stc_preheat.py          # ASHPB + STC preheat
+│       ├── ashpb_stc_tank.py             # ASHPB + STC with stratified tank
+│       ├── ashpb_pv_ess.py               # ASHPB + PV + ESS
+│       ├── ground_source_heat_pump.py    # GSHP (space conditioning)
+│       ├── ground_source_heat_pump_boiler.py  # GSHPB core model
+│       ├── gshpb_stc_preheat.py
+│       ├── gshpb_stc_tank.py
+│       ├── gshpb_pv_ess.py
+│       ├── water_source_heat_pump_boiler.py   # WSHPB core model
+│       ├── refrigerant.py                # CoolProp state-point helpers
+│       ├── thermodynamics.py             # Cycle analysis (COP, exergy, …)
+│       ├── heat_transfer.py              # ε-NTU heat exchanger calcs
+│       ├── hx_fan.py                     # Fan / heat-exchanger air-side model
+│       ├── g_function.py                 # Borehole g-function (pygfunction)
+│       ├── weather.py                    # Outdoor / weather utilities
+│       ├── dhw.py                        # DHW demand profiles
+│       ├── cop.py                        # COP correlations
+│       ├── enex_functions.py             # Energy / exergy helpers
+│       ├── dynamic_context.py            # Per-step simulation state
+│       ├── subsystems.py                 # Subsystem composition helpers
+│       ├── simulation_summary.py         # Stdout summary tables
+│       ├── visualization.py              # Facade for Mollier plots
+│       ├── mollier_diagram.py            # T-h / P-h / T-s plots (optional dep)
+│       ├── uv_treatment.py
+│       ├── calc_util.py                  # Unit-conversion constants
+│       └── constants.py                  # Physical constants
+├── docs/                                 # Sphinx documentation
 │   ├── Makefile
 │   ├── make.bat
 │   └── source/
@@ -169,19 +195,9 @@ physics-heatpump-models/
 │       ├── index.rst
 │       ├── getting-started/
 │       └── api/
-├── tests/                    # Unit tests
-├── air_source_heat_pump_boiler.py   # Core ASHPB model
-├── ground_source_heat_pump_boiler.py
-├── water_source_heat_pump_boiler.py
-├── refrigerant.py
-├── thermodynamics.py
-├── heat_transfer.py
-├── weather.py
-├── dhw.py
-├── visualization.py
-├── calc_util.py
-├── constants.py
+├── tests/                                # Unit / smoke tests
 ├── pyproject.toml
+├── uv.lock
 └── README.md
 ```
 
