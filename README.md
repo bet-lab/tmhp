@@ -5,7 +5,7 @@
 A Python library that provides physics-based dynamic models for heat pump systems used in domestic hot water (DHW) and building heating applications. Unlike conventional empirical curve-fit approaches, this library solves the thermodynamic refrigerant cycle at every time step using CoolProp, enabling system evaluation across a broad range of refrigerants and operating conditions without proprietary manufacturer data.
 
 > **Repository**: [bet-lab/physics-heatpump-models](https://github.com/bet-lab/physics-heatpump-models)
-> **Part of**: [enex_analysis_engine](https://github.com/bet-lab/enex_analysis_engine) ecosystem (git submodule)
+> **Sister project**: [enex_analysis_engine](https://github.com/bet-lab/enex_analysis_engine) — energy/exergy analysis engine maintained in parallel; not currently a git-submodule consumer of this library.
 
 ---
 
@@ -78,10 +78,14 @@ This library solves these limitations by directly computing:
 
 ## Quick Start
 
-### As part of `enex_analysis_engine` (recommended)
+```bash
+git clone https://github.com/bet-lab/physics-heatpump-models.git
+cd physics-heatpump-models
+uv sync
+```
 
 ```python
-from enex_analysis import AirSourceHeatPumpBoiler
+from physics_hp import AirSourceHeatPumpBoiler
 
 # Initialize model with R32 refrigerant
 ashpb = AirSourceHeatPumpBoiler(ref="R32")
@@ -100,18 +104,6 @@ print(f"Cond sat. temp.    : {result['T_ref_cond_sat_v [°C]']:.1f} °C")
 
 For a full time-stepping simulation use `analyze_dynamic(...)` instead — it takes
 a weather/load DataFrame and returns a per-step DataFrame of the same keys.
-
-### As a standalone package
-
-```bash
-git clone https://github.com/bet-lab/physics-heatpump-models.git
-cd physics-heatpump-models
-uv sync
-```
-
-```python
-from physics_hp import AirSourceHeatPumpBoiler
-```
 
 ---
 
@@ -138,10 +130,6 @@ See the associated paper: *"Thermodynamic Modeling of Refrigerant Cycle in an Ai
 ### From source
 
 ```bash
-# Clone with submodule (when using as part of enex_analysis_engine)
-git submodule update --init --recursive
-
-# Or clone standalone
 git clone https://github.com/bet-lab/physics-heatpump-models.git
 cd physics-heatpump-models
 uv sync
@@ -152,7 +140,7 @@ uv sync
 ## Documentation
 
 - **[📚 Online Documentation](https://bet-lab.github.io/physics-heatpump-models/)**: Full API reference (Sphinx-generated)
-- **[enex_analysis_engine docs](https://bet-lab.github.io/enex_analysis_engine/)**: Parent library documentation
+- **[enex_analysis_engine docs](https://bet-lab.github.io/enex_analysis_engine/)**: Sister project, independently maintained
 
 ---
 
@@ -209,7 +197,7 @@ physics-heatpump-models/
 
 ## Related Repositories
 
-- [`enex_analysis_engine`](https://github.com/bet-lab/enex_analysis_engine): Parent energy-exergy analysis library (uses this as a submodule)
+- [`enex_analysis_engine`](https://github.com/bet-lab/enex_analysis_engine): Sister energy/exergy analysis library, currently maintained in parallel (does not consume this repo as a submodule)
 
 ---
 
