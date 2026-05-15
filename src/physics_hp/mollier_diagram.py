@@ -5,15 +5,31 @@ Mollier diagram visualization functions.
 from functools import lru_cache
 
 import CoolProp.CoolProp as CP
-import dartwork_mpl as dm
 import matplotlib.axes as maxes
 import matplotlib.figure as mfigure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from typing import cast
+from typing import Any, cast
 
 from . import calc_util as cu
+
+try:
+    import dartwork_mpl as _dartwork_mpl
+
+    dm: Any = _dartwork_mpl
+except ImportError:
+    dm = None
+
+
+def _require_dm() -> None:
+    if dm is None:
+        raise ImportError(
+            "Plotting functions in physics_hp.mollier_diagram require the "
+            "optional 'dartwork_mpl' package, which is not installed. "
+            "Install it from your package index before calling plot_ph_diagram / "
+            "plot_th_diagram / plot_ts_diagram."
+        )
 
 
 def _draw_cycle_lines_and_annotations(
@@ -221,6 +237,7 @@ def plot_th_diagram(
     tick_pad: float | None = None,
 ) -> None:
     """Plot T-h diagram on given axis."""
+    _require_dm()
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray5"
     limits = REF_LIMITS.get(refrigerant, {"th": {"xmin": 200.0, "xmax": 750.0, "ymin": -40.0, "ymax": 160.0}})["th"]
 
@@ -347,6 +364,7 @@ def plot_ph_diagram(
     tick_pad: float | None = None,
 ) -> None:
     """Plot P-h diagram on given axis."""
+    _require_dm()
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray4"
     limits = REF_LIMITS.get(refrigerant, {"ph": {"xmin": 200.0, "xmax": 750.0, "ymin": 100.0, "ymax": 10000.0}})["ph"]
 
@@ -424,6 +442,7 @@ def plot_ts_diagram(
     T_evap_bound: dict[str, float | str] | None = None,
 ) -> None:
     """Plot T-s diagram on given axis with super heating/cooling considered."""
+    _require_dm()
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray5"
     limits = REF_LIMITS.get(refrigerant, {"ts": {"xmin": 1.0, "xmax": 3.0, "ymin": -40.0, "ymax": 160.0}})["ts"]
 
