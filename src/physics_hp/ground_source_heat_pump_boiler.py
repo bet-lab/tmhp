@@ -466,7 +466,6 @@ class GroundSourceHeatPumpBoiler:
         NTU_evap = self.UA_evap / m_dot_cp_b
         eps = 1.0 - math.exp(-NTU_evap)
         Q_evap_actual = eps * m_dot_cp_b * (T_evap_in_K - T_ref_evap_sat_K)
-        err = Q_ref_evap - Q_evap_actual
 
         # Penalize if cycle evap load exceeds physics limit
         penalty = 0.0
@@ -859,7 +858,6 @@ class GroundSourceHeatPumpBoiler:
 
             # --- Phase A: Control Decisions ---
             hp_is_on, hp_result, Q_ref_cond = self._determine_hp_state(ctx, is_on_prev)
-            is_transitioning_off_to_on = (not is_on_prev) and hp_is_on
             is_on_prev = hp_is_on
 
             # Refill logic

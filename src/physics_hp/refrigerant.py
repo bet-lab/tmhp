@@ -116,10 +116,7 @@ def calc_ref_state(
     # 3단계: State 2 (압축기 출구 - 고압 과열 증기) 계산
     h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_ref_cmp_in, refrigerant)
 
-    if callable(eta_cmp_isen):
-        val_eta_cmp_isen = eta_cmp_isen(P_cond / P_evap)
-    else:
-        val_eta_cmp_isen = eta_cmp_isen
+    val_eta_cmp_isen = eta_cmp_isen(P_cond / P_evap) if callable(eta_cmp_isen) else eta_cmp_isen
 
     h_ref_cmp_out = h_ref_cmp_in + (h2_isen - h_ref_cmp_in) / val_eta_cmp_isen
     try:
@@ -131,8 +128,6 @@ def calc_ref_state(
         # Just set T and s to NaN.
         T_ref_cmp_out_K = np.nan
         s_ref_cmp_out = np.nan
-
-    P_ref_cmp_out = P_cond
 
     # 3.5단계: State 2* (응축기 포화 증기 도달 지점) 계산
     T_ref_cond_sat_v_K = T_ref_cond_sat_l_K
@@ -152,7 +147,6 @@ def calc_ref_state(
 
     # 5단계: State 4 (팽창밸브 출구) 계산
     h_ref_exp_out = h_ref_exp_in
-    P_ref_exp_out = P_evap
     T_ref_exp_out_K = CP.PropsSI("T", "P", P_evap, "H", h_ref_exp_out, refrigerant)
     s_ref_exp_out = CP.PropsSI("S", "P", P_evap, "H", h_ref_exp_out, refrigerant)
 

@@ -480,7 +480,7 @@ def tank_mass_energy_residual(
     # (e.g. STC tank-circuit heat gain, pump heat)
     Q_sub_total: float = 0.0
     E_sub_total: float = 0.0
-    for name, sub in subsystems.items():
+    for name in subsystems:
         ss: dict = sub_states.get(name, {})
         Q_sub_total += ss.get("Q_contribution", 0.0)
         E_sub_total += ss.get("E_subsystem", 0.0)

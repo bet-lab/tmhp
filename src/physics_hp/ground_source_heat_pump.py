@@ -18,6 +18,7 @@ and ``AirSourceHeatPump`` for the indoor-unit side.
 
 from __future__ import annotations
 
+import contextlib
 import math
 import warnings
 from collections.abc import Callable
@@ -205,7 +206,6 @@ class GroundSourceHeatPump:
         T_a_room : float
             Room air temperature [°C].
         """
-        T0_K = cu.C2K(T0)
         T_a_room_K = cu.C2K(T_a_room)
         T_bhe_f_out_K = float(getattr(self, "T_bhe_f_out_K", self.Ts_K))
 
@@ -506,10 +506,8 @@ class GroundSourceHeatPump:
         else:
             opt = self._optimize_operation(Q_r_iu, T0, T_a_room)
             result = None
-            try:
+            with contextlib.suppress(Exception):
                 result = self._calc_state(opt.x[0], opt.x[1], Q_r_iu, T0, T_a_room)
-            except Exception:
-                pass
 
             if result is None:
                 warnings.warn(

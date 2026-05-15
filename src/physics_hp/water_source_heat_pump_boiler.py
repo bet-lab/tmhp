@@ -715,7 +715,6 @@ class WaterSourceHeatPumpBoiler:
                         stacklevel=2,
                     )
                 T_source_w_n = self.T_bhe  # fallback to last known valid
-            T_source_w_K_n = cu.C2K(T_source_w_n)
 
             # Subsystem activation
             activation_flags = self._get_activation_flags(hour_of_day)

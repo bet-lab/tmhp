@@ -254,13 +254,11 @@ class AirSourceHeatPump:
             mode = "cooling"
             T_evap_sat_K = T_a_room_K - dT_ref_evap     # evap below room
             T_cond_sat_K = T0_K + dT_ref_cond            # cond above outdoor
-            Q_ref_iu = Q_r_iu                             # evap heat = cooling load
         else:
             # Heating mode: indoor = condenser, outdoor = evaporator
             mode = "heating"
             T_evap_sat_K = T0_K - dT_ref_evap            # evap below outdoor
             T_cond_sat_K = T_a_room_K + dT_ref_cond      # cond above room
-            Q_ref_iu = abs(Q_r_iu)                        # cond heat = heating load
 
         # Guard: evap must be below cond with required minimal lift
         if (T_cond_sat_K - T_evap_sat_K) <= self.min_lift_K:
