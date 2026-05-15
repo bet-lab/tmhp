@@ -79,7 +79,7 @@ autodoc_default_options = {
     "exclude-members": "__weakref__",
 }
 
-autodoc_mock_imports = ["dartwork_mpl", "dartwork-mpl", "pvlib", "pygfunction"]
+autodoc_mock_imports = ["dartwork_mpl"]
 
 # -- Napoleon -----------------------------------------------------------------
 
