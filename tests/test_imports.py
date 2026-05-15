@@ -1,11 +1,5 @@
 """Smoke tests — verify that core classes can be imported and instantiated."""
 
-import sys
-import os
-
-# Add repo root to path (flat-layout: source files live at src/physics_hp)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-
 
 def test_import_ashpb():
     from physics_hp.air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
