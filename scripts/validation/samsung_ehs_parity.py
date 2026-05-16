@@ -49,11 +49,11 @@ CATALOGUE: tuple[OperatingPoint, ...] = (
     OperatingPoint(8, 50, 12, 14.76, 3.86),
     OperatingPoint(9, 50, 20, 15.97, 4.78),
     OperatingPoint(10, 50, 30, 17.48, 5.95),
-    OperatingPoint(11, 65, -10, 13.96, 1.83),
-    OperatingPoint(12, 65, 2, 13.59, 2.27),
-    OperatingPoint(13, 65, 12, 15.55, 3.22),
-    OperatingPoint(14, 65, 20, 16.76, 3.83),
-    OperatingPoint(15, 65, 30, 18.27, 4.72),
+    OperatingPoint(11, 65, -10, 13.97, 1.73),
+    OperatingPoint(12, 65, 2, 13.71, 2.04),
+    OperatingPoint(13, 65, 12, 16.38, 2.84),
+    OperatingPoint(14, 65, 20, 17.48, 3.34),
+    OperatingPoint(15, 65, 30, 18.84, 4.04),
 )
 
 

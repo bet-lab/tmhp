@@ -9,7 +9,7 @@ Validation
    14 kW** catalogue across 15 operating points spanning
    :math:`T_{\mathrm{LWT}} \in \{40, 50, 65\}` °C and outdoor air
    temperatures from −10 to 30 °C, tracking the catalogue COP to a
-   mean absolute error of 0.44 (MAPE 11.8 %) without any
+   mean absolute error of 0.35 (MAPE 10.1 %) without any
    unit-specific calibration — the same code path applies to any
    CoolProp refrigerant.
 
@@ -60,7 +60,7 @@ from re-running the released code via
           - 2.30
           - 2.37
           - 0.07
-          - 3.0 %
+          - 3.1 %
         * - 2
           - 40
           - 2
@@ -68,7 +68,7 @@ from re-running the released code via
           - 3.04
           - 3.83
           - 0.79
-          - 25.8 %
+          - 26.0 %
         * - 3
           - 40
           - 12
@@ -84,7 +84,7 @@ from re-running the released code via
           - 6.48
           - 5.65
           - 0.83
-          - 12.8 %
+          - 12.9 %
         * - 5
           - 40
           - 30
@@ -92,13 +92,13 @@ from re-running the released code via
           - 7.68
           - 7.43
           - 0.25
-          - 3.2 %
+          - 3.3 %
         * - 6
           - 50
           - −10
           - 13.89
           - 2.00
-          - 1.84
+          - 1.85
           - 0.16
           - 7.8 %
         * - 7
@@ -108,15 +108,15 @@ from re-running the released code via
           - 2.56
           - 3.04
           - 0.48
-          - 18.9 %
+          - 18.8 %
         * - 8
           - 50
           - 12
           - 14.76
           - 3.86
           - 3.71
-          - 0.15
-          - 3.9 %
+          - 0.16
+          - 4.0 %
         * - 9
           - 50
           - 20
@@ -132,55 +132,55 @@ from re-running the released code via
           - 5.95
           - 5.37
           - 0.58
-          - 9.8 %
+          - 9.7 %
         * - 11
           - 65
           - −10
-          - 13.96
-          - 1.83
-          - 1.43
-          - 0.40
-          - 22.1 %
+          - 13.97
+          - 1.73
+          - 1.42
+          - 0.31
+          - 17.7 %
         * - 12
           - 65
           - 2
-          - 13.59
-          - 2.27
-          - 2.38
-          - 0.11
-          - 4.9 %
+          - 13.71
+          - 2.04
+          - 2.37
+          - 0.33
+          - 16.0 %
         * - 13
           - 65
           - 12
-          - 15.55
-          - 3.22
-          - 2.81
-          - 0.41
-          - 12.7 %
+          - 16.38
+          - 2.84
+          - 2.73
+          - 0.10
+          - 3.7 %
         * - 14
           - 65
           - 20
-          - 16.76
-          - 3.83
-          - 3.23
-          - 0.60
-          - 15.7 %
+          - 17.48
+          - 3.34
+          - 3.17
+          - 0.17
+          - 5.0 %
         * - 15
           - 65
           - 30
-          - 18.27
-          - 4.72
-          - 3.84
-          - 0.88
-          - 18.6 %
+          - 18.84
+          - 4.04
+          - 3.79
+          - 0.25
+          - 6.2 %
         * -
           -
           -
           -
           - **Mean**
           -
-          - **0.44**
-          - **11.8 %**
+          - **0.35**
+          - **10.1 %**
 
 Notation
 ========
