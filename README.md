@@ -57,13 +57,13 @@ Each time step solves a closed refrigerant cycle coupled to the surrounding syst
 
 | Sub-model                | Method                                                                      |
 | ------------------------ | --------------------------------------------------------------------------- |
-| Refrigerant state points | [CoolProp](http://www.coolprop.org) (REFPROP-grade EOS)                     |
-| Compressor work          | Isentropic + volumetric + mechanical efficiency                             |
-| Condenser / evaporator   | ε-NTU heat exchanger model                                                  |
-| Outdoor unit fan         | ASHRAE 90.1-style VSD power curve, air-side ε-NTU                           |
-| Borehole (GSHP)          | g-function via [pygfunction](https://github.com/MassimoCimmino/pygfunction) |
-| PV / solar thermal       | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power      |
-| Cycle closure            | Internal minimization → optimal evaporating temperature                     |
+| Refrigerant state points | [CoolProp](http://www.coolprop.org) (REFPROP-grade equation of state)                 |
+| Compressor work          | Isentropic + volumetric + mechanical efficiency                                       |
+| Condenser / evaporator   | ε-NTU (effectiveness-NTU) heat exchanger model                                        |
+| Outdoor unit fan         | ASHRAE 90.1-style variable-speed-drive (VSD) power curve + air-side ε-NTU             |
+| Ground heat exchanger    | g-function (ground thermal response) via [pygfunction](https://github.com/MassimoCimmino/pygfunction)   |
+| PV / solar thermal       | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power                |
+| Cycle closure            | Internal minimization → optimal evaporating temperature                               |
 
 The same core cycle is reused across every system model — what changes is the **source-side** (air / ground / water) and the **sink-side** (DHW tank, building load, hybrid PV / STC / ESS configurations).
 
@@ -223,7 +223,7 @@ df = ashpb.analyze_dynamic(
 
 ## Validation
 
-The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue data — the **Samsung EHS Mono HT Quiet R32 14 kW** unit ([Technical Data Book PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)) — across **15 operating points** spanning LWT 40 / 50 / 65 °C and outdoor air temperatures from −10 to 30 °C.
+The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue data — the **Samsung EHS Mono HT Quiet R32 14 kW** unit ([Technical Data Book PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)) — across **15 operating points** spanning $T_{\mathrm{LWT}} \in \{40, 50, 65\}$ °C and outdoor air temperatures from −10 to 30 °C.
 
 <div align="center">
 
@@ -233,7 +233,7 @@ The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue d
 
 <sub>Per-point comparison (catalogue conditions and target values follow Table 1 of the KJACR 2026 paper; predicted values come from re-running the released code via `scripts/validation/samsung_ehs_parity.py`):</sub>
 
-| ID | LWT [°C] | T₀ [°C] | Q̇<sub>cond</sub> [kW] | Target COP | Predicted COP | \|Δ\| | \|Δ\| / Target |
+| ID | $T_{\mathrm{LWT}}$ [°C] | $T_0$ [°C] | $\dot{Q}_{\mathrm{cond}}$ [kW] | $\mathrm{COP}_{\mathrm{target}}$ | $\mathrm{COP}_{\mathrm{pred}}$ | AE | APE |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | 1 | 40 | −10 | 13.45 | 2.30 | 2.37 | 0.07 | 3.0 % |
 | 2 | 40 | 2 | 12.42 | 3.04 | 3.83 | 0.79 | 25.8 % |
@@ -250,10 +250,13 @@ The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue d
 | 13 | 65 | 12 | 15.55 | 3.22 | 2.81 | 0.41 | 12.7 % |
 | 14 | 65 | 20 | 16.76 | 3.83 | 3.23 | 0.60 | 15.7 % |
 | 15 | 65 | 30 | 18.27 | 4.72 | 3.84 | 0.88 | 18.6 % |
-| | | | | | **MAE** | **0.44** | |
-| | | | | | **MAPE** | | **11.8 %** |
+| | | | | | **Mean** | **0.44** | **11.8 %** |
+
+**Notation.** $T_{\mathrm{LWT}}$ — Leaving Water Temperature, the manufacturer's catalogue reference (the model's tank temperature is set 2.5 K below $T_{\mathrm{LWT}}$ for $T_{\mathrm{LWT}} \le 60$ °C and 5 K below for $T_{\mathrm{LWT}} > 60$ °C, per the paper's EWT/LWT offset). · $T_0$ — outdoor (dead-state) air temperature. · $\dot{Q}_{\mathrm{cond}}$ — target condenser heat rate. · $\mathrm{COP}$ — system Coefficient of Performance, $\dot{Q}_{\mathrm{cond}} / (E_{\mathrm{cmp}} + E_{\mathrm{fan}})$. · **AE** — Absolute Error, $\lvert \mathrm{COP}_{\mathrm{pred}} - \mathrm{COP}_{\mathrm{target}} \rvert$. · **APE** — Absolute Percentage Error, $\mathrm{AE} / \mathrm{COP}_{\mathrm{target}}$. · **MAE** / **MAPE** — mean of AE / APE over all 15 points.
 
 This accuracy is achieved **without unit-specific calibration** — the same code path applies to any CoolProp refrigerant and any operating envelope the cycle can physically close in. The parity plot and the table above are regenerated by [`scripts/validation/samsung_ehs_parity.py`](scripts/validation/samsung_ehs_parity.py), so anyone can reproduce the comparison from the source.
+
+> **Scope.** Only `AirSourceHeatPumpBoiler` has been quantitatively validated against catalogue data. The other system classes (`GroundSourceHeatPumpBoiler`, `WaterSourceHeatPumpBoiler`, `AirSourceHeatPump`, `GroundSourceHeatPump`, and the subsystem-augmented variants) share the same refrigerant-cycle core and pass smoke tests on representative operating points, but they have not yet been benchmarked against unit-specific data.
 
 > 📄 Jo, H. & Choi, W. _"Thermodynamic Modeling of Refrigerant Cycle in an Air-Source Heat Pump Boiler and Performance Validation"_, KJACR (2026, in press).
 >
@@ -268,7 +271,8 @@ This accuracy is achieved **without unit-specific calibration** — the same cod
 
 ---
 
-## Project layout
+<details>
+<summary><b>Project layout</b></summary>
 
 ```text
 physics-heatpump-models/
@@ -312,6 +316,25 @@ physics-heatpump-models/
 ├── pyproject.toml
 ├── uv.lock
 └── README.md
+```
+
+</details>
+
+---
+
+## Cite
+
+If you use this library in academic work, please cite the validation paper:
+
+```bibtex
+@article{Jo2026Thermodynamic,
+  title   = {Thermodynamic Modeling of Refrigerant Cycle in an Air-Source
+             Heat Pump Boiler and Performance Validation},
+  author  = {Jo, Habin and Choi, Wonjun},
+  journal = {Korean Journal of Air-Conditioning and Refrigeration Engineering},
+  year    = {2026},
+  note    = {in press}
+}
 ```
 
 ---

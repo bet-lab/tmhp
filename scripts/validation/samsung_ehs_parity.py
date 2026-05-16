@@ -156,7 +156,11 @@ def plot_parity(rows: list[tuple[OperatingPoint, float]], out_path: Path) -> Non
 
 
 def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
-    """Render a Markdown results table suitable for the README."""
+    """Render a Markdown results table suitable for the README.
+
+    Column headers use GitHub-flavored LaTeX (``$...$``) so the rendered table
+    matches the symbols used in the paper and in the supporting modules.
+    """
     target = np.array([op.target_cop for op, _ in rows])
     pred = np.array([cop for _, cop in rows])
     abs_err = np.abs(pred - target)
@@ -165,12 +169,19 @@ def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
     mape = float(pct_err.mean())
 
     header = (
-        "| ID | LWT [°C] | T₀ [°C] | Q̇<sub>cond</sub> [kW] | "
-        "Target COP | Predicted COP | \\|Δ\\| | \\|Δ\\| / Target |\n"
+        "| ID "
+        "| $T_{\\mathrm{LWT}}$ [°C] "
+        "| $T_0$ [°C] "
+        "| $\\dot{Q}_{\\mathrm{cond}}$ [kW] "
+        "| $\\mathrm{COP}_{\\mathrm{target}}$ "
+        "| $\\mathrm{COP}_{\\mathrm{pred}}$ "
+        "| AE "
+        "| APE |\n"
         "|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|"
     )
+
     def _fmt_t0(t: float) -> str:
-        # Use a typographic minus / en-dash so the column reads cleanly.
+        # Typographic minus so the column reads cleanly when rendered.
         return f"−{abs(t):.0f}" if t < 0 else f"{t:.0f}"
 
     body_lines = [
@@ -180,10 +191,7 @@ def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
         )
         for (op, cop), ae, pe in zip(rows, abs_err, pct_err, strict=True)
     ]
-    footer = (
-        f"| | | | | | **MAE** | **{mae:.2f}** | |\n"
-        f"| | | | | | **MAPE** | | **{mape:.1f} %** |"
-    )
+    footer = f"| | | | | | **Mean** | **{mae:.2f}** | **{mape:.1f} %** |"
     return "\n".join([header, *body_lines, footer])
 
 
