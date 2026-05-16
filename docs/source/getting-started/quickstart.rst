@@ -2,17 +2,17 @@
 Quick start
 ===========
 
-This page walks through one steady-state evaluation of the
+This page walks through a single steady-state evaluation of the
 ``AirSourceHeatPumpBoiler`` model — the cheapest call you can make
-against the library. For the time-stepping flow, see
-:doc:`first-dynamic-simulation`.
+against the library. Once this works, move on to the time-stepping
+flow in :doc:`first-dynamic-simulation`.
 
 A single steady-state operating point
 =====================================
 
-``analyze_steady`` evaluates the refrigerant cycle at a fixed operating
-point — tank water at 55 °C, outdoor air at 5 °C, target condenser heat
-8 kW — without solving the tank energy balance.
+``analyze_steady`` evaluates the refrigerant cycle at one fixed
+operating point — tank water at 55 °C, outdoor air at 5 °C, target
+condenser duty 8 kW — without solving the tank energy balance.
 
 .. code-block:: python
 
@@ -32,15 +32,16 @@ point — tank water at 55 °C, outdoor air at 5 °C, target condenser heat
    print(f"Evap. sat. temp.  : {result['T_ref_evap_sat [°C]']:.1f} °C")
    print(f"Cond. sat. temp.  : {result['T_ref_cond_sat_v [°C]']:.1f} °C")
 
-``analyze_steady`` returns a flat ``dict`` whose keys carry the unit in
-brackets (for example ``E_cmp [W]``). Pass ``return_dict=False`` to
-get a single-row ``pandas.DataFrame`` with the same columns instead.
+``analyze_steady`` returns a flat ``dict`` whose keys carry their
+units in brackets (for example ``E_cmp [W]``). Pass
+``return_dict=False`` to get a single-row ``pandas.DataFrame`` with
+the same columns instead.
 
 Swapping the refrigerant
 ========================
 
-The refrigerant is just a constructor argument — no recalibration is
-required. Anything CoolProp supports works:
+The refrigerant is just a constructor argument; no recalibration is
+required. Any fluid CoolProp recognises works:
 
 .. code-block:: python
 

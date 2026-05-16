@@ -2,12 +2,12 @@
 Refrigerants and CoolProp
 =========================
 
-Refrigerant choice is a constructor argument across the whole
-library — every model takes ``ref="<name>"`` and routes state
-queries to `CoolProp <http://www.coolprop.org>`_. This page
-covers what that means in practice: which refrigerants work,
-where the cycle assumptions break, and how to interpret
-CoolProp-related failures.
+The refrigerant is a constructor argument across the whole
+library — every model takes ``ref="<name>"`` and routes its state
+queries to `CoolProp <http://www.coolprop.org>`_. This page covers
+what that means in practice: which refrigerants work out of the
+box, where the cycle assumptions break, and how to read CoolProp-
+related failures.
 
 The contract
 ============

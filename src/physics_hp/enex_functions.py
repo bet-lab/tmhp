@@ -412,37 +412,39 @@ def calc_HX_perf_for_target_heat(
     T_ref_evap_sat_K=None,
     T_ref_cond_sat_l_K=None,
 ):
-    """ε-NTU 기반 공기측 열교환기 풍량 수치 해석.
+    """Numerically solve for the air-side flow rate of an ε-NTU heat exchanger.
 
-    This function determines the airflow that is needed to meet a specified heat transfer demand, accounting for dynamic changes in the overall heat transfer coefficient (UA) as a function of flow velocity based on the correlation for fin-and-tube heat exchangers by Wang et al. (2000) where UA ∝ velocity^0.71.
+    Given a target heat transfer duty, find the airflow that delivers it,
+    accounting for the velocity dependence of UA via the Wang et al. (2000)
+    fin-and-tube correlation (UA ∝ velocity^0.71).
 
     Parameters
     ----------
     Q_ref_target : float
-        목표 열전달량 [W] (항상 양수).
+        Target heat transfer rate [W] (always positive).
     T_a_in_C : float, optional
-        공기 입구 온도 [°C].
+        Air-side inlet temperature [°C].
     T_ref_sat_K : float, optional
-        냉매 포화 온도 [K] (일정 온도측).
+        Refrigerant saturation temperature [K] on the constant-temperature side.
     A_cross : float
-        HX 단면적 [m²].
+        Heat-exchanger cross-sectional area [m²].
     UA_design : float
-        설계 UA [W/K].
+        Design UA [W/K].
     dV_fan_design : float
-        설계 팬 풍량 [m³/s].
+        Design fan volumetric flow rate [m³/s].
 
     is_active : bool
-        활성화 여부.
+        Active flag.
     exponent : float
         UA scaling exponent (default: 0.71).
 
-    # Legacy Aliases (optional)
+    # Legacy aliases (optional)
     T_ou_a_in_C : float, optional
-        (하위 호환성) 과거 버전의 ``T_a_in_C`` 역할을 수행합니다.
+        Backward-compat alias for ``T_a_in_C``.
     T_ref_evap_sat_K : float, optional
-        (하위 호환성) 과거 버전의 ``T_ref_sat_K`` 역할을 수행합니다.
+        Backward-compat alias for ``T_ref_sat_K``.
     T_ref_cond_sat_l_K : float, optional
-        (하위 호환성) 과거 함수 시그니처 유지를 위한 미사용 파라미터입니다.
+        Unused; kept only to preserve the older function signature.
 
     Returns
     -------
@@ -458,7 +460,7 @@ def calc_HX_perf_for_target_heat(
 
         All numeric values are ``np.nan`` when ``is_active=False``.
     """
-    # ── Legacy alias 하위호환 ──
+    # Backward-compat: accept legacy parameter names.
     if T_a_in_C is None:
         T_a_in_C = T_ou_a_in_C
     if T_ref_sat_K is None:
@@ -597,85 +599,84 @@ def update_tank_temperature(T_tank_w_K, Q_gain, UA_tank, T0_K, C_tank, dt):
 
 
 def calc_stc_performance(
-    I_DN_stc,  # 직달일사 [W/m²]
-    I_dH_stc,  # 확산일사 [W/m²]
-    T_stc_w_in_K,  # STC 입수 온도 (저탕조 온도) [K]
-    T0_K,  # 기준 온도 [K]
-    A_stc_pipe,  # STC 파이프 면적 [m²]
-    alpha_stc,  # 흡수율 [-]
-    h_o_stc,  # 외부 대류 열전달계수 [W/m²K]
-    h_r_stc,  # 공기층 복사 열전달계수 [W/m²K]
-    k_ins_stc,  # 단열재 열전도도 [W/mK]
-    x_air_stc,  # 공기층 두께 [m]
-    x_ins_stc,  # 단열재 두께 [m]
-    dV_stc,  # STC 유량 [m3/s]
-    E_pump,  # 펌프 소모 전력 [W]
-    is_active=True,  # 활성화 여부 (기본값: True)
+    I_DN_stc,  # direct normal irradiance [W/m²]
+    I_dH_stc,  # diffuse horizontal irradiance [W/m²]
+    T_stc_w_in_K,  # STC inlet water temperature (tank temperature) [K]
+    T0_K,  # reference (ambient) temperature [K]
+    A_stc_pipe,  # STC pipe area [m²]
+    alpha_stc,  # absorptance [-]
+    h_o_stc,  # outer convective HT coefficient [W/m²K]
+    h_r_stc,  # air-gap radiative HT coefficient [W/m²K]
+    k_ins_stc,  # insulation thermal conductivity [W/mK]
+    x_air_stc,  # air-gap thickness [m]
+    x_ins_stc,  # insulation thickness [m]
+    dV_stc,  # STC volumetric flow rate [m³/s]
+    E_pump,  # pump electrical input [W]
+    is_active=True,  # active flag (default: True)
 ):
-    """
-    Solar Thermal Collector (STC) 성능을 계산합니다.
+    """Compute the performance of a solar thermal collector (STC).
 
-    이 함수는 태양열 집열판의 열전달 분석을 수행합니다.
-    enex_engine.py의 SolarAssistedGasBoiler.system_update() 로직을 참조하여 구현되었습니다.
+    Adapted from the ``SolarAssistedGasBoiler.system_update`` logic in the
+    legacy ``enex_engine.py``.
 
     Parameters
     ----------
     I_DN_stc : float
-        직달일사 [W/m²]
+        Direct normal irradiance [W/m²].
     I_dH_stc : float
-        확산일사 [W/m²]
+        Diffuse horizontal irradiance [W/m²].
     T_stc_w_in_K : float
-        STC 입수 온도 (저탕조 온도) [K]
+        Inlet water temperature to the STC (equal to the tank temperature) [K].
     T0_K : float
-        기준 온도 (환경 온도) [K]
+        Reference / ambient temperature [K].
     A_stc_pipe : float
-        STC 파이프 면적 [m²]
+        STC pipe area [m²].
     alpha_stc : float
-        흡수율 [-]
+        Absorptance [-].
     h_o_stc : float
-        외부 대류 열전달계수 [W/m²K]
+        Outer convective heat-transfer coefficient [W/m²K].
     h_r_stc : float
-        공기층 복사 열전달계수 [W/m²K]
+        Air-gap radiative heat-transfer coefficient [W/m²K].
     k_ins_stc : float
-        단열재 열전도도 [W/mK]
+        Insulation thermal conductivity [W/mK].
     x_air_stc : float
-        공기층 두께 [m]
+        Air-gap thickness [m].
     x_ins_stc : float
-        단열재 두께 [m]
+        Insulation thickness [m].
     dV_stc : float
-        STC 유량 [m3/s]
+        STC volumetric flow rate [m³/s].
     E_pump : float
-        펌프 소모 전력 [W]
+        Pump electrical input [W].
     is_active : bool, optional
-        활성화 여부 (기본값: True)
-        is_active=False일 때 nan 값으로 채워진 딕셔너리 반환
+        Active flag (default: True). When ``False``, returns a dict filled
+        with ``np.nan`` (except ``T_stc_w_out_K`` and ``T_stc_w_in_K``, which
+        are set to the inlet temperature).
 
     Returns
     -------
     dict
-        계산 결과 딕셔너리:
-        - I_sol_stc: 총 일사량 [W/m²]
-        - Q_sol_stc: 태양열 흡수 열량 [W]
-        - Q_stc_w_in: STC 입수 열량 [W]
-        - Q_stc_w_out: STC 출수 열량 [W]
-        - ksi_stc: 무차원 수 [-]
-        - T_stc_w_out_K: STC 출수 온도 [K]
-        - T_stc_w_final_K: 펌프 열 포함 최종 출수 온도 [K]
-        - T_stc_w_in_K: STC 입수 온도 [K]
-        - T_stc_K: 집열판 평균 온도 [K]
-        - Q_l_stc: 집열판 열 손실 [W]
-        Returns dict with all values as np.nan (except T_stc_w_out_K, T_stc_w_in_K = T_stc_w_in_K) if is_active=False
+        - ``I_sol_stc``      — total incident irradiance [W/m²]
+        - ``Q_sol_stc``      — absorbed solar heat [W]
+        - ``Q_stc_w_in``     — inlet enthalpy flow relative to ``T0_K`` [W]
+        - ``Q_stc_w_out``    — outlet enthalpy flow relative to ``T0_K`` [W]
+        - ``ksi_stc``        — dimensionless efficiency parameter [-]
+        - ``T_stc_w_out_K``  — outlet water temperature [K]
+        - ``T_stc_w_final_K``— outlet temperature including pump heat gain [K]
+        - ``T_stc_w_in_K``   — inlet water temperature (echoed back) [K]
+        - ``T_stc_K``        — mean absorber-plate temperature [K]
+        - ``Q_l_stc``        — absorber-plate heat loss [W]
 
     Notes
     -----
-    - 모든 변수명에 _stc 접미사를 사용하여 STC 관련 변수임을 명확히 구분합니다.
-    - 열 손실은 Q_l_stc로 명명됩니다.
-    - 엔트로피 및 엑서지 계산은 제거되었으며, CSV 파일 후처리를 통해 계산해야 합니다.
+    - All variable names are suffixed with ``_stc`` to mark them as
+      STC-specific.
+    - Heat losses are reported as ``Q_l_stc``.
+    - Entropy and exergy quantities are intentionally not computed here; do
+      them as a post-processing step on the result CSV if needed.
     """
     from .constants import k_a
 
-    # U_stc 계산 (내부에서 계산)
-    # Resistance [m²K/W]
+    # Compute U_stc from layer resistances [m²K/W].
     R_air_stc = x_air_stc / k_a
     R_ins_stc = x_ins_stc / k_ins_stc
     R_o_stc = 1 / h_o_stc
@@ -684,12 +685,12 @@ def calc_stc_performance(
     R1_stc = (R_r_stc * R_air_stc) / (R_r_stc + R_air_stc) + R_o_stc
     R2_stc = R_ins_stc + R_o_stc
 
-    # U-value [W/m²K] (병렬)
+    # Overall U-value (parallel resistance network) [W/m²K].
     U1_stc = 1 / R1_stc
     U2_stc = 1 / R2_stc
     U_stc = U1_stc + U2_stc
 
-    # is_active=False일 때 nan 값으로 채워진 딕셔너리 반환
+    # When inactive, short-circuit with a NaN-filled dict (preserving inlet T).
     if not is_active:
         return {
             "I_sol_stc": np.nan,
@@ -697,29 +698,29 @@ def calc_stc_performance(
             "Q_stc_w_in": np.nan,
             "Q_stc_w_out": np.nan,
             "ksi_stc": np.nan,
-            "T_stc_w_final_K": T_stc_w_in_K,  # 입수 온도와 동일
-            "T_stc_w_out_K": T_stc_w_in_K,  # 입수 온도와 동일
+            "T_stc_w_final_K": T_stc_w_in_K,  # echo inlet
+            "T_stc_w_out_K": T_stc_w_in_K,  # echo inlet
             "T_stc_w_in_K": T_stc_w_in_K,
             "T_stc_K": np.nan,
             "Q_l_stc": np.nan,
         }
 
-    # 총 일사량 계산
+    # Total incident irradiance.
     I_sol_stc = I_DN_stc + I_dH_stc
 
-    # 태양열 흡수 열량
+    # Absorbed solar heat.
     Q_sol_stc = I_sol_stc * A_stc_pipe * alpha_stc
 
-    # Heat capacity flow rate
+    # Heat-capacity flow rate.
     G_stc = c_w * rho_w * dV_stc
 
-    # 입수 열량 (기준 온도 기준) - calc_energy_flow 사용
+    # Inlet enthalpy flow relative to T0_K.
     Q_stc_w_in = calc_energy_flow(G_stc, T_stc_w_in_K, T0_K)
 
-    # 무차원 수 (효율 계수)
+    # Dimensionless efficiency parameter.
     ksi_stc = np.exp(-A_stc_pipe * U_stc / G_stc)
 
-    # STC 출수 온도 계산
+    # STC outlet temperature.
     T_stc_w_out_numerator = (
         T0_K
         + (
@@ -737,10 +738,10 @@ def calc_stc_performance(
     T_stc_w_final_K = T_stc_w_out_K + E_pump / G_stc
     T_stc_K = 1 / (1 - ksi_stc) * T_stc_w_out_K - ksi_stc / (1 - ksi_stc) * T_stc_w_in_K
 
-    # STC 출수 열량 - calc_energy_flow 사용
+    # STC outlet enthalpy flow relative to T0_K.
     Q_stc_w_out = calc_energy_flow(G_stc, T_stc_w_out_K, T0_K)
 
-    # 집열판 열 손실
+    # Absorber-plate heat loss.
     Q_l_stc = A_stc_pipe * U_stc * (T_stc_K - T0_K)
 
     return {

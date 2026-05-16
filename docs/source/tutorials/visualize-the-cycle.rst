@@ -1,15 +1,16 @@
-=========================
-Visualize the cycle (P–h)
-=========================
+=================================
+Visualize the thermodynamic cycle
+=================================
 
-Every ``analyze_steady`` call returns the full thermodynamic state at
-each cycle node (compressor in / out, expander in / out, evaporator /
-condenser saturation). Plotting those points on a pressure–enthalpy
-(P–h) chart — and, side-by-side, on a temperature–enthalpy (T–h) chart
-— is the fastest way to sanity-check a solved cycle.
+Every ``analyze_steady`` call returns the full thermodynamic state
+at each cycle node (compressor in / out, expander in / out,
+evaporator / condenser saturation). Plotting those points on a
+pressure–enthalpy (P–h) chart — and, side by side, on a
+temperature–enthalpy (T–h) chart — is the fastest way to
+sanity-check a solved cycle.
 
-This tutorial draws both panels with no extra dependencies — just
-CoolProp and Matplotlib, which the library already pulls in.
+This tutorial draws both panels with no extra dependencies; just
+CoolProp and Matplotlib, both already pulled in by the library.
 
 The output
 ==========

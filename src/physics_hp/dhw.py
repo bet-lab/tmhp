@@ -144,7 +144,9 @@ def calc_cold_water_temp(df: pd.DataFrame, target_date_str: str) -> float:
     float
         Calculated cold water temperature [degC].
     """
-    # 온도 컬럼 동적 탐색 (T_avg, 기온, temp, T0 등 다양한 이름 대응)
+    # Dynamic temperature-column lookup. The Korean keywords ('기온') are kept
+    # so KMA (Korea Meteorological Administration) CSVs match out of the box
+    # alongside English column names (T_avg, temp, T0, °C, ℃).
     _TEMP_PATTERNS = ["t_avg", "기온", "temp", "t0", "°c", "℃"]
     temp_col: str | None = None
     for pat in _TEMP_PATTERNS:
@@ -154,9 +156,10 @@ def calc_cold_water_temp(df: pd.DataFrame, target_date_str: str) -> float:
             break
     if temp_col is None:
         raise ValueError(
-            f"calc_cold_water_temp: 온도 컬럼을 찾을 수 없습니다. "
-            f"현재 컬럼: {df.columns.tolist()}. "
-            f"'T_avg', '기온', 'temp', 'T0' 등의 키워드가 포함된 컬럼이 필요합니다."
+            f"calc_cold_water_temp: could not find a temperature column. "
+            f"Columns present: {df.columns.tolist()}. "
+            f"A column whose name contains one of "
+            f"{_TEMP_PATTERNS} is required."
         )
 
     T_out_avg = df[temp_col].mean()

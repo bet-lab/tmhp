@@ -2,10 +2,11 @@
 Your first dynamic simulation
 =============================
 
-``analyze_dynamic`` runs the same refrigerant cycle as ``analyze_steady``
-at every time step, coupled to a tank-energy balance and any active
-subsystems. This page steps through the simplest possible call: 24 hours
-of operation against a constant outdoor temperature and zero DHW draw.
+``analyze_dynamic`` solves the same refrigerant cycle as
+``analyze_steady`` at every time step, coupled to a tank-energy
+balance and any active subsystems. This page walks through the
+simplest possible call: 24 hours of operation against a constant
+outdoor temperature and zero DHW draw.
 
 Minimum viable example
 ======================
@@ -74,7 +75,7 @@ Common next moves
 
 .. note::
 
-   ``analyze_dynamic`` uses a fully implicit scheme — ``fsolve`` solves
-   for ``[T_next, level_next]`` at every step. This makes the integrator
-   robust to large ``dt_s`` values, but a 1-minute step is a sensible
-   default for first runs.
+   ``analyze_dynamic`` uses a fully implicit time-stepping scheme —
+   ``fsolve`` solves for ``[T_next, level_next]`` at every step. This
+   makes the integrator robust to large ``dt_s`` values, but a
+   1-minute step is a safe default for first runs.

@@ -3,11 +3,11 @@ Why physics-based?
 ==================
 
 Most building-energy simulators model a heat pump as an empirical
-curve fit: a polynomial in (outdoor temperature, leaving-water
-temperature) calibrated against the manufacturer's test points. That
-approach is cheap and accurate *inside the calibration envelope*, but
-it carries three structural limitations that this library is built
-to remove.
+curve fit — typically a polynomial in (outdoor temperature,
+leaving-water temperature) calibrated against the manufacturer's test
+points. That approach is cheap and accurate *inside the calibration
+envelope*, but it carries three structural limitations that this
+library was built to remove.
 
 The three structural limits of curve fits
 ==========================================
@@ -39,11 +39,11 @@ The three structural limits of curve fits
 What gets solved at every time step
 ====================================
 
-Each call to ``analyze_steady`` or each step of ``analyze_dynamic``
-solves a closed refrigerant cycle coupled to the surrounding
-system. The condenser duty is the target; the evaporating
-temperature is found by internally minimising compressor power, so
-the cycle closes physically rather than via fitted coefficients.
+Each call to ``analyze_steady`` (and each step of ``analyze_dynamic``)
+solves a closed refrigerant cycle coupled to the surrounding system.
+The condenser duty is the target; the evaporating temperature is
+found by internally minimising compressor power, so the cycle closes
+on a physical optimum rather than on fitted coefficients.
 
 .. list-table::
     :header-rows: 1
@@ -76,11 +76,11 @@ The compute trade-off
 =====================
 
 Solving an EOS state at every cycle node is more expensive than
-evaluating a polynomial. In practice this lands around a few
-hundred steps per second on a single core for a vanilla ASHPB —
-fast enough that a year-long minute-resolution run is hours, not
-minutes. If that's too slow for your use case, a fitted surrogate
-is the right escape hatch; this library is calibrated against
-commercial catalogue data well enough that the surrogate can be
-trained against ``physics_hp`` itself rather than against new
-bench data.
+evaluating a polynomial. In practice it lands around a few hundred
+steps per second on a single core for a vanilla ASHPB — fast enough
+that a year-long minute-resolution run takes hours, not minutes.
+
+If that is still too slow for your use case, a fitted surrogate is
+the right escape hatch. ``physics_hp`` is calibrated against
+commercial catalogue data well enough that you can train the
+surrogate against this library itself, with no fresh bench data.

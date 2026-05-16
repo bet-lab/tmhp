@@ -18,7 +18,8 @@ __all__ = [
 
 
 def load_kma_solar_csv(csv_path: str, encoding: str = "euc-kr") -> pd.DataFrame:
-    """Load KMA (기상청) 1-minute cumulative solar irradiance CSV.
+    """Load a Korea Meteorological Administration (KMA, 기상청) 1-minute
+    cumulative solar irradiance CSV.
 
     Parameters
     ----------
@@ -39,20 +40,21 @@ def load_kma_solar_csv(csv_path: str, encoding: str = "euc-kr") -> pd.DataFrame:
     )
     df = pd.read_csv(csv_path, encoding=encoding)
 
-    # 1. 일시 파싱
+    # 1. Parse the timestamp column. KMA exports label it '일시' or '시간';
+    # both spellings are accepted.
     time_col = df.columns[df.columns.str.contains("일시|시간")][0]
     df["datetime"] = pd.to_datetime(df[time_col])
 
-    # [BUGFIX] KMA 데이터는 KST 기준이나, 시간대(tz) 정보가 없는 Naive Datetime으로 파싱됨.
-    # 이를 그대로 pvlib에 넘기면 UTC로 오인하여 9시간의 태양 위치 계산 오차(일몰/일출 시 DNI 폭증 Anomaly 등)가 발생함.
-    # 따라서 반드시 'Asia/Seoul' 시간대를 명시적으로 부여해야 함.
+    # BUGFIX: KMA timestamps are KST but parsed as tz-naive. If passed to
+    # pvlib as-is they would be interpreted as UTC, producing a 9-hour offset
+    # that shows up as a sunrise/sunset DNI anomaly. Localise explicitly.
     if df["datetime"].dt.tz is None:
         df["datetime"] = df["datetime"].dt.tz_localize("Asia/Seoul")
 
     df.set_index("datetime", inplace=True)
 
-    # 2. 일사량 파싱 (MJ/m2 -> W/m2)
-    # 1분 단위 누적 일사량이라 가정
+    # 2. Parse the cumulative irradiance column (MJ/m² per 1-minute interval)
+    # and convert it to an instantaneous W/m² rate.
     solar_col = df.columns[df.columns.str.contains("일사")][0]
     df["ghi"] = df[solar_col].diff().fillna(0) * 1e6 / 60
     df.loc[df["ghi"] < 0, "ghi"] = 0
@@ -82,7 +84,8 @@ def load_kma_T0_sol_hourly_csv(csv_path: str, encoding: str = "euc-kr") -> pd.Da
     )
     df = pd.read_csv(csv_path, encoding=encoding)
 
-    # 컬럼 찾기 함수
+    # Match columns case-insensitively against a list of candidate substrings.
+    # Korean keywords (KMA exports) and English keywords both work.
     def _find_col(patterns: list[str]) -> str:
         for p in patterns:
             match = df.columns[df.columns.str.lower().str.contains(p.lower())]
@@ -96,18 +99,18 @@ def load_kma_T0_sol_hourly_csv(csv_path: str, encoding: str = "euc-kr") -> pd.Da
 
     df["datetime"] = pd.to_datetime(df[time_col])
 
-    # [BUGFIX] KMA 데이터는 KST 기준이나, 시간대(tz) 정보가 없는 Naive Datetime으로 파싱됨.
-    # 이를 그대로 pvlib에 넘기면 UTC로 오인하여 9시간의 태양 위치 계산 오차(일몰/일출 시 DNI 폭증 Anomaly 등)가 발생함.
-    # 따라서 반드시 'Asia/Seoul' 시간대를 명시적으로 부여해야 함.
+    # BUGFIX: KMA timestamps are KST but parsed as tz-naive. If passed to
+    # pvlib as-is they would be interpreted as UTC, producing a 9-hour offset
+    # that shows up as a sunrise/sunset DNI anomaly. Localise explicitly.
     if df["datetime"].dt.tz is None:
         df["datetime"] = df["datetime"].dt.tz_localize("Asia/Seoul")
 
     df.set_index("datetime", inplace=True)
 
-    # 온도를 Kelvin으로 변환
+    # Convert temperature to Kelvin.
     df["T0_K"] = cu.C2K(df[temp_col])
 
-    # 일사량을 W/m2로 변환 (1시간 누적 MJ/m2 -> W/m2)
+    # Convert irradiance from MJ/m² per hour to W/m².
     df["ghi"] = df[ghi_col] * cu.MJ2J * cu.s2h
     df.loc[df["ghi"] < 0, "ghi"] = 0
 
@@ -159,20 +162,20 @@ def decompose_ghi_to_poa(
     times = ghi.index
     location = pvlib.location.Location(latitude, longitude, tz, altitude)
 
-    # 1. 태양 위치 계산
+    # 1. Solar position.
     solar_position = location.get_solarposition(times)
 
-    # 2. DNI, DHI 분해
+    # 2. Decompose GHI into DNI and DHI.
     if decomposition.lower() == "erbs":
         dni_dhi = pvlib.irradiance.erbs(ghi, solar_position["zenith"], times.dayofyear)
     else:
-        # 간단히 erbs 폴백
+        # Fall back to Erbs for any unrecognised decomposition model.
         dni_dhi = pvlib.irradiance.erbs(ghi, solar_position["zenith"], times.dayofyear)
 
     dni = dni_dhi["dni"]
     dhi = dni_dhi["dhi"]
 
-    # 3. POA 변환
+    # 3. Transpose to plane-of-array (POA) irradiance.
     dni_extra = pvlib.irradiance.get_extra_radiation(times)
     airmass = location.get_airmass(times=times)
     poa = pvlib.irradiance.get_total_irradiance(

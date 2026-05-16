@@ -4,7 +4,8 @@ Cycle architecture
 
 Every model in ``physics_hp`` is the same closed refrigerant cycle
 wrapped in a different source / sink pairing. This page sketches
-the shared structure and shows where each system family plugs in.
+the shared structure and shows where each system family plugs into
+it.
 
 The shared core
 ===============
@@ -52,12 +53,12 @@ Every system reuses the same closed cycle — only the blocks marked
     cycle-closure block in the centre reappears identically in the
     GSHPB, WSHPB, ASHP, and GSHP models.
 
-The cycle solves four refrigerant state points (compressor in,
-compressor out, expander in, expander out) plus the evaporator and
-condenser saturation states. Heat transfer at each HX is solved
-with an ε-NTU model. The evaporating temperature is treated as a
+The cycle solves four refrigerant state points (compressor in /
+out, expander in / out) plus the evaporator and condenser
+saturation states. Heat transfer at each heat exchanger is solved
+with an ε-NTU model. The evaporating temperature is left as a
 free parameter and chosen by minimising compressor power, so the
-cycle closure is a physical optimum rather than a fitted
+cycle closes on a physical optimum rather than on a fitted
 coefficient.
 
 Source side: where heat comes from

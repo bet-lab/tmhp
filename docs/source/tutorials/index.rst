@@ -30,7 +30,7 @@ one or two values, and you have a working starting point.
         Wire a ``SolarThermalCollector`` onto ``ASHPB_STC_preheat`` and
         feed irradiance schedules into ``analyze_dynamic``.
 
-    .. grid-item-card:: Visualize the cycle (P–h)
+    .. grid-item-card:: Visualize the thermodynamic cycle
         :link: visualize-the-cycle
         :link-type: doc
 

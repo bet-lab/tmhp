@@ -107,7 +107,8 @@ def calc_exergy_flow(G, T, T0):
 
     is_series = isinstance(T, pd.Series) or isinstance(T0, pd.Series) or isinstance(G, pd.Series)
     if is_series:
-        # 벡터화 처리: T <= 0 또는 T0 <= 0인 경우 0으로 마스킹
+        # Vectorised path: mask rows where T <= 0 or T0 <= 0 to zero so the
+        # log doesn't blow up on invalid inputs.
         invalid = (T <= 0) | (T0 <= 0)
         T_safe = np.where(T <= 0, 1.0, T)
         T0_safe = np.where(T0 <= 0, 1.0, T0)

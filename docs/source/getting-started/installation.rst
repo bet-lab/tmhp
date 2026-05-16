@@ -17,8 +17,9 @@ Clone and install
    cd physics-heatpump-models
    uv sync --locked
 
-``--locked`` makes ``uv`` honor the committed ``uv.lock`` and fail rather
-than silently re-resolving versions, which is the same contract CI uses.
+``--locked`` tells ``uv`` to respect the committed ``uv.lock`` and
+fail rather than silently re-resolving versions. This is the same
+contract CI uses, so your local install matches what we test.
 
 Optional dependency groups
 ==========================

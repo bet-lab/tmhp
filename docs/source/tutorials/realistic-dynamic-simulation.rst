@@ -2,13 +2,15 @@
 Realistic dynamic simulation
 =============================
 
-:doc:`../getting-started/first-dynamic-simulation` runs ``analyze_dynamic``
-with flat schedules. Real runs almost never look like that.
+:doc:`../getting-started/first-dynamic-simulation` runs
+``analyze_dynamic`` with flat schedules. Real runs almost never
+look like that.
 
 This tutorial assembles a more representative 24-hour scenario:
 
-- a domestic-hot-water draw profile with morning and evening peaks,
-- a sinusoidal outdoor-temperature schedule (overnight low → mid-afternoon high),
+- a domestic-hot-water draw profile with morning and evening peaks;
+- a sinusoidal outdoor-temperature schedule (overnight low,
+  mid-afternoon high);
 - and CSV output for downstream analysis.
 
 The schedule arrays

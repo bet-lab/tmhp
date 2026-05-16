@@ -250,10 +250,13 @@ def plot_th_diagram(
     pts_x = {"1_star": h1_star, "1": h1, "2": h2, "2_star": h2_star, "3_star": h3_star, "3": h3, "4": h4}
     pts_y = {"1_star": T1_star, "1": T1, "2": T2, "2_star": T2_star, "3_star": T3_star, "3": T3, "4": T4}
     is_on = bool(result.get("hp_is_on", result.get("is_on", False)))
-    # T-h 다이어그램: x축=엔탈피[kJ/kg], y축=온도[°C]
-    # 두 축의 단위가 달라 tol_y_atol을 별도로 지정:
-    # - h 기준(tol_atol): 0.5 kJ/kg → 포화 구간 좁은 엔탈피 차 허용
-    # - T 기준(tol_y_atol): 0.5 °C → SH/SC 적용 시 과열·과냉 구간 구별 허용
+    # T-h chart: x-axis = enthalpy [kJ/kg], y-axis = temperature [°C].
+    # The two axes use different units, so tol_atol and tol_y_atol are
+    # specified independently:
+    # - tol_atol  = 0.5 kJ/kg — narrow enthalpy difference inside the
+    #               saturation dome.
+    # - tol_y_atol = 0.5 °C   — temperature resolution that lets the SH/SC
+    #               (superheat / subcool) segments stay visible.
     _draw_cycle_lines_and_annotations(
         ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4,
         tol_atol=0.5, tol_y_atol=0.5,

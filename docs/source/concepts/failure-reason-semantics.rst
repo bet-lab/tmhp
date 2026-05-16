@@ -3,10 +3,10 @@
 ============================
 
 Every ``analyze_steady`` result carries a ``failure_reason`` key.
-It's a diagnostic *report* — independent from whether the result
-dict contains usable cycle numbers — and lets callers branch on
-*why* a step looks the way it does without having to inspect cycle
-internals.
+It is a diagnostic *report* — independent of whether the result
+dict contains usable cycle numbers — that lets callers branch on
+*why* a step looks the way it does, without having to inspect the
+cycle internals.
 
 The four values
 ===============

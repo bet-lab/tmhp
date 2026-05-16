@@ -2,12 +2,12 @@
 Swap refrigerants
 ==================
 
-The refrigerant is a constructor argument across every model in
+The refrigerant is a constructor argument on every model in
 ``physics_hp``. Changing it requires no recalibration and no
 manufacturer data — pick any name CoolProp recognises and the
 library re-solves the cycle from first principles.
 
-This tutorial sweeps four common refrigerants at one fixed
+This tutorial sweeps four common refrigerants at a single fixed
 operating point and tabulates the resulting COP.
 
 Sweep

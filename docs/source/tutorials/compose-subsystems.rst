@@ -4,10 +4,10 @@ Compose subsystems
 
 Solar thermal collectors, photovoltaic systems, and energy
 storage are not modelled as separate top-level classes — they
-plug onto an existing heat-pump model. This tutorial walks
-through the simplest composition: ``ASHPB_STC_preheat``, where a
-``SolarThermalCollector`` heats the mains-cold water entering the
-DHW tank.
+plug into an existing heat-pump model. This tutorial walks
+through the simplest such composition: ``ASHPB_STC_preheat``,
+where a ``SolarThermalCollector`` heats the cold mains water
+before it reaches the DHW tank.
 
 The two pieces
 ==============

@@ -18,35 +18,42 @@ __all__ = [
 
 
 def calc_ref_state(
-    T_evap_K: float,  # 증발 온도 [K] (포화 온도로 해석)
-    T_cond_K: float,  # 응축 온도 [K] (포화 온도로 해석)
-    refrigerant: str,  # 냉매 이름
-    eta_cmp_isen: float | Callable,  # 압축기 등엔트로피 효율 (Float 또는 함수)
-    mode: str = "heating",  # 작동 모드 ('heating' 또는 'cooling')
-    dT_superheat: float = 0.0,  # [K] 증발기 출구 과열도 (State 1* → 1)
-    dT_subcool: float = 0.0,  # [K] 응축기 출구 과냉각도 (State 3* → 3)
-    is_active: bool = True,  # 활성화 여부 (False일 때 nan 값 반환)
+    T_evap_K: float,  # evaporating temperature [K] (treated as saturation T)
+    T_cond_K: float,  # condensing temperature [K] (treated as saturation T)
+    refrigerant: str,  # refrigerant name
+    eta_cmp_isen: float | Callable,  # compressor isentropic efficiency (scalar or callable)
+    mode: str = "heating",  # operating mode ('heating' or 'cooling')
+    dT_superheat: float = 0.0,  # [K] evaporator outlet superheat (State 1* → 1)
+    dT_subcool: float = 0.0,  # [K] condenser outlet subcool (State 3* → 3)
+    is_active: bool = True,  # active flag (returns nan-filled dict when False)
 ) -> dict[str, Any]:
-    """
-    냉매 사이클의 State 1-4 열역학 물성치를 계산하는 공통 함수.
+    """Compute the four thermodynamic state points of the refrigerant cycle.
 
-    증기압축 사이클의 4개 주요 상태점을 계산합니다:
+    The vapour-compression cycle has four canonical state points:
 
-    - State 1 (cmp_in):  압축기 입구 (증발기 출구, 저압 과열 증기)
-    - State 2 (cmp_out): 압축기 출구 (응축기 입구, 고압 과열 증기)
-    - State 3 (exp_in):  팽창밸브 입구 (응축기 출구, 고압 과냉 액체)
-    - State 4 (exp_out): 팽창밸브 출구 (증발기 입구, 저압 2상 혼합물)
+    - State 1 (``cmp_in``):  compressor inlet  — low-pressure superheated vapour
+      at the evaporator outlet.
+    - State 2 (``cmp_out``): compressor outlet — high-pressure superheated vapour
+      at the condenser inlet.
+    - State 3 (``exp_in``):  expansion-valve inlet  — high-pressure subcooled
+      liquid at the condenser outlet.
+    - State 4 (``exp_out``): expansion-valve outlet — low-pressure two-phase
+      mixture at the evaporator inlet.
 
-    키 배정은 항상 물리적 압축기 입출구 기준이며, mode 값은
-    결과 dict의 ``"mode"`` 키에만 기록됩니다.
+    Keys in the returned dict are always assigned by the physical compressor /
+    expander ports; the ``mode`` argument is preserved verbatim under the
+    ``"mode"`` key but does not change the key naming.
 
     Note
     ----
-    냉방/난방 모드에서 어느 HX가 증발기/응축기인지는 호출측
-    (``_calc_state``)에서 T_evap_K, T_cond_K를 결정하여 전달합니다.
+    Whether a given heat exchanger acts as the evaporator or the condenser in
+    heating versus cooling mode is decided by the caller (``_calc_state``),
+    which chooses ``T_evap_K`` and ``T_cond_K`` accordingly before calling
+    this function.
     """
 
-    # is_active=False일 때 nan 값으로 채워진 딕셔너리 반환
+    # When inactive, short-circuit with a dict of NaNs so downstream code can
+    # still index by key without special-casing missing fields.
     if not is_active:
         return {
             "P_ref_cmp_in [Pa]": np.nan,
@@ -88,20 +95,20 @@ def calc_ref_state(
             "mode": mode,
         }
 
-    # 1단계: 포화 온도 및 압력 계산
+    # Step 1: saturation temperatures and pressures.
     T_ref_evap_sat_K = T_evap_K
     T_ref_cond_sat_l_K = T_cond_K
 
     P_evap = CP.PropsSI("P", "T", T_ref_evap_sat_K, "Q", 1, refrigerant)
     P_cond = CP.PropsSI("P", "T", T_ref_cond_sat_l_K, "Q", 0, refrigerant)
 
-    # 포화 상태 추가 계산
+    # Saturation-state enthalpy / entropy at the evaporator and condenser.
     h_ref_evap_sat = CP.PropsSI("H", "T", T_ref_evap_sat_K, "Q", 1, refrigerant)
     s_ref_evap_sat = CP.PropsSI("S", "T", T_ref_evap_sat_K, "Q", 1, refrigerant)
     h_ref_cond_sat_l = CP.PropsSI("H", "T", T_ref_cond_sat_l_K, "Q", 0, refrigerant)
     s_ref_cond_sat_l = CP.PropsSI("S", "T", T_ref_cond_sat_l_K, "Q", 0, refrigerant)
 
-    # 2단계: State 1 (실제 과열 증기) 계산
+    # Step 2: State 1 — actual superheated vapour at the compressor inlet.
     T_ref_cmp_in_K = T_ref_evap_sat_K + dT_superheat
 
     if abs(dT_superheat) < 1e-6:
@@ -113,7 +120,7 @@ def calc_ref_state(
         s_ref_cmp_in = CP.PropsSI("S", "T", T_ref_cmp_in_K, "P", P_evap, refrigerant)
         rho_ref_cmp_in = CP.PropsSI("D", "T", T_ref_cmp_in_K, "P", P_evap, refrigerant)
 
-    # 3단계: State 2 (압축기 출구 - 고압 과열 증기) 계산
+    # Step 3: State 2 — high-pressure superheated vapour at the compressor outlet.
     h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_ref_cmp_in, refrigerant)
 
     val_eta_cmp_isen = eta_cmp_isen(P_cond / P_evap) if callable(eta_cmp_isen) else eta_cmp_isen
@@ -123,19 +130,20 @@ def calc_ref_state(
         T_ref_cmp_out_K = CP.PropsSI("T", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
         s_ref_cmp_out = CP.PropsSI("S", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
     except ValueError:
-        # If H is too high, it exceeds Tmax of CoolProp (e.g. 435K for R32).
-        # We MUST NOT modify h_ref_cmp_out as it breaks the energy balance.
-        # Just set T and s to NaN.
+        # H is too high — it exceeds CoolProp's Tmax for this fluid
+        # (e.g. 435 K for R32). Do NOT clip h_ref_cmp_out, since that would
+        # silently break the energy balance; just record T and s as NaN.
         T_ref_cmp_out_K = np.nan
         s_ref_cmp_out = np.nan
 
-    # 3.5단계: State 2* (응축기 포화 증기 도달 지점) 계산
+    # Step 3.5: State 2* — point where the high-pressure stream first reaches
+    # the condenser saturation vapour line.
     T_ref_cond_sat_v_K = T_ref_cond_sat_l_K
     P_ref_cond_sat_v = P_cond
     h_ref_cond_sat_v = CP.PropsSI("H", "P", P_cond, "Q", 1, refrigerant)
     s_ref_cond_sat_v = CP.PropsSI("S", "P", P_cond, "Q", 1, refrigerant)
 
-    # 4단계: State 3 (실제 과냉 액체) 계산
+    # Step 4: State 3 — actual subcooled liquid at the expansion-valve inlet.
     T_ref_exp_in_K = T_ref_cond_sat_l_K - dT_subcool
 
     if abs(dT_subcool) < 1e-6:
@@ -145,7 +153,8 @@ def calc_ref_state(
         h_ref_exp_in = CP.PropsSI("H", "T", T_ref_exp_in_K, "P", P_cond, refrigerant)
         s_ref_exp_in = CP.PropsSI("S", "T", T_ref_exp_in_K, "P", P_cond, refrigerant)
 
-    # 5단계: State 4 (팽창밸브 출구) 계산
+    # Step 5: State 4 — two-phase mixture at the expansion-valve outlet
+    # (isenthalpic expansion: h_4 = h_3).
     h_ref_exp_out = h_ref_exp_in
     T_ref_exp_out_K = CP.PropsSI("T", "P", P_evap, "H", h_ref_exp_out, refrigerant)
     s_ref_exp_out = CP.PropsSI("S", "P", P_evap, "H", h_ref_exp_out, refrigerant)

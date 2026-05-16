@@ -1458,7 +1458,8 @@ class AirSourceHeatPumpBoiler:
 
         X_out_tank = df[
             "Xst_tank [W]"
-        ]  # df['X_tank_loss [W]']를 제외하는 이유는 X_tank_loss 또한 exergy consumption에 포함시기 위함임
+        ]  # X_tank_loss is intentionally excluded here: it is treated as
+        # part of the tank's exergy consumption rather than an outflow.
         if "X_tank_w_out [W]" in df.columns:
             X_out_tank = X_out_tank + df["X_tank_w_out [W]"].fillna(0)
 
