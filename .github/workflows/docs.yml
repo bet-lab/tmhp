@@ -18,6 +18,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          # Full history so sphinx-last-updated-by-git can compute the
+          # per-page modification timestamps. The default shallow clone
+          # (depth=1) trips the `git.too_shallow` warning for every page.
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
