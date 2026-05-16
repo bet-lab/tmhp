@@ -78,6 +78,7 @@ html_theme_options = {
     "globaltoc_expand_depth": 1,
     "nav_links": [
         {"title": "Getting Started", "url": "getting-started/index"},
+        {"title": "Concepts", "url": "concepts/index"},
         {"title": "API Reference", "url": "api/index"},
     ],
     # Social-card image shown when the docs are linked on GitHub, Slack, etc.
