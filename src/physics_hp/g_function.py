@@ -189,7 +189,9 @@ def precompute_gfunction(
     t_min = max(dt_s, 3600.0)
     times = np.geomspace(t_min, t_max_s * 1.5, num=100)
 
-    boreField = gt.boreholes.rectangle_field(N_1=N_1, N_2=N_2, B_1=B, B_2=B, H=H_b, D=D_b, r_b=r_b)
+    boreField = gt.borefield.Borefield.rectangle_field(
+        N_1=N_1, N_2=N_2, B_1=B, B_2=B, H=H_b, D=D_b, r_b=r_b
+    )
 
     # Use uniform_heat_flux to ensure stability and compatibility with fundamental FLS assumptions
     options = {"method": "uniform_heat_flux"}
@@ -329,11 +331,13 @@ def precompute_gfunction_mls(
     t_min = max(dt_s, 3600.0)
     times = np.geomspace(t_min, t_max_s * 1.5, num=50)
 
-    boreField = gt.boreholes.rectangle_field(N_1=N_1, N_2=N_2, B_1=B, B_2=B, H=H_b, D=D_b, r_b=r_b)
+    boreField = gt.borefield.Borefield.rectangle_field(
+        N_1=N_1, N_2=N_2, B_1=B, B_2=B, H=H_b, D=D_b, r_b=r_b
+    )
 
     g_vals_dim = G_MFLS_Field(
         times=times,
-        boreholes=boreField,
+        boreholes=boreField.to_boreholes(),
         v_gw=v_gw,
         theta_gw=theta_gw,
         rho_w=rho_w,
