@@ -88,3 +88,8 @@ Thumbs.db
 # ===========================
 .agents/
 .claude
+
+# ===========================
+# Local validation reference materials (copyrighted, not redistributed)
+# ===========================
+references/
