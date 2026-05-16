@@ -216,7 +216,7 @@ df = ashpb.analyze_dynamic(
 
 ## Validation
 
-The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue data (**Samsung EHS 14 kW**) across **15 operating points** spanning LWT 40 / 50 / 65 °C and outdoor air temperatures from −10 to 30 °C.
+The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue data — the **Samsung EHS Mono HT Quiet R32 14 kW** unit ([Technical Data Book PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)) — across **15 operating points** spanning LWT 40 / 50 / 65 °C and outdoor air temperatures from −10 to 30 °C.
 
 <div align="center">
 
@@ -229,7 +229,9 @@ The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue d
 
 This accuracy is achieved **without unit-specific calibration** — the same code path applies to any CoolProp refrigerant and any operating envelope the cycle can physically close in.
 
-> 📄 *"Thermodynamic Modeling of Refrigerant Cycle in an Air-Source Heat Pump Boiler and Validation against Commercial Catalogue Data"*, KJACR (2025).
+> 📄 Jo, H. & Choi, W. *"Thermodynamic Modeling of Refrigerant Cycle in an Air-Source Heat Pump Boiler and Performance Validation"*, KJACR (2026, in press).
+>
+> 📘 Samsung Electronics, *EHS Mono HT Quiet R32 Technical Data Book* (2024) — [PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)
 
 ---
 

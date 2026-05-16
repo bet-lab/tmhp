@@ -37,8 +37,19 @@ jobs:
       - name: Mypy
         run: uv run mypy src/physics_hp
 
-      - name: Pytest
-        run: uv run pytest -q
+      - name: Pytest with coverage
+        run: |
+          uv run pytest -q \
+            --cov=physics_hp \
+            --cov-report=term \
+            --cov-report=xml
+
+      - name: Upload coverage XML
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: coverage.xml
+          if-no-files-found: error
 
   docs:
     # Sphinx output is Python-version-independent; run once and gate PRs on it.
