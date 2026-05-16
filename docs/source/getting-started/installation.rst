@@ -42,68 +42,27 @@ pollute the runtime install.
    # Everything at once (mirrors the docs CI job)
    uv sync --all-groups --locked
 
-Runtime dependencies
-====================
+What's installed
+================
 
-The runtime install pulls in:
+The runtime install pulls in `CoolProp <http://www.coolprop.org>`_
+for refrigerant thermodynamics, NumPy / SciPy for numerical work,
+pandas for per-timestep result frames, and Matplotlib for plotting,
+plus a few smaller libraries for the PV and ground-loop subsystems.
+The full, version-pinned list lives in ``pyproject.toml`` and
+``uv.lock``.
 
-- `CoolProp <http://www.coolprop.org>`_ — refrigerant thermodynamic
-  properties (REFPROP-grade EOS).
-- `NumPy <https://numpy.org>`_ + `SciPy <https://scipy.org>`_ —
-  numerical computation and ``fsolve`` for cycle closure.
-- `pandas <https://pandas.pydata.org>`_ — per-timestep result frames.
-- `Matplotlib <https://matplotlib.org>`_ — plotting primitives.
-- `pvlib <https://pvlib-python.readthedocs.io>`_ — solar irradiance
-  and PV power for the STC / PV subsystems.
-- `pygfunction <https://github.com/MassimoCimmino/pygfunction>`_ —
-  g-function borehole heat exchanger model.
-- `tqdm <https://tqdm.github.io>`_ — progress bars on long
-  ``analyze_dynamic`` runs.
-- `dartwork-mpl <https://github.com/dartworklabs/dartwork-mpl>`_ —
-  thin matplotlib styling layer used by
-  :doc:`../api/support/visualization`. Pulled from the upstream Git
-  repo via ``[tool.uv.sources]`` since there is no PyPI release; you
-  do not need to install it separately.
+Running the dev checks
+======================
 
-Development dependencies (``--group dev``)
-==========================================
+After ``uv sync --group dev --locked``, the three commands CI runs
+on every PR are:
 
-Run the same checks CI runs on every PR:
+.. code-block:: bash
 
-- `ruff <https://docs.astral.sh/ruff>`_ — lint
-  (``uv run ruff check src/physics_hp tests``).
-- `mypy <https://mypy.readthedocs.io>`_ — static type checking
-  (``uv run mypy src/physics_hp``).
-- `pytest <https://docs.pytest.org>`_ +
-  `pytest-cov <https://pytest-cov.readthedocs.io>`_ — unit tests and
-  coverage (``uv run pytest --cov=physics_hp``).
-
-Documentation dependencies (``--group docs``)
-=============================================
-
-The Sphinx build pulls in:
-
-- `Sphinx <https://www.sphinx-doc.org>`_ +
-  `Shibuya theme <https://shibuya.lepture.com>`_ — base toolchain.
-- `sphinx-autodoc-typehints
-  <https://github.com/tox-dev/sphinx-autodoc-typehints>`_,
-  `sphinx-design <https://sphinx-design.readthedocs.io>`_,
-  `sphinx-copybutton <https://sphinx-copybutton.readthedocs.io>`_,
-  `MyST-Parser <https://myst-parser.readthedocs.io>`_,
-  `sphinx-click <https://sphinx-click.readthedocs.io>`_,
-  `linkify-it-py <https://github.com/tsutsu3/linkify-it-py>`_ —
-  authoring helpers (typehints, grids/cards/tabs, copy button,
-  Markdown, CLI docs, link autodetection).
-- `sphinxcontrib-mermaid
-  <https://github.com/mgaitan/sphinxcontrib-mermaid>`_,
-  `sphinx-togglebutton <https://sphinx-togglebutton.readthedocs.io>`_,
-  `sphinxext-opengraph <https://github.com/sphinx-doc/sphinxext-opengraph>`_,
-  `sphinx-notfound-page <https://sphinx-notfound-page.readthedocs.io>`_,
-  `sphinx-sitemap <https://sphinx-sitemap.readthedocs.io>`_,
-  `sphinx-last-updated-by-git
-  <https://github.com/mgeier/sphinx-last-updated-by-git>`_ —
-  UX/UI layer (Mermaid diagrams, collapsibles, social cards, 404,
-  sitemap, per-page Last-updated footer).
+   uv run ruff check src/physics_hp tests
+   uv run mypy src/physics_hp
+   uv run pytest --cov=physics_hp
 
 Building the docs locally
 =========================
@@ -115,6 +74,6 @@ After ``uv sync --group docs --locked``:
    cd docs
    uv run make html
 
-The rendered HTML lands in ``docs/build/html``. CI builds the same target
-with ``sphinx-build -W --keep-going``, so any new warning fails the
-documentation job.
+The rendered HTML lands in ``docs/build/html``. CI builds the same
+target with ``sphinx-build -W --keep-going``, so any new warning
+fails the documentation job.
