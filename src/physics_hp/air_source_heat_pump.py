@@ -25,6 +25,7 @@ from scipy.optimize import minimize
 from tqdm import tqdm
 
 from . import calc_util as cu
+from ._opt_utils import safe_float_attr
 from .constants import c_a, rho_a
 from .enex_functions import (
     calc_fan_power_from_dV_fan,
@@ -618,7 +619,7 @@ class AirSourceHeatPump:
                         f"T_a_room={T_a_room:.1f}°C, "
                         f"opt_success={opt_success}, "
                         f"opt_x=({opt_result.x[0]:.2f}, {opt_result.x[1]:.2f}), "
-                        f"opt_fun={float(getattr(opt_result, 'fun', float('nan'))):.3g}). "
+                        f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
                         "Consider increasing UA_design or fan-flow design.",
                         RuntimeWarning,
                         stacklevel=2,

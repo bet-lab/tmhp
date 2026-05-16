@@ -50,6 +50,7 @@ from scipy.optimize import minimize_scalar
 from tqdm import tqdm
 
 from . import calc_util as cu
+from ._opt_utils import safe_float_attr
 from .constants import c_a, c_w, rho_a, rho_w
 from .dynamic_context import (
     ControlState,
@@ -686,7 +687,7 @@ class AirSourceHeatPumpBoiler:
             result = None
             with contextlib.suppress(Exception):
                 result = self._calc_state(
-                    dT_ref_evap=float(getattr(opt_result, "x", 5.0)),
+                    dT_ref_evap=safe_float_attr(opt_result, "x", 5.0),
                     T_tank_w=T_tank_w,
                     T0=T0,
                     Q_ref_cond=Q_ref_cond,
@@ -714,8 +715,8 @@ class AirSourceHeatPumpBoiler:
                     f"T_tank_w={T_tank_w:.1f}°C, T0={T0:.1f}°C, "
                     f"Q_ref_cond={Q_ref_cond:.0f}W, "
                     f"opt_success={opt_success}, "
-                    f"opt_x={float(getattr(opt_result, 'x', float('nan'))):.2f}, "
-                    f"opt_fun={float(getattr(opt_result, 'fun', float('nan'))):.3g}). "
+                    f"opt_x={safe_float_attr(opt_result, 'x', float('nan')):.2f}, "
+                    f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
                     "Consider increasing UA_design or fan-flow design.",
                     RuntimeWarning,
                     stacklevel=2,

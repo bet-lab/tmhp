@@ -47,6 +47,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from . import calc_util as cu
+from ._opt_utils import safe_float_attr
 from .constants import c_w, k_w, mu_w, rho_w
 from .dynamic_context import (
     ControlState,
@@ -386,15 +387,17 @@ class GroundSourceHeatPumpBoiler:
             return self._calc_off_state(T_tank_w, T0, flow_state)
 
         import inspect
-        def _eval_eff(eff, r_p, rps) -> float:
+        def _eval_eff(
+            eff: float | Callable[..., float] | None, r_p: float, rps: float
+        ) -> float:
             if eff is None:
                 return 1.0
             if callable(eff):
                 sig = inspect.signature(eff)
                 if len(sig.parameters) == 2:
-                    return float(eff(r_p, rps))
-                return float(eff(r_p))
-            return float(eff)
+                    return eff(r_p, rps)
+                return eff(r_p)
+            return eff
 
         # 1. Analytical Condenser Approach Temperature
         dT_ref_cond = Q_cond_load / self.UA_cond
@@ -501,7 +504,7 @@ class GroundSourceHeatPumpBoiler:
         result.update(
             {
                 "hp_is_on": True,
-                "converged": bool(converged_rps),
+                "converged": converged_rps,
                 "_penalty": penalty,
                 "err_Q_evap [W]": 0.0,
                 "T_ref_evap_sat [°C]": cu.K2C(cs.get("T_ref_evap_sat_K", np.nan)),
@@ -1043,7 +1046,7 @@ class GroundSourceHeatPumpBoiler:
             )
             result = None
             with contextlib.suppress(Exception):
-                opt_x = float(getattr(opt_result, "x", 5.0))
+                opt_x = safe_float_attr(opt_result, "x", 5.0)
                 result = self._calc_state(
                     dT_ref_evap=opt_x,
                     T_tank_w=T_tank_w,
@@ -1071,8 +1074,8 @@ class GroundSourceHeatPumpBoiler:
                     f"T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, "
                     f"Q_ref_cond={Q_ref_cond:.0f}W, "
                     f"opt_success={opt_success}, "
-                    f"opt_x={float(getattr(opt_result, 'x', float('nan'))):.2f}, "
-                    f"opt_fun={float(getattr(opt_result, 'fun', float('nan'))):.3g}). "
+                    f"opt_x={safe_float_attr(opt_result, 'x', float('nan')):.2f}, "
+                    f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
                     "Consider increasing UA_design or fan-flow design.",
                     RuntimeWarning,
                     stacklevel=2,

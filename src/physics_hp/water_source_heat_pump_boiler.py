@@ -22,6 +22,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from . import calc_util as cu
+from ._opt_utils import safe_float_attr
 from .constants import c_w, k_w, mu_w, rho_w
 from .dynamic_context import (
     ControlState,
@@ -348,7 +349,7 @@ class WaterSourceHeatPumpBoiler:
         T_tank_w_K = cu.C2K(T_tank_w)
 
         # The source temperature leaving BHE and entering HP
-        T_source_K = float(getattr(self, "T_bhe_f_out_K", cu.C2K(15.0)))
+        T_source_K = safe_float_attr(self, "T_bhe_f_out_K", cu.C2K(15.0))
 
         m_dot_cp_b = self.dV_b_f_m3s * rho_w * c_w
         T_evap_in_K = T_source_K + (self.E_pmp / m_dot_cp_b)
@@ -950,7 +951,7 @@ class WaterSourceHeatPumpBoiler:
             )
             result = None
             with contextlib.suppress(Exception):
-                opt_x = float(getattr(opt_result, "x", 5.0))
+                opt_x = safe_float_attr(opt_result, "x", 5.0)
                 result = self._calc_state(
                     dT_ref_evap=opt_x,
                     T_tank_w=T_tank_w,
@@ -978,8 +979,8 @@ class WaterSourceHeatPumpBoiler:
                     f"T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, "
                     f"Q_ref_cond={Q_ref_cond:.0f}W, "
                     f"opt_success={opt_success}, "
-                    f"opt_x={float(getattr(opt_result, 'x', float('nan'))):.2f}, "
-                    f"opt_fun={float(getattr(opt_result, 'fun', float('nan'))):.3g}). "
+                    f"opt_x={safe_float_attr(opt_result, 'x', float('nan')):.2f}, "
+                    f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
                     "Consider increasing UA_design or fan-flow design.",
                     RuntimeWarning,
                     stacklevel=2,
