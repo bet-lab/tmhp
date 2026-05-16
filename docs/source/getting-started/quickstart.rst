@@ -53,19 +53,8 @@ required. Any fluid CoolProp recognises works:
 Next steps
 ==========
 
-.. grid:: 2
-    :gutter: 3
+.. container:: next-steps
 
-    .. grid-item-card:: Run a 24-hour dynamic simulation
-        :link: first-dynamic-simulation
-        :link-type: doc
+   :doc:`Run a 24-hour dynamic simulation <first-dynamic-simulation>` — step ``analyze_dynamic`` through outdoor and demand schedules over a full day.
 
-        Use ``analyze_dynamic`` to step through outdoor and demand
-        schedules over a full day.
-
-    .. grid-item-card:: Browse the full API
-        :link: ../api/index
-        :link-type: doc
-
-        Every model class, subsystem, and helper module documented in
-        one place.
+   :doc:`Browse the full API <../api/index>` — every model class, subsystem, and helper module documented in one place.
