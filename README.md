@@ -248,33 +248,33 @@ The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue d
 
 <sub>Per-point comparison (catalogue conditions and target values follow Table 1 of the KJACR 2026 paper; predicted values come from re-running the released code via `scripts/validation/samsung_ehs_parity.py`):</sub>
 
-| $\mathrm{ID}$  | $T_{\mathrm{LWT}}~[^\circ\mathrm{C}]$ | $T_0~[^\circ\mathrm{C}]$ | $\dot{Q}_{\mathrm{cond}}~[\mathrm{kW}]$ | $\mathrm{COP}_{\mathrm{target}}$ | $\mathrm{COP}_{\mathrm{pred}}$ | $\mathrm{AE}$ | $\mathrm{APE}$ |
+| $\mathrm{ID}$  | $T_{\mathrm{LWT}}~[^\circ\mathrm{C}]$ | $T_0~[^\circ\mathrm{C}]$ | ${Q}_{\mathrm{ref,cond}}~[\mathrm{kW}]$ | $\mathrm{COP}_{\mathrm{target}}$ | $\mathrm{COP}_{\mathrm{pred}}$ | $\mathrm{AE}$ | $\mathrm{APE}$ |
 | :-: | :---------------------: | :--------: | :----------------------------: | :------------------------------: | :----------------------------: | :------: | :--------: |
-|  1  |           40            |    −10     |             13.45              |               2.30               |              2.37              |   0.07   |   3.0 %    |
-|  2  |           40            |     2      |             12.42              |               3.04               |              3.83              |   0.79   |   25.8 %   |
+|  1  |           40            |    −10     |             13.45              |               2.30               |              2.37              |   0.07   |   3.1 %    |
+|  2  |           40            |     2      |             12.42              |               3.04               |              3.83              |   0.79   |   26.0 %   |
 |  3  |           40            |     12     |             14.65              |               5.07               |              4.67              |   0.40   |   7.9 %    |
-|  4  |           40            |     20     |             15.69              |               6.48               |              5.65              |   0.83   |   12.8 %   |
-|  5  |           40            |     30     |             16.98              |               7.68               |              7.43              |   0.25   |   3.2 %    |
-|  6  |           50            |    −10     |             13.89              |               2.00               |              1.84              |   0.16   |   7.8 %    |
-|  7  |           50            |     2      |             13.27              |               2.56               |              3.04              |   0.48   |   18.9 %   |
-|  8  |           50            |     12     |             14.76              |               3.86               |              3.71              |   0.15   |   3.9 %    |
+|  4  |           40            |     20     |             15.69              |               6.48               |              5.65              |   0.83   |   12.9 %   |
+|  5  |           40            |     30     |             16.98              |               7.68               |              7.43              |   0.25   |   3.3 %    |
+|  6  |           50            |    −10     |             13.89              |               2.00               |              1.85              |   0.16   |   7.8 %    |
+|  7  |           50            |     2      |             13.27              |               2.56               |              3.04              |   0.48   |   18.8 %   |
+|  8  |           50            |     12     |             14.76              |               3.86               |              3.71              |   0.16   |   4.0 %    |
 |  9  |           50            |     20     |             15.97              |               4.78               |              4.34              |   0.44   |   9.2 %    |
-| 10  |           50            |     30     |             17.48              |               5.95               |              5.37              |   0.58   |   9.8 %    |
-| 11  |           65            |    −10     |             13.96              |               1.83               |              1.43              |   0.40   |   22.1 %   |
-| 12  |           65            |     2      |             13.59              |               2.27               |              2.38              |   0.11   |   4.9 %    |
-| 13  |           65            |     12     |             15.55              |               3.22               |              2.81              |   0.41   |   12.7 %   |
-| 14  |           65            |     20     |             16.76              |               3.83               |              3.23              |   0.60   |   15.7 %   |
-| 15  |           65            |     30     |             18.27              |               4.72               |              3.84              |   0.88   |   18.6 %   |
-|     |                         |            |                                |                                  |            **Mean**            | **0.44** | **11.8 %** |
+| 10  |           50            |     30     |             17.48              |               5.95               |              5.37              |   0.58   |   9.7 %    |
+| 11  |           65            |    −10     |             13.97              |               1.73               |              1.42              |   0.31   |   17.7 %   |
+| 12  |           65            |     2      |             13.71              |               2.04               |              2.37              |   0.33   |   16.0 %   |
+| 13  |           65            |     12     |             16.38              |               2.84               |              2.73              |   0.10   |   3.7 %    |
+| 14  |           65            |     20     |             17.48              |               3.34               |              3.17              |   0.17   |   5.0 %    |
+| 15  |           65            |     30     |             18.84              |               4.04               |              3.79              |   0.25   |   6.2 %    |
+|     |                         |            |                                |                                  |            **Mean**            | **0.35** | **10.1 %** |
 
 **Notation**
 
-- <i>T</i><sub>LWT</sub> — Leaving Water Temperature, the manufacturer's catalogue reference. The model's tank temperature is set 2.5 K below <i>T</i><sub>LWT</sub> for <i>T</i><sub>LWT</sub> ≤ 60 °C and 5 K below for <i>T</i><sub>LWT</sub> > 60 °C, per the paper's EWT/LWT offset.
+- <i>T</i><sub>LWT</sub> — Leaving Water Temperature, the manufacturer's catalogue reference. The model's tank water temperature is set 2.5 K below <i>T</i><sub>LWT</sub> for <i>T</i><sub>LWT</sub> ≤ 60 °C and 5 K below for <i>T</i><sub>LWT</sub> > 60 °C, per the paper's EWT/LWT offset.
 - <i>T</i><sub>0</sub> — outdoor (dead-state) air temperature.
-- <i>Q̇</i><sub>cond</sub> — target condenser heat rate.
-- COP — system Coefficient of Performance, <i>Q̇</i><sub>cond</sub> / (<i>E</i><sub>cmp</sub> + <i>E</i><sub>fan</sub>).
+- <i>Q</i><sub>ref,cond</sub> — target condenser heat rate.
+- COP — system Coefficient of Performance, <i>Q</i><sub>ref,cond</sub> / (<i>E</i><sub>cmp</sub> + <i>E</i><sub>fan</sub>).
 - AE — Absolute Error, \|COP<sub>pred</sub> − COP<sub>target</sub>\|.
-- APE — Absolute Percentage Error, AE / COP<sub>target</sub>.
+- APE — Absolute Percentage Error, (AE / COP<sub>target</sub>) × 100 [%].
 - MAE / MAPE — mean of AE / APE over all 15 points.
 
 This accuracy is achieved **without unit-specific calibration** — the same code path applies to any CoolProp refrigerant and any operating envelope the cycle can physically close in. The parity plot and the table above are regenerated by [`scripts/validation/samsung_ehs_parity.py`](scripts/validation/samsung_ehs_parity.py), so anyone can reproduce the comparison from the source.
