@@ -1,6 +1,6 @@
-==================
-Cycle architecture
-==================
+================================
+Thermodynamic cycle architecture
+================================
 
 Every model in ``physics_hp`` is the same closed refrigerant cycle
 wrapped in a different source / sink pairing. This page sketches

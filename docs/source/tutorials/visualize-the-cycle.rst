@@ -1,6 +1,6 @@
-=================================
-Visualize the thermodynamic cycle
-=================================
+=============================
+Visualize thermodynamic cycle
+=============================
 
 Every ``analyze_steady`` call returns the full thermodynamic state
 at each cycle node (compressor in / out, expander in / out,
