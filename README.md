@@ -65,7 +65,13 @@ Each time step solves a closed refrigerant cycle coupled to the surrounding syst
 | PV / solar thermal       | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power                |
 | Cycle closure            | Internal minimization → optimal evaporating temperature                               |
 
-The same core cycle is reused across every system model — what changes is the **source-side** (air / ground / water) and the **sink-side** (DHW tank, building load, hybrid PV / STC / ESS configurations).
+The same refrigerant cycle is reused across every system model. What varies between models is composed along three independent axes:
+
+- **Environmental medium** — air, ground, or water. Acts as the heat *source* in heating mode and the heat *sink* in cooling mode; the same loop, just with the direction of heat flow reversed.
+- **Demand side** — what the system has to deliver: a domestic-hot-water tank, a space-heating load, or a space-cooling load.
+- **Auxiliary subsystems** — parallel energy contributors that augment (not replace) the cycle: solar thermal collectors (STC) preheat the tank, photovoltaics (PV) offset compressor and fan electricity, and an energy storage system (ESS) buffers surplus PV generation.
+
+Each concrete model in the next section is a fixed combination of these three axes.
 
 ---
 
