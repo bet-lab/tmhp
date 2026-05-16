@@ -28,8 +28,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install project (with dev group)
-        run: uv sync --group dev
+      - name: Install project (with dev group, lockfile pinned)
+        run: uv sync --group dev --locked
 
       - name: Ruff lint
         run: uv run ruff check src/physics_hp tests
@@ -54,8 +54,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install project (dev + docs groups)
-        run: uv sync --all-groups
+      - name: Install project (dev + docs groups, lockfile pinned)
+        run: uv sync --all-groups --locked
 
       - name: Sphinx build (warnings-as-errors)
         run: uv run sphinx-build -W --keep-going -b html docs/source docs/build/html
