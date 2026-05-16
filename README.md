@@ -55,19 +55,19 @@ The trade-off is a few extra parameters and a slightly more expensive time step 
 
 Each time step solves a closed refrigerant cycle coupled to the surrounding system (tank, building, ground loop, etc.). The condenser duty is the target, and the evaporating temperature is found by internally minimizing compressor power, so the cycle closes physically rather than via fitted coefficients.
 
-| Sub-model                | Method                                                                      |
-| ------------------------ | --------------------------------------------------------------------------- |
-| Refrigerant state points | [CoolProp](http://www.coolprop.org) (REFPROP-grade equation of state)                 |
-| Compressor work          | Isentropic + volumetric + mechanical efficiency                                       |
-| Condenser / evaporator   | ε-NTU (effectiveness-NTU) heat exchanger model                                        |
-| Outdoor unit fan         | ASHRAE 90.1-style variable-speed-drive (VSD) power curve + air-side ε-NTU             |
-| Ground heat exchanger    | g-function (ground thermal response) via [pygfunction](https://github.com/MassimoCimmino/pygfunction)   |
-| PV / solar thermal       | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power                |
-| Cycle closure            | Internal minimization → optimal evaporating temperature                               |
+| Sub-model                | Method                                                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Refrigerant state points | [CoolProp](http://www.coolprop.org) (REFPROP-grade equation of state)                                 |
+| Compressor work          | Isentropic + volumetric + mechanical efficiency                                                       |
+| Condenser / evaporator   | ε-NTU (effectiveness-NTU) heat exchanger model                                                        |
+| Outdoor unit fan         | ASHRAE 90.1-style variable-speed-drive (VSD) power curve + air-side ε-NTU                             |
+| Ground heat exchanger    | g-function (ground thermal response) via [pygfunction](https://github.com/MassimoCimmino/pygfunction) |
+| PV / solar thermal       | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power                                |
+| Cycle closure            | Internal minimization → optimal evaporating temperature                                               |
 
 The same refrigerant cycle is reused across every system model. What varies between models is composed along three independent axes:
 
-- **Environmental medium** — air, ground, or water. Acts as the heat *source* in heating mode and the heat *sink* in cooling mode; the same loop, just with the direction of heat flow reversed.
+- **Environmental medium** — air, ground, or water. Acts as the heat _source_ in heating mode and the heat _sink_ in cooling mode; the same loop, just with the direction of heat flow reversed.
 - **Demand side** — what the system has to deliver: a domestic-hot-water tank, a space-heating load, or a space-cooling load.
 - **Auxiliary subsystems** — parallel energy contributors that augment (not replace) the cycle: solar thermal collectors (STC) preheat the tank, photovoltaics (PV) offset compressor and fan electricity, and an energy storage system (ESS) buffers surplus PV generation.
 
@@ -239,24 +239,24 @@ The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue d
 
 <sub>Per-point comparison (catalogue conditions and target values follow Table 1 of the KJACR 2026 paper; predicted values come from re-running the released code via `scripts/validation/samsung_ehs_parity.py`):</sub>
 
-| ID | $T_{\mathrm{LWT}}$ [°C] | $T_0$ [°C] | $\dot{Q}_{\mathrm{cond}}$ [kW] | $\mathrm{COP}_{\mathrm{target}}$ | $\mathrm{COP}_{\mathrm{pred}}$ | AE | APE |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1 | 40 | −10 | 13.45 | 2.30 | 2.37 | 0.07 | 3.0 % |
-| 2 | 40 | 2 | 12.42 | 3.04 | 3.83 | 0.79 | 25.8 % |
-| 3 | 40 | 12 | 14.65 | 5.07 | 4.67 | 0.40 | 7.9 % |
-| 4 | 40 | 20 | 15.69 | 6.48 | 5.65 | 0.83 | 12.8 % |
-| 5 | 40 | 30 | 16.98 | 7.68 | 7.43 | 0.25 | 3.2 % |
-| 6 | 50 | −10 | 13.89 | 2.00 | 1.84 | 0.16 | 7.8 % |
-| 7 | 50 | 2 | 13.27 | 2.56 | 3.04 | 0.48 | 18.9 % |
-| 8 | 50 | 12 | 14.76 | 3.86 | 3.71 | 0.15 | 3.9 % |
-| 9 | 50 | 20 | 15.97 | 4.78 | 4.34 | 0.44 | 9.2 % |
-| 10 | 50 | 30 | 17.48 | 5.95 | 5.37 | 0.58 | 9.8 % |
-| 11 | 65 | −10 | 13.96 | 1.83 | 1.43 | 0.40 | 22.1 % |
-| 12 | 65 | 2 | 13.59 | 2.27 | 2.38 | 0.11 | 4.9 % |
-| 13 | 65 | 12 | 15.55 | 3.22 | 2.81 | 0.41 | 12.7 % |
-| 14 | 65 | 20 | 16.76 | 3.83 | 3.23 | 0.60 | 15.7 % |
-| 15 | 65 | 30 | 18.27 | 4.72 | 3.84 | 0.88 | 18.6 % |
-| | | | | | **Mean** | **0.44** | **11.8 %** |
+| ID  | $T_{\mathrm{LWT}}~[^\circ\mathrm{C}]$ | $T_0~[^\circ\mathrm{C}]$ | $\dot{Q}_{\mathrm{cond}}~[\mathrm{kW}]$ | $\mathrm{COP}_{\mathrm{target}}$ | $\mathrm{COP}_{\mathrm{pred}}$ |    AE    |    APE     |
+| :-: | :---------------------: | :--------: | :----------------------------: | :------------------------------: | :----------------------------: | :------: | :--------: |
+|  1  |           40            |    −10     |             13.45              |               2.30               |              2.37              |   0.07   |   3.0 %    |
+|  2  |           40            |     2      |             12.42              |               3.04               |              3.83              |   0.79   |   25.8 %   |
+|  3  |           40            |     12     |             14.65              |               5.07               |              4.67              |   0.40   |   7.9 %    |
+|  4  |           40            |     20     |             15.69              |               6.48               |              5.65              |   0.83   |   12.8 %   |
+|  5  |           40            |     30     |             16.98              |               7.68               |              7.43              |   0.25   |   3.2 %    |
+|  6  |           50            |    −10     |             13.89              |               2.00               |              1.84              |   0.16   |   7.8 %    |
+|  7  |           50            |     2      |             13.27              |               2.56               |              3.04              |   0.48   |   18.9 %   |
+|  8  |           50            |     12     |             14.76              |               3.86               |              3.71              |   0.15   |   3.9 %    |
+|  9  |           50            |     20     |             15.97              |               4.78               |              4.34              |   0.44   |   9.2 %    |
+| 10  |           50            |     30     |             17.48              |               5.95               |              5.37              |   0.58   |   9.8 %    |
+| 11  |           65            |    −10     |             13.96              |               1.83               |              1.43              |   0.40   |   22.1 %   |
+| 12  |           65            |     2      |             13.59              |               2.27               |              2.38              |   0.11   |   4.9 %    |
+| 13  |           65            |     12     |             15.55              |               3.22               |              2.81              |   0.41   |   12.7 %   |
+| 14  |           65            |     20     |             16.76              |               3.83               |              3.23              |   0.60   |   15.7 %   |
+| 15  |           65            |     30     |             18.27              |               4.72               |              3.84              |   0.88   |   18.6 %   |
+|     |                         |            |                                |                                  |            **Mean**            | **0.44** | **11.8 %** |
 
 **Notation.** <i>T</i><sub>LWT</sub> — Leaving Water Temperature, the manufacturer's catalogue reference (the model's tank temperature is set 2.5 K below <i>T</i><sub>LWT</sub> for <i>T</i><sub>LWT</sub> ≤ 60 °C and 5 K below for <i>T</i><sub>LWT</sub> > 60 °C, per the paper's EWT/LWT offset). · <i>T</i><sub>0</sub> — outdoor (dead-state) air temperature. · <i>Q̇</i><sub>cond</sub> — target condenser heat rate. · COP — system Coefficient of Performance, <i>Q̇</i><sub>cond</sub> / (<i>E</i><sub>cmp</sub> + <i>E</i><sub>fan</sub>). · **AE** — Absolute Error, \|COP<sub>pred</sub> − COP<sub>target</sub>\|. · **APE** — Absolute Percentage Error, AE / COP<sub>target</sub>. · **MAE** / **MAPE** — mean of AE / APE over all 15 points.
 
@@ -353,4 +353,4 @@ If you use this library in academic work, please cite the validation paper:
 
 ## License
 
-MIT License © 2025 **betlab** — Habin Jo, Wonjun Choi
+MIT License © 2026 betlab — Habin Jo, Wonjun Choi

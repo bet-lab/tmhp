@@ -127,13 +127,14 @@ def plot_parity(rows: list[tuple[OperatingPoint, float]], out_path: Path) -> Non
                linewidth=0.6)
     for (op, cop) in rows:
         ax.annotate(str(op.id), (op.target_cop, cop),
-                    textcoords="offset points", xytext=(6, -6), fontsize=8.5,
+                    textcoords="offset points", xytext=(3, -3), fontsize=9.5,
                     color="#1f2a36")
 
     ax.set_xlim(lo, hi)
     ax.set_ylim(lo, hi)
-    ax.set_xlabel("Target COP")
-    ax.set_ylabel("Predicted COP")
+    ax.set_xlabel("Target COP", fontsize=11)
+    ax.set_ylabel("Predicted COP", fontsize=11)
+    ax.tick_params(axis="both", labelsize=11)
     ax.set_aspect("equal", adjustable="box")
     ax.grid(True, alpha=0.25, linewidth=0.6)
     ax.legend(loc="lower right", frameon=False, fontsize=9)
@@ -168,11 +169,13 @@ def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
     mae = float(abs_err.mean())
     mape = float(pct_err.mean())
 
+    # Wrap units in math too — the table-header bold otherwise makes plain
+    # "[°C]" / "[kW]" pop visually next to the MathJax-rendered symbols.
     header = (
         "| ID "
-        "| $T_{\\mathrm{LWT}}$ [°C] "
-        "| $T_0$ [°C] "
-        "| $\\dot{Q}_{\\mathrm{cond}}$ [kW] "
+        "| $T_{\\mathrm{LWT}}~[^\\circ\\mathrm{C}]$ "
+        "| $T_0~[^\\circ\\mathrm{C}]$ "
+        "| $\\dot{Q}_{\\mathrm{cond}}~[\\mathrm{kW}]$ "
         "| $\\mathrm{COP}_{\\mathrm{target}}$ "
         "| $\\mathrm{COP}_{\\mathrm{pred}}$ "
         "| AE "
