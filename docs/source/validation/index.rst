@@ -11,6 +11,53 @@ Validation
    \{40, 50, 65\}` °C and outdoor air temperatures from −10 to
    30 °C.
 
+Headline numbers
+================
+
+.. grid:: 2 2 4 4
+    :gutter: 2
+    :class-container: stat-grid
+
+    .. grid-item-card:: :octicon:`graph;1.2em` MAPE
+        :class-card: sd-text-center sd-shadow-sm stat-card
+
+        **11.8 %**
+
+        +++
+
+        mean absolute % error
+        across all 15 points
+
+    .. grid-item-card:: :octicon:`pulse;1.2em` MAE
+        :class-card: sd-text-center sd-shadow-sm stat-card
+
+        **0.44**
+
+        +++
+
+        mean absolute COP error
+        (COP units)
+
+    .. grid-item-card:: :octicon:`hash;1.2em` Operating points
+        :class-card: sd-text-center sd-shadow-sm stat-card
+
+        **15**
+
+        +++
+
+        :math:`T_{\mathrm{LWT}} \in \{40, 50, 65\}` °C
+        × :math:`T_0` from −10 to 30 °C
+
+    .. grid-item-card:: :octicon:`zap;1.2em` Calibration
+        :class-card: sd-text-center sd-shadow-sm stat-card
+
+        **None**
+
+        +++
+
+        no unit-specific tuning;
+        same code path for any refrigerant
+
 Parity plot
 ===========
 
@@ -33,146 +80,152 @@ KJACR 2026 paper (see citations below). Predicted values come
 from re-running the released code via
 ``scripts/validation/samsung_ehs_parity.py``.
 
-.. list-table::
-    :header-rows: 1
-    :widths: 5 12 10 14 14 14 8 10
+.. dropdown:: Show all 15 operating points
+    :icon: table
+    :color: primary
+    :animate: fade-in-slide-down
 
-    * - ID
-      - :math:`T_{\mathrm{LWT}}\ [\mathrm{°C}]`
-      - :math:`T_0\ [\mathrm{°C}]`
-      - :math:`\dot{Q}_{\mathrm{cond}}\ [\mathrm{kW}]`
-      - :math:`\mathrm{COP}_{\mathrm{target}}`
-      - :math:`\mathrm{COP}_{\mathrm{pred}}`
-      - AE
-      - APE
-    * - 1
-      - 40
-      - −10
-      - 13.45
-      - 2.30
-      - 2.37
-      - 0.07
-      - 3.0 %
-    * - 2
-      - 40
-      - 2
-      - 12.42
-      - 3.04
-      - 3.83
-      - 0.79
-      - 25.8 %
-    * - 3
-      - 40
-      - 12
-      - 14.65
-      - 5.07
-      - 4.67
-      - 0.40
-      - 7.9 %
-    * - 4
-      - 40
-      - 20
-      - 15.69
-      - 6.48
-      - 5.65
-      - 0.83
-      - 12.8 %
-    * - 5
-      - 40
-      - 30
-      - 16.98
-      - 7.68
-      - 7.43
-      - 0.25
-      - 3.2 %
-    * - 6
-      - 50
-      - −10
-      - 13.89
-      - 2.00
-      - 1.84
-      - 0.16
-      - 7.8 %
-    * - 7
-      - 50
-      - 2
-      - 13.27
-      - 2.56
-      - 3.04
-      - 0.48
-      - 18.9 %
-    * - 8
-      - 50
-      - 12
-      - 14.76
-      - 3.86
-      - 3.71
-      - 0.15
-      - 3.9 %
-    * - 9
-      - 50
-      - 20
-      - 15.97
-      - 4.78
-      - 4.34
-      - 0.44
-      - 9.2 %
-    * - 10
-      - 50
-      - 30
-      - 17.48
-      - 5.95
-      - 5.37
-      - 0.58
-      - 9.8 %
-    * - 11
-      - 65
-      - −10
-      - 13.96
-      - 1.83
-      - 1.43
-      - 0.40
-      - 22.1 %
-    * - 12
-      - 65
-      - 2
-      - 13.59
-      - 2.27
-      - 2.38
-      - 0.11
-      - 4.9 %
-    * - 13
-      - 65
-      - 12
-      - 15.55
-      - 3.22
-      - 2.81
-      - 0.41
-      - 12.7 %
-    * - 14
-      - 65
-      - 20
-      - 16.76
-      - 3.83
-      - 3.23
-      - 0.60
-      - 15.7 %
-    * - 15
-      - 65
-      - 30
-      - 18.27
-      - 4.72
-      - 3.84
-      - 0.88
-      - 18.6 %
-    * -
-      -
-      -
-      -
-      - **Mean**
-      -
-      - **0.44**
-      - **11.8 %**
+    .. list-table::
+        :header-rows: 1
+        :widths: 5 12 10 14 14 14 8 10
+        :class: validation-table
+
+        * - ID
+          - :math:`T_{\mathrm{LWT}}\ [\mathrm{°C}]`
+          - :math:`T_0\ [\mathrm{°C}]`
+          - :math:`\dot{Q}_{\mathrm{cond}}\ [\mathrm{kW}]`
+          - :math:`\mathrm{COP}_{\mathrm{target}}`
+          - :math:`\mathrm{COP}_{\mathrm{pred}}`
+          - AE
+          - APE
+        * - 1
+          - 40
+          - −10
+          - 13.45
+          - 2.30
+          - 2.37
+          - 0.07
+          - 3.0 %
+        * - 2
+          - 40
+          - 2
+          - 12.42
+          - 3.04
+          - 3.83
+          - 0.79
+          - 25.8 %
+        * - 3
+          - 40
+          - 12
+          - 14.65
+          - 5.07
+          - 4.67
+          - 0.40
+          - 7.9 %
+        * - 4
+          - 40
+          - 20
+          - 15.69
+          - 6.48
+          - 5.65
+          - 0.83
+          - 12.8 %
+        * - 5
+          - 40
+          - 30
+          - 16.98
+          - 7.68
+          - 7.43
+          - 0.25
+          - 3.2 %
+        * - 6
+          - 50
+          - −10
+          - 13.89
+          - 2.00
+          - 1.84
+          - 0.16
+          - 7.8 %
+        * - 7
+          - 50
+          - 2
+          - 13.27
+          - 2.56
+          - 3.04
+          - 0.48
+          - 18.9 %
+        * - 8
+          - 50
+          - 12
+          - 14.76
+          - 3.86
+          - 3.71
+          - 0.15
+          - 3.9 %
+        * - 9
+          - 50
+          - 20
+          - 15.97
+          - 4.78
+          - 4.34
+          - 0.44
+          - 9.2 %
+        * - 10
+          - 50
+          - 30
+          - 17.48
+          - 5.95
+          - 5.37
+          - 0.58
+          - 9.8 %
+        * - 11
+          - 65
+          - −10
+          - 13.96
+          - 1.83
+          - 1.43
+          - 0.40
+          - 22.1 %
+        * - 12
+          - 65
+          - 2
+          - 13.59
+          - 2.27
+          - 2.38
+          - 0.11
+          - 4.9 %
+        * - 13
+          - 65
+          - 12
+          - 15.55
+          - 3.22
+          - 2.81
+          - 0.41
+          - 12.7 %
+        * - 14
+          - 65
+          - 20
+          - 16.76
+          - 3.83
+          - 3.23
+          - 0.60
+          - 15.7 %
+        * - 15
+          - 65
+          - 30
+          - 18.27
+          - 4.72
+          - 3.84
+          - 0.88
+          - 18.6 %
+        * -
+          -
+          -
+          -
+          - **Mean**
+          -
+          - **0.44**
+          - **11.8 %**
 
 Notation
 ========

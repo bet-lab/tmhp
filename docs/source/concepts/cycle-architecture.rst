@@ -9,6 +9,38 @@ the shared structure and shows where each system family plugs in.
 The shared core
 ===============
 
+Every system reuses the same closed cycle — only the blocks marked
+*source side* and *sink side* swap out per family.
+
+.. mermaid::
+    :align: center
+    :caption: Data flow shared by every ``physics_hp`` model. Bold blocks
+        are reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP.
+
+    flowchart LR
+        classDef src fill:#fef3c7,stroke:#d97706,color:#78350f;
+        classDef sink fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+        classDef cycle fill:#eef2ff,stroke:#6366f1,color:#1e1b4b;
+        classDef solver fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95,stroke-dasharray:4 3;
+
+        SRC["☀️ Source side<br/><i>air · ground · water</i>"]:::src
+        EVAP[("Evaporator HX<br/>ε-NTU")]:::cycle
+        CMP["Compressor<br/><i>η_is · η_vol · η_mech</i>"]:::cycle
+        COND[("Condenser HX<br/>ε-NTU")]:::cycle
+        EXP["Expander<br/><i>isenthalpic</i>"]:::cycle
+        SINK["🚰 Sink side<br/><i>DHW tank · building load</i>"]:::sink
+        OPT(["Cycle closure<br/><b>min E_cmp(dT_evap)</b>"]):::solver
+
+        SRC -->|Q_evap| EVAP
+        EVAP -->|low-P vapour| CMP
+        CMP -->|high-P vapour| COND
+        COND -->|liquid| EXP
+        EXP -->|two-phase| EVAP
+        COND -->|Q_cond| SINK
+
+        OPT -.optimises.-> EVAP
+        OPT -.optimises.-> CMP
+
 .. figure:: ../_static/system_schematic.png
     :alt: ASHPB system schematic — refrigerant cycle, condenser HX,
         evaporator HX with outdoor fan, expander, and tank-side
@@ -16,9 +48,9 @@ The shared core
     :align: center
     :width: 90%
 
-    The ASHPB schematic. The same compressor / expander / cycle
-    closure block reappears in GSHPB, WSHPB, ASHP, and GSHP — only
-    the components attached to the evaporator and condenser change.
+    Physical wiring view of the ASHPB. The compressor / expander
+    cycle-closure block in the centre reappears identically in the
+    GSHPB, WSHPB, ASHP, and GSHP models.
 
 The cycle solves four refrigerant state points (compressor in,
 compressor out, expander in, expander out) plus the evaporator and

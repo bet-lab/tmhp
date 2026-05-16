@@ -37,6 +37,7 @@ dependencies = [
     "pvlib>=0.15.0",
     "pygfunction>=2.3.1",
     "tqdm>=4.67.1",
+    "dartwork-mpl",
 ]
 
 [build-system]
@@ -63,6 +64,14 @@ docs = [
     "myst-parser>=3.0.1",
     "sphinx-click>=6.0.0",
     "linkify-it-py>=2.0.0",
+    # UX/UI extensions: dynamic diagrams, collapsibles, social cards, 404,
+    # sitemap, and per-page "last updated" — all backend-only, theme-agnostic.
+    "sphinxcontrib-mermaid>=1.0.0",
+    "sphinx-togglebutton>=0.3.2",
+    "sphinxext-opengraph>=0.9.1",
+    "sphinx-notfound-page>=1.0.4",
+    "sphinx-sitemap>=2.6.0",
+    "sphinx-last-updated-by-git>=0.3.8",
 ]
 
 [project.urls]
@@ -109,3 +118,6 @@ ignore_missing_imports = true
 # matching annotations. mypy still flags this as redefinition unless we
 # explicitly allow it.
 allow_redefinition = true
+
+[tool.uv.sources]
+dartwork-mpl = { git = "https://github.com/dartworklabs/dartwork-mpl" }

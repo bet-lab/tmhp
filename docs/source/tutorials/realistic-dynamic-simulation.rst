@@ -84,7 +84,7 @@ Inspecting the run
 
 The ``Counter`` gives a quick view of how many steps hit each
 diagnostic. For a sensible system at moderate ambient, almost
-every step should be ``"none"`` — see
+every step should be ``none`` — see
 :doc:`../concepts/failure-reason-semantics` for what the other
 values mean.
 

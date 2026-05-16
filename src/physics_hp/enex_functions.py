@@ -105,13 +105,6 @@ from .uv_treatment import (
     get_uv_params_from_turbidity as get_uv_params_from_turbidity,
 )
 
-try:
-    import dartwork_mpl as dm
-except ImportError:
-    # dartwork_mpl이 없는 경우를 대비한 fallback
-    dm = None
-
-
 __all__ = [
     # Locally defined helpers
     "calc_HX_perf_for_target_heat",

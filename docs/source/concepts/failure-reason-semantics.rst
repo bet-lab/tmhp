@@ -2,7 +2,7 @@
 ``failure_reason`` semantics
 ============================
 
-Every ``analyze_steady`` result carries a ``"failure_reason"`` key.
+Every ``analyze_steady`` result carries a ``failure_reason`` key.
 It's a diagnostic *report* — independent from whether the result
 dict contains usable cycle numbers — and lets callers branch on
 *why* a step looks the way it does without having to inspect cycle
@@ -18,20 +18,20 @@ The four values
     * - Value
       - Means
       - Result dict carries cycle numbers?
-    * - ``"none"``
+    * - ``none``
       - Cycle closed and the SciPy optimiser converged.
       - Yes — trust ``E_cmp``, ``Q_ref_*``, ``cop_*``.
-    * - ``"hx_not_converged"``
+    * - ``hx_not_converged``
       - HX residual exceeded tolerance, but the cycle itself
         produced a state.
       - Yes — numbers are usable but should be treated as
         approximate. ``converged == False``.
-    * - ``"optimizer_failed"``
+    * - ``optimizer_failed``
       - SciPy couldn't satisfy its own success criteria, even
         though the cycle returned a state.
       - Yes — numbers exist, but the evaporating-temperature
         choice is not provably optimal.
-    * - ``"cycle_invalid"``
+    * - ``cycle_invalid``
       - The cycle itself was infeasible at the requested
         operating point. The model falls back to off-mode
         (``E_cmp = 0``, ``Q_ref_cond = 0``).
@@ -75,20 +75,62 @@ What triggers each value
 
 These are implementation details and may shift between releases —
 treat the four values themselves as the stable contract, not the
-mechanism.
+mechanism. Expand the cards below for the trigger conditions and
+the recommended lever to pull when you hit each one.
 
-- **``"cycle_invalid"``** — ``_calc_state`` raised, or returned a
-  non-dict, at the requested ``T_tank_w`` / ``T0`` / ``Q_ref_cond``.
-  Usually a sign the requested duty is unreachable for the given
-  geometry; consider increasing the design ε-NTU or fan flow.
-- **``"hx_not_converged"``** — HX residual didn't drop below
-  tolerance inside the inner iteration. Result is still usable;
-  treat ``converged`` as the truth on this.
-- **``"optimizer_failed"``** — the outer SciPy optimiser exited
-  with ``success == False``. The cycle still has a state at the
-  optimiser's best ``dT_ref_evap``, just not a provably optimal
-  one.
-- **``"none"``** — everything converged.
+.. dropdown:: ``none`` — everything converged
+    :icon: check-circle
+    :color: success
+
+    Both the inner HX loop and the outer SciPy optimiser hit
+    their success criteria. The result dict is fully populated
+    and ``converged`` is ``True``.
+
+    **No action needed.** This is the common path on a well-sized
+    system at moderate ambient.
+
+.. dropdown:: ``hx_not_converged`` — HX residual exceeded tolerance
+    :icon: alert
+    :color: warning
+
+    The HX residual didn't drop below tolerance inside the inner
+    iteration, but the cycle still produced a state. The result
+    is usable as an approximation — ``converged`` is set to
+    ``False`` so you can filter rows downstream.
+
+    **What to do.** Treat ``converged`` as the source of truth
+    for "trust this row?" decisions. If the rate of
+    ``hx_not_converged`` is uncomfortably high, oversize the
+    affected HX (design ε-NTU or area) so the iteration has
+    more headroom near phase boundaries.
+
+.. dropdown:: ``optimizer_failed`` — SciPy didn't satisfy its own criteria
+    :icon: alert
+    :color: warning
+
+    The outer SciPy optimiser exited with ``success == False``.
+    The cycle still has a state at the optimiser's best
+    ``dT_ref_evap``, just not a provably optimal one.
+
+    **What to do.** The numbers are reasonable but not
+    optimisation-grade — fine for most aggregations, suspect for
+    point-comparison work. Wider initial bounds on
+    ``dT_ref_evap`` usually clears this.
+
+.. dropdown:: ``cycle_invalid`` — cycle was infeasible at this point
+    :icon: x-circle
+    :color: danger
+
+    ``_calc_state`` raised, or returned a non-dict, at the
+    requested ``T_tank_w`` / ``T0`` / ``Q_ref_cond``. The model
+    falls back to off-mode placeholders (``E_cmp = 0``,
+    ``Q_ref_cond = 0``).
+
+    **What to do.** Usually the requested duty is unreachable
+    for the given geometry. Consider increasing the design
+    ε-NTU, fan flow, or condenser area; or accept that the
+    operating point is genuinely off-limits and let the
+    off-mode row stand.
 
 Off-mode fallback
 =================

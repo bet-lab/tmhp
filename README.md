@@ -64,6 +64,7 @@ Each time step solves a closed refrigerant cycle coupled to the surrounding syst
 | Ground heat exchanger    | g-function (ground thermal response) via [pygfunction](https://github.com/MassimoCimmino/pygfunction) |
 | PV / solar thermal       | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power                                |
 | Cycle closure            | Internal minimization → optimal evaporating temperature                                               |
+| Plotting backend         | [dartwork-mpl](https://github.com/dartworklabs/dartwork-mpl) — thin matplotlib utility layer          |
 
 The same refrigerant cycle is reused across every system model. What varies between models is composed along three independent axes:
 

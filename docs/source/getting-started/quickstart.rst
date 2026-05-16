@@ -33,7 +33,7 @@ point — tank water at 55 °C, outdoor air at 5 °C, target condenser heat
    print(f"Cond. sat. temp.  : {result['T_ref_cond_sat_v [°C]']:.1f} °C")
 
 ``analyze_steady`` returns a flat ``dict`` whose keys carry the unit in
-brackets (for example ``"E_cmp [W]"``). Pass ``return_dict=False`` to
+brackets (for example ``E_cmp [W]``). Pass ``return_dict=False`` to
 get a single-row ``pandas.DataFrame`` with the same columns instead.
 
 Swapping the refrigerant
