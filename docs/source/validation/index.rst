@@ -2,16 +2,13 @@
 Validation
 ==========
 
-.. rst-class:: lead
-
-   :class:`~physics_hp.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler`
-   has been validated against the **Samsung EHS Mono HT Quiet R32
-   14 kW** catalogue across 15 operating points spanning
-   :math:`T_{\mathrm{LWT}} \in \{40, 50, 65\}` °C and outdoor air
-   temperatures from −10 to 30 °C, tracking the catalogue COP to a
-   mean absolute error of 0.35 (MAPE 10.1 %) without any
-   unit-specific calibration — the same code path applies to any
-   CoolProp refrigerant.
+:class:`~physics_hp.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler`
+has been validated against the **Samsung EHS Mono HT Quiet R32 14 kW**
+catalogue across 15 operating points spanning
+:math:`T_{\mathrm{LWT}} \in \{40, 50, 65\}` °C and outdoor air
+temperatures from −10 to 30 °C, tracking the catalogue COP to a mean
+absolute error of 0.35 (MAPE 10.1 %) without any unit-specific
+calibration — the same code path applies to any CoolProp refrigerant.
 
 Parity plot
 ===========
