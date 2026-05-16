@@ -45,7 +45,7 @@ build-backend = "hatchling.build"
 # Source files live under src/physics_hp/ (src layout).
 packages = ["src/physics_hp"]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "mypy>=1.19.1",
     "pytest>=9.0.2",
