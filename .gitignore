@@ -98,3 +98,8 @@ references/
 # Local scratch (drafts, notes, in-flight artifacts not meant for the repo)
 # ===========================
 temp/
+
+# ===========================
+# Playwright MCP screenshot cache (local browser-tool artefacts)
+# ===========================
+.playwright-mcp/
