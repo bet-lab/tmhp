@@ -11,50 +11,10 @@ Validation
    \{40, 50, 65\}` °C and outdoor air temperatures from −10 to
    30 °C.
 
-Headline numbers
-================
-
-.. grid:: 2 2 4 4
-    :gutter: 2
-    :class-container: stat-grid
-
-    .. grid-item-card:: MAPE
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        **11.8 %**
-
-        +++
-
-        mean absolute % error
-        across 15 points
-
-    .. grid-item-card:: MAE
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        **0.44**
-
-        +++
-
-        mean absolute COP error
-
-    .. grid-item-card:: Operating points
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        **15**
-
-        +++
-
-        LWT 40 / 50 / 65 °C ×
-        T₀ −10 to 30 °C
-
-    .. grid-item-card:: Calibration
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        **None**
-
-        +++
-
-        no unit-specific tuning
+Across those 15 points the model tracks the catalogue COP to a
+mean absolute error of **0.44** (mean absolute percentage error
+**11.8 %**), without any unit-specific calibration — the same
+code path applies to any CoolProp refrigerant.
 
 Parity plot
 ===========
