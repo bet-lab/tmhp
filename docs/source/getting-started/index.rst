@@ -1,8 +1,10 @@
+===============
 Getting Started
 ===============
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
 
-   installation
-   quickstart
+    installation
+    quickstart
+    first-dynamic-simulation
