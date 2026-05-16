@@ -920,6 +920,22 @@ class WaterSourceHeatPumpBoiler:
         Returns
         -------
         dict | pd.DataFrame
+            Cycle state plus diagnostic flags. Notable keys:
+
+            - ``"converged"`` (bool) — True only when the HX optimisation and
+              the SciPy optimiser both succeeded.
+            - ``"failure_reason"`` (str) — one of ``"none"``,
+              ``"cycle_invalid"``, ``"hx_not_converged"``, or
+              ``"optimizer_failed"``.
+
+            Important: like GSHPB, WSHPB often reports
+            ``failure_reason="hx_not_converged"`` on realistic operating
+            points; the cycle numbers (``E_cmp``, ``Q_ref_cond``,
+            ``cop_sys``, ...) **are still usable** in that case. Only
+            ``"cycle_invalid"`` forces an off-mode fallback (E_cmp=0,
+            COP=NaN). Branch on ``E_cmp [W] > 0`` rather than
+            ``failure_reason == "none"`` if you only want to discard
+            truly broken results.
         """
         import contextlib
         import warnings

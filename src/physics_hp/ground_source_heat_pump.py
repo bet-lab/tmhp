@@ -486,7 +486,25 @@ class GroundSourceHeatPump:
         *,
         return_dict: bool = True,
     ) -> dict | pd.DataFrame:
-        """Run a steady-state performance snapshot."""
+        """Run a steady-state performance snapshot.
+
+        Returns
+        -------
+        dict | pd.DataFrame
+            Cycle state plus diagnostic flags. Notable keys:
+
+            - ``"converged"`` (bool) — True only when the HX optimisation and
+              the SciPy optimiser both succeeded.
+            - ``"failure_reason"`` (str) — one of ``"none"``,
+              ``"cycle_invalid"``, ``"hx_not_converged"``, or
+              ``"optimizer_failed"``.
+
+            GSHP triggers an off-mode fallback only when the refrigerant cycle
+            itself was infeasible (``"cycle_invalid"``); in that case
+            ``E_cmp [W]`` is 0 and COP keys are NaN. The other non-``"none"``
+            values are diagnostic — the cycle numbers are populated and
+            usable.
+        """
         if T_a_room is None:
             T_a_room = self.T_a_room
 

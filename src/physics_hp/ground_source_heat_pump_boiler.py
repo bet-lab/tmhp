@@ -1015,6 +1015,22 @@ class GroundSourceHeatPumpBoiler:
         Returns
         -------
         dict | pd.DataFrame
+            Cycle state plus diagnostic flags. Notable keys:
+
+            - ``"converged"`` (bool) — True only when the HX optimisation and
+              the SciPy optimiser both succeeded.
+            - ``"failure_reason"`` (str) — one of ``"none"``,
+              ``"cycle_invalid"``, ``"hx_not_converged"``, or
+              ``"optimizer_failed"``.
+
+            Important: GSHPB frequently reports
+            ``failure_reason="hx_not_converged"`` on realistic operating
+            points because its inner NTU/HX residual tolerance is strict.
+            The returned ``E_cmp [W]`` / ``Q_ref_cond [W]`` / ``cop_sys [-]``
+            **are still usable** in that case — only ``"cycle_invalid"``
+            forces an off-mode fallback (E_cmp=0, COP=NaN). Branch on
+            ``E_cmp [W] > 0`` rather than ``failure_reason == "none"`` if
+            you only want to discard truly broken results.
         """
         import contextlib
         import warnings

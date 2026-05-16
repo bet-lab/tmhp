@@ -568,6 +568,22 @@ class AirSourceHeatPump:
         Returns
         -------
         dict | pd.DataFrame
+            Cycle state plus diagnostic flags.
+
+            Two keys are useful for branching:
+
+            - ``"converged"`` (bool) — True only when the inner HX optimisation
+              and the SciPy optimiser both succeeded.
+            - ``"failure_reason"`` (str) — one of ``"none"``, ``"cycle_invalid"``
+              (the refrigerant cycle itself was infeasible),
+              ``"hx_not_converged"`` (cycle OK but the HX residual exceeded
+              tolerance), or ``"optimizer_failed"`` (SciPy reported
+              ``success=False``).
+
+            ASHP triggers an off-mode fallback for any of the non-``"none"``
+            reasons — ``E_cmp [W]`` will be 0 and the COP keys will be NaN
+            in that case. Treat ``failure_reason != "none"`` as "do not
+            trust the numbers".
         """
         import warnings
 

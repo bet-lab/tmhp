@@ -657,6 +657,22 @@ class AirSourceHeatPumpBoiler:
         Returns
         -------
         dict | pd.DataFrame
+            Cycle state plus diagnostic flags.
+
+            Two keys are useful for branching:
+
+            - ``"converged"`` (bool) — True only when the HX optimisation and
+              the SciPy optimiser both succeeded.
+            - ``"failure_reason"`` (str) — one of ``"none"``,
+              ``"cycle_invalid"``, ``"hx_not_converged"``, or
+              ``"optimizer_failed"``.
+
+            ASHPB returns the cycle numbers (``E_cmp``, ``Q_ref_cond``, ...)
+            whenever ``_calc_state`` produced a dict at all. A
+            ``failure_reason`` of ``"hx_not_converged"`` therefore does not
+            invalidate the result: it only means the HX residual exceeded
+            tolerance and the converged flag is False. Off-mode fallback
+            (E_cmp=0) only occurs when the cycle itself was infeasible.
         """
         import warnings
 
