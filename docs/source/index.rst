@@ -46,43 +46,43 @@ needing manufacturer-specific curve fits.
         :link: getting-started/index
         :link-type: doc
 
-        Installation guide and your first simulation in minutes.
+        Install with ``uv``, run your first steady-state, then
+        drive a 24-hour dynamic simulation.
 
     .. grid-item-card:: Concepts
         :link: concepts/index
         :link-type: doc
 
-        Why physics-based, how the cycle is assembled, and how to
-        read the diagnostic flags every call returns.
+        Why first-principles, how the cycle is assembled, and
+        how to read the diagnostic flags every call returns.
 
     .. grid-item-card:: Tutorials
         :link: tutorials/index
         :link-type: doc
 
-        Focused walkthroughs: swap refrigerants, drive realistic
-        schedules, compose subsystems.
+        Focused walkthroughs — swap refrigerants, drive realistic
+        schedules, compose PV / STC / ESS subsystems.
 
     .. grid-item-card:: API Reference
         :link: api/index
         :link-type: doc
 
-        Complete API documentation for every model class and
-        helper module.
+        Every model, support module, and helper exposed by the
+        ``physics_hp`` package, with full type signatures.
 
     .. grid-item-card:: Validation
         :link: validation/index
         :link-type: doc
 
         ASHPB benchmarked against 15 Samsung EHS catalogue
-        operating points — parity plot, per-point table, and
-        the reproducibility script.
+        points — parity plot, per-point table, reproducibility.
 
     .. grid-item-card:: Visualize
         :link: tutorials/visualize-the-cycle
         :link-type: doc
 
-        Plot a solved refrigerant cycle on a P–h chart with only
-        CoolProp and Matplotlib.
+        Plot a solved refrigerant cycle on a P–h chart using
+        only CoolProp and Matplotlib.
 
 .. toctree::
    :maxdepth: 2
