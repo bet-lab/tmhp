@@ -59,14 +59,32 @@ myst_enable_extensions = [
 html_theme = "shibuya"
 html_title = "Physics-Based Heat Pump Models"
 html_static_path = ["_static"]
+html_css_files = ["css/custom.css"]
 html_baseurl = "https://bet-lab.github.io/physics-heatpump-models/"
 
+# Hide the per-page "Show Source" link — the GitHub icon already gives readers
+# a path to the repo, and the in-tree .rst files aren't a useful artifact.
+html_show_sourcelink = False
+html_copy_source = False
+
 html_theme_options = {
+    # Cool blue accent fits a thermodynamics / refrigerant-cycle library and
+    # keeps headings, links, and the active-nav indicator on one consistent hue.
+    "accent_color": "iris",
     "github_url": "https://github.com/bet-lab/physics-heatpump-models",
+    # Expand top-level toctree captions in the sidebar by default so the four
+    # planned sections (Getting Started, Concepts, Tutorials, API, Validation)
+    # are visible without the reader hunting for them.
+    "globaltoc_expand_depth": 1,
     "nav_links": [
         {"title": "Getting Started", "url": "getting-started/index"},
         {"title": "API Reference", "url": "api/index"},
     ],
+    # Social-card image shown when the docs are linked on GitHub, Slack, etc.
+    "og_image_url": (
+        "https://bet-lab.github.io/physics-heatpump-models/"
+        "_static/system_schematic.png"
+    ),
 }
 
 # -- Autodoc ------------------------------------------------------------------
