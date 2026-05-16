@@ -31,5 +31,31 @@ jobs:
       - name: Install project (with dev group)
         run: uv sync --group dev
 
+      - name: Ruff lint
+        run: uv run ruff check src/physics_hp tests
+
+      - name: Mypy
+        run: uv run mypy src/physics_hp
+
       - name: Pytest
         run: uv run pytest -q
+
+  docs:
+    # Sphinx output is Python-version-independent; run once and gate PRs on it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project (dev + docs groups)
+        run: uv sync --all-groups
+
+      - name: Sphinx build (warnings-as-errors)
+        run: uv run sphinx-build -W --keep-going -b html docs/source docs/build/html
