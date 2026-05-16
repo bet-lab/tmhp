@@ -18,45 +18,43 @@ Headline numbers
     :gutter: 2
     :class-container: stat-grid
 
-    .. grid-item-card:: :octicon:`graph;1.2em` MAPE
-        :class-card: sd-text-center sd-shadow-sm stat-card
+    .. grid-item-card:: MAPE
+        :class-card: sd-text-center sd-shadow-none stat-card
 
         **11.8 %**
 
         +++
 
         mean absolute % error
-        across all 15 points
+        across 15 points
 
-    .. grid-item-card:: :octicon:`pulse;1.2em` MAE
-        :class-card: sd-text-center sd-shadow-sm stat-card
+    .. grid-item-card:: MAE
+        :class-card: sd-text-center sd-shadow-none stat-card
 
         **0.44**
 
         +++
 
         mean absolute COP error
-        (COP units)
 
-    .. grid-item-card:: :octicon:`hash;1.2em` Operating points
-        :class-card: sd-text-center sd-shadow-sm stat-card
+    .. grid-item-card:: Operating points
+        :class-card: sd-text-center sd-shadow-none stat-card
 
         **15**
 
         +++
 
-        :math:`T_{\mathrm{LWT}} \in \{40, 50, 65\}` °C
-        × :math:`T_0` from −10 to 30 °C
+        LWT 40 / 50 / 65 °C ×
+        T₀ −10 to 30 °C
 
-    .. grid-item-card:: :octicon:`zap;1.2em` Calibration
-        :class-card: sd-text-center sd-shadow-sm stat-card
+    .. grid-item-card:: Calibration
+        :class-card: sd-text-center sd-shadow-none stat-card
 
         **None**
 
         +++
 
-        no unit-specific tuning;
-        same code path for any refrigerant
+        no unit-specific tuning
 
 Parity plot
 ===========

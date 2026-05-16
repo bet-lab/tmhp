@@ -31,9 +31,6 @@ needing manufacturer-specific curve fits.
       :alt: Powered by CoolProp
       :target: http://www.coolprop.org
 
-   .. image:: https://img.shields.io/badge/validated-Samsung%20EHS%20R32-iris
-      :alt: Validated against Samsung EHS Mono HT Quiet R32
-
 .. grid:: 2 2 4 4
    :gutter: 2
    :class-container: hero-cta
@@ -153,32 +150,6 @@ needing manufacturer-specific curve fits.
         +++
 
         :bdg-primary-line:`P–h` :bdg-primary-line:`Mollier`
-
-.. rubric:: At a glance
-
-.. grid:: 2 2 4 4
-    :gutter: 2
-    :class-container: stat-grid
-
-    .. grid-item-card:: :octicon:`flame;1.2em` 5 system families
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        ASHPB · GSHPB · WSHPB · ASHP · GSHP
-
-    .. grid-item-card:: :octicon:`stack;1.2em` 6 subsystem variants
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        STC preheat, stratified tank, PV + ESS
-
-    .. grid-item-card:: :octicon:`zap;1.2em` Any CoolProp refrigerant
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        R32, R290, R410A, R134a, R744 …
-
-    .. grid-item-card:: :octicon:`pulse;1.2em` Minute-resolution dynamic
-        :class-card: sd-text-center sd-shadow-none stat-card
-
-        Implicit ``fsolve`` per step, robust to large ``dt``
 
 .. toctree::
    :maxdepth: 2
