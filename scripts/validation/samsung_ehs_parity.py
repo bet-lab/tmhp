@@ -171,15 +171,18 @@ def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
 
     # Wrap units in math too — the table-header bold otherwise makes plain
     # "[°C]" / "[kW]" pop visually next to the MathJax-rendered symbols.
+    # Every header cell goes through MathJax so the <th> default bold
+    # cannot apply — GitHub-rendered MathJax glyphs ignore the surrounding
+    # font-weight, which keeps the header visually consistent.
     header = (
-        "| ID "
+        "| $\\mathrm{ID}$ "
         "| $T_{\\mathrm{LWT}}~[^\\circ\\mathrm{C}]$ "
         "| $T_0~[^\\circ\\mathrm{C}]$ "
         "| $\\dot{Q}_{\\mathrm{cond}}~[\\mathrm{kW}]$ "
         "| $\\mathrm{COP}_{\\mathrm{target}}$ "
         "| $\\mathrm{COP}_{\\mathrm{pred}}$ "
-        "| AE "
-        "| APE |\n"
+        "| $\\mathrm{AE}$ "
+        "| $\\mathrm{APE}$ |\n"
         "|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|"
     )
 
