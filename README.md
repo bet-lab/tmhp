@@ -86,12 +86,20 @@ cd physics-heatpump-models
 uv sync
 ```
 
+Runtime dependencies (resolved automatically by `uv sync`):
+
+- [CoolProp](http://www.coolprop.org) · [NumPy](https://numpy.org) · [SciPy](https://scipy.org) · [pandas](https://pandas.pydata.org) · [Matplotlib](https://matplotlib.org)
+- [pvlib](https://pvlib-python.readthedocs.io) (PV / solar thermal subsystems) · [pygfunction](https://github.com/MassimoCimmino/pygfunction) (g-function borehole) · [tqdm](https://tqdm.github.io) (progress bars)
+- [dartwork-mpl](https://github.com/dartworklabs/dartwork-mpl) — matplotlib styling layer used by the `mollier_diagram` plotters; pulled from the upstream Git repo via `[tool.uv.sources]` (no PyPI release).
+
 Optional dev / docs tooling is exposed via [PEP 735](https://peps.python.org/pep-0735/) dependency groups:
 
 ```bash
-uv sync --group dev      # pytest, mypy, ruff
-uv sync --group docs     # sphinx + theme
+uv sync --group dev      # ruff, mypy, pytest, pytest-cov
+uv sync --group docs     # sphinx + shibuya theme + 14 authoring / UX extensions
 ```
+
+See [`docs/source/getting-started/installation.rst`](docs/source/getting-started/installation.rst) for the full per-group breakdown.
 
 ---
 
