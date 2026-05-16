@@ -81,6 +81,7 @@ html_theme_options = {
         {"title": "Concepts", "url": "concepts/index"},
         {"title": "Tutorials", "url": "tutorials/index"},
         {"title": "API Reference", "url": "api/index"},
+        {"title": "Validation", "url": "validation/index"},
     ],
     # Social-card image shown when the docs are linked on GitHub, Slack, etc.
     "og_image_url": (
