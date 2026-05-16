@@ -47,6 +47,14 @@ The trade-off is a few extra parameters and a slightly more expensive time step 
 
 <div align="center">
 
+<a href="https://bet-lab.github.io/physics-heatpump-models/concepts/cycle-architecture.html">
+  <img src="docs/source/_static/cycle-architecture.svg" alt="Cycle architecture: source → evaporator → compressor → condenser → expander, with a cycle-closure solver optimizing the evaporating-side approach temperature and compressor speed" width="900">
+</a>
+
+<sub><i>Shared cycle architecture — bold blocks are reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP. <a href="https://bet-lab.github.io/physics-heatpump-models/concepts/cycle-architecture.html">Open the interactive version →</a></i></sub>
+
+<br/><br/>
+
 ![ASHPB system schematic](docs/source/_static/system_schematic.png)
 
 <sub><i>Reference ASHPB topology — outdoor unit, refrigerant loop, hot water tank, mixing valve.</i></sub>
