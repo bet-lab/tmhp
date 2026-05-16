@@ -93,3 +93,8 @@ Thumbs.db
 # Local validation reference materials (copyrighted, not redistributed)
 # ===========================
 references/
+
+# ===========================
+# Local scratch (drafts, notes, in-flight artifacts not meant for the repo)
+# ===========================
+temp/
