@@ -60,7 +60,7 @@ from re-running the released code via
           - 2.30
           - 2.37
           - 0.07
-          - 3.1 %
+          - 3.0 %
         * - 2
           - 40
           - 2
@@ -68,7 +68,7 @@ from re-running the released code via
           - 3.04
           - 3.83
           - 0.79
-          - 26.0 %
+          - 25.8 %
         * - 3
           - 40
           - 12
@@ -84,7 +84,7 @@ from re-running the released code via
           - 6.48
           - 5.65
           - 0.83
-          - 12.9 %
+          - 12.8 %
         * - 5
           - 40
           - 30
@@ -92,13 +92,13 @@ from re-running the released code via
           - 7.68
           - 7.43
           - 0.25
-          - 3.3 %
+          - 3.2 %
         * - 6
           - 50
           - −10
           - 13.89
           - 2.00
-          - 1.85
+          - 1.84
           - 0.16
           - 7.8 %
         * - 7
@@ -108,15 +108,15 @@ from re-running the released code via
           - 2.56
           - 3.04
           - 0.48
-          - 18.8 %
+          - 18.9 %
         * - 8
           - 50
           - 12
           - 14.76
           - 3.86
           - 3.71
-          - 0.16
-          - 4.0 %
+          - 0.15
+          - 3.9 %
         * - 9
           - 50
           - 20
@@ -132,7 +132,7 @@ from re-running the released code via
           - 5.95
           - 5.37
           - 0.58
-          - 9.7 %
+          - 9.8 %
         * - 11
           - 65
           - −10
@@ -148,14 +148,14 @@ from re-running the released code via
           - 2.04
           - 2.37
           - 0.33
-          - 16.0 %
+          - 16.1 %
         * - 13
           - 65
           - 12
           - 16.38
           - 2.84
           - 2.73
-          - 0.10
+          - 0.11
           - 3.7 %
         * - 14
           - 65
@@ -164,7 +164,7 @@ from re-running the released code via
           - 3.34
           - 3.17
           - 0.17
-          - 5.0 %
+          - 5.1 %
         * - 15
           - 65
           - 30
@@ -172,7 +172,7 @@ from re-running the released code via
           - 4.04
           - 3.79
           - 0.25
-          - 6.2 %
+          - 6.1 %
         * -
           -
           -
