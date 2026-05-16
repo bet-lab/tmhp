@@ -4,7 +4,7 @@
 
 **A general-purpose, physics-based heat pump modeling library**
 
-*Refrigerant-agnostic · operating-condition-agnostic · first-principles from the cycle up*
+_Refrigerant-agnostic · operating-condition-agnostic · first-principles from the cycle up_
 
 [![Python](https://img.shields.io/badge/python-≥3.10-3776AB?logo=python&logoColor=white)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
@@ -12,7 +12,6 @@
 [![CoolProp](https://img.shields.io/badge/powered%20by-CoolProp-orange.svg)](http://www.coolprop.org)
 
 [**Documentation**](https://bet-lab.github.io/physics-heatpump-models/) ·
-[**Repository**](https://github.com/bet-lab/physics-heatpump-models) ·
 [**Sister project**](https://github.com/bet-lab/enex_analysis_engine)
 
 </div>
@@ -33,12 +32,12 @@ Unlike conventional simulators that rely on manufacturer-specific curve fits, th
 
 Empirical curve-fit models (typical in EnergyPlus, TRNSYS, and most BES tools) carry structural limitations:
 
-| Curve-fit models | This library |
-|---|---|
-| Tied to the operating range of the original test data | Predictive across the full refrigerant envelope |
-| Refrigerant is baked into the coefficients | Any CoolProp-supported refrigerant, swappable at runtime |
-| Refrigerant state is hidden | Full thermodynamic state at every cycle node |
-| Requires re-fitting for every new unit | One model class, parameterized by geometry & components |
+| Curve-fit models                                      | This library                                             |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| Tied to the operating range of the original test data | Predictive across the full refrigerant envelope          |
+| Refrigerant is baked into the coefficients            | Any CoolProp-supported refrigerant, swappable at runtime |
+| Refrigerant state is hidden                           | Full thermodynamic state at every cycle node             |
+| Requires re-fitting for every new unit                | One model class, parameterized by geometry & components  |
 
 The trade-off is a few extra parameters and a slightly more expensive time step — in exchange for a model you can **trust outside its calibration range**.
 
@@ -56,15 +55,15 @@ The trade-off is a few extra parameters and a slightly more expensive time step 
 
 Each time step solves a closed refrigerant cycle coupled to the surrounding system (tank, building, ground loop, etc.). The condenser duty is the target, and the evaporating temperature is found by internally minimizing compressor power, so the cycle closes physically rather than via fitted coefficients.
 
-| Sub-model | Method |
-|---|---|
-| Refrigerant state points | [CoolProp](http://www.coolprop.org) (REFPROP-grade EOS) |
-| Compressor work | Isentropic + volumetric + mechanical efficiency |
-| Condenser / evaporator | ε-NTU heat exchanger model |
-| Outdoor unit fan | ASHRAE 90.1-style VSD power curve, air-side ε-NTU |
-| Borehole (GSHP) | g-function via [pygfunction](https://github.com/MassimoCimmino/pygfunction) |
-| PV / solar thermal | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power |
-| Cycle closure | Internal minimization → optimal evaporating temperature |
+| Sub-model                | Method                                                                      |
+| ------------------------ | --------------------------------------------------------------------------- |
+| Refrigerant state points | [CoolProp](http://www.coolprop.org) (REFPROP-grade EOS)                     |
+| Compressor work          | Isentropic + volumetric + mechanical efficiency                             |
+| Condenser / evaporator   | ε-NTU heat exchanger model                                                  |
+| Outdoor unit fan         | ASHRAE 90.1-style VSD power curve, air-side ε-NTU                           |
+| Borehole (GSHP)          | g-function via [pygfunction](https://github.com/MassimoCimmino/pygfunction) |
+| PV / solar thermal       | [pvlib](https://pvlib-python.readthedocs.io)-driven irradiance & power      |
+| Cycle closure            | Internal minimization → optimal evaporating temperature                     |
 
 The same core cycle is reused across every system model — what changes is the **source-side** (air / ground / water) and the **sink-side** (DHW tank, building load, hybrid PV / STC / ESS configurations).
 
@@ -155,32 +154,32 @@ df = ashpb.analyze_dynamic(
 <details open>
 <summary><b>Air-source heat pump boilers (ASHPB)</b></summary>
 
-| Class | Description |
-|---|---|
+| Class                     | Description                                   |
+| ------------------------- | --------------------------------------------- |
 | `AirSourceHeatPumpBoiler` | Core ASHPB — refrigerant cycle + storage tank |
-| `ASHPB_STC_preheat` | + Solar thermal collector preheat |
-| `ASHPB_STC_tank` | + STC with stratified tank |
-| `ASHPB_PV_ESS` | + PV + Energy Storage System |
+| `ASHPB_STC_preheat`       | + Solar thermal collector preheat             |
+| `ASHPB_STC_tank`          | + STC with stratified tank                    |
+| `ASHPB_PV_ESS`            | + PV + Energy Storage System                  |
 
 </details>
 
 <details open>
 <summary><b>Ground-source heat pump boilers (GSHPB)</b></summary>
 
-| Class | Description |
-|---|---|
+| Class                        | Description                               |
+| ---------------------------- | ----------------------------------------- |
 | `GroundSourceHeatPumpBoiler` | Core GSHPB with g-function borehole model |
-| `GSHPB_STC_preheat` | + STC preheat |
-| `GSHPB_STC_tank` | + STC with stratified tank |
-| `GSHPB_PV_ESS` | + PV + Energy Storage System |
+| `GSHPB_STC_preheat`          | + STC preheat                             |
+| `GSHPB_STC_tank`             | + STC with stratified tank                |
+| `GSHPB_PV_ESS`               | + PV + Energy Storage System              |
 
 </details>
 
 <details open>
 <summary><b>Water-source heat pump boiler (WSHPB)</b></summary>
 
-| Class | Description |
-|---|---|
+| Class                       | Description         |
+| --------------------------- | ------------------- |
 | `WaterSourceHeatPumpBoiler` | Dynamic WSHPB model |
 
 </details>
@@ -188,9 +187,9 @@ df = ashpb.analyze_dynamic(
 <details open>
 <summary><b>Space-conditioning heat pumps</b></summary>
 
-| Class | Description |
-|---|---|
-| `AirSourceHeatPump` | ASHP — heating & cooling |
+| Class                  | Description              |
+| ---------------------- | ------------------------ |
+| `AirSourceHeatPump`    | ASHP — heating & cooling |
 | `GroundSourceHeatPump` | GSHP — heating & cooling |
 
 </details>
@@ -198,25 +197,25 @@ df = ashpb.analyze_dynamic(
 <details>
 <summary><b>Supporting modules</b></summary>
 
-| Module | Purpose |
-|---|---|
-| `refrigerant.py` | CoolProp state-point helpers |
-| `thermodynamics.py` | Cycle analysis — COP, compression ratio, isentropic efficiency |
-| `heat_transfer.py` | ε-NTU heat exchanger calculations |
-| `hx_fan.py` | Air-side fan & heat-exchanger model |
-| `g_function.py` | Borehole g-function (pygfunction) |
-| `weather.py` | Outdoor air temperature & weather utilities |
-| `dhw.py` | Domestic hot water demand profiles |
-| `cop.py` | COP correlations |
-| `enex_functions.py` | Energy / exergy helpers |
-| `dynamic_context.py` | Per-step simulation state |
-| `subsystems.py` | Subsystem composition (STC / PV / UV) |
-| `simulation_summary.py` | Stdout summary tables |
-| `visualization.py` | Plotting facade |
-| `mollier_diagram.py` | T-h / P-h / T-s plots |
-| `uv_treatment.py` | UV treatment subsystem |
-| `calc_util.py` | Unit conversions |
-| `constants.py` | Physical constants |
+| Module                  | Purpose                                                        |
+| ----------------------- | -------------------------------------------------------------- |
+| `refrigerant.py`        | CoolProp state-point helpers                                   |
+| `thermodynamics.py`     | Cycle analysis — COP, compression ratio, isentropic efficiency |
+| `heat_transfer.py`      | ε-NTU heat exchanger calculations                              |
+| `hx_fan.py`             | Air-side fan & heat-exchanger model                            |
+| `g_function.py`         | Borehole g-function (pygfunction)                              |
+| `weather.py`            | Outdoor air temperature & weather utilities                    |
+| `dhw.py`                | Domestic hot water demand profiles                             |
+| `cop.py`                | COP correlations                                               |
+| `enex_functions.py`     | Energy / exergy helpers                                        |
+| `dynamic_context.py`    | Per-step simulation state                                      |
+| `subsystems.py`         | Subsystem composition (STC / PV / UV)                          |
+| `simulation_summary.py` | Stdout summary tables                                          |
+| `visualization.py`      | Plotting facade                                                |
+| `mollier_diagram.py`    | T-h / P-h / T-s plots                                          |
+| `uv_treatment.py`       | UV treatment subsystem                                         |
+| `calc_util.py`          | Unit conversions                                               |
+| `constants.py`          | Physical constants                                             |
 
 </details>
 
@@ -230,24 +229,41 @@ The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue d
 
 <img src="docs/source/_static/validation_parity.svg" alt="Parity plot: predicted vs target COP across 15 operating points" width="520">
 
-| Metric | Value |
-|:---:|:---:|
-| **MAE** | 0.44 |
-| **MAPE** | 11.8 % |
-
 </div>
 
-This accuracy is achieved **without unit-specific calibration** — the same code path applies to any CoolProp refrigerant and any operating envelope the cycle can physically close in. The parity plot above is regenerated by [`scripts/validation/samsung_ehs_parity.py`](scripts/validation/samsung_ehs_parity.py), so anyone can reproduce the comparison from the source.
+<sub>Per-point comparison (catalogue conditions and target values follow Table 1 of the KJACR 2026 paper; predicted values come from re-running the released code via `scripts/validation/samsung_ehs_parity.py`):</sub>
 
-> 📄 Jo, H. & Choi, W. *"Thermodynamic Modeling of Refrigerant Cycle in an Air-Source Heat Pump Boiler and Performance Validation"*, KJACR (2026, in press).
+| ID | LWT [°C] | T₀ [°C] | Q̇<sub>cond</sub> [kW] | Target COP | Predicted COP | \|Δ\| | \|Δ\| / Target |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | 40 | −10 | 13.45 | 2.30 | 2.37 | 0.07 | 3.0 % |
+| 2 | 40 | 2 | 12.42 | 3.04 | 3.83 | 0.79 | 25.8 % |
+| 3 | 40 | 12 | 14.65 | 5.07 | 4.67 | 0.40 | 7.9 % |
+| 4 | 40 | 20 | 15.69 | 6.48 | 5.65 | 0.83 | 12.8 % |
+| 5 | 40 | 30 | 16.98 | 7.68 | 7.43 | 0.25 | 3.2 % |
+| 6 | 50 | −10 | 13.89 | 2.00 | 1.84 | 0.16 | 7.8 % |
+| 7 | 50 | 2 | 13.27 | 2.56 | 3.04 | 0.48 | 18.9 % |
+| 8 | 50 | 12 | 14.76 | 3.86 | 3.71 | 0.15 | 3.9 % |
+| 9 | 50 | 20 | 15.97 | 4.78 | 4.34 | 0.44 | 9.2 % |
+| 10 | 50 | 30 | 17.48 | 5.95 | 5.37 | 0.58 | 9.8 % |
+| 11 | 65 | −10 | 13.96 | 1.83 | 1.43 | 0.40 | 22.1 % |
+| 12 | 65 | 2 | 13.59 | 2.27 | 2.38 | 0.11 | 4.9 % |
+| 13 | 65 | 12 | 15.55 | 3.22 | 2.81 | 0.41 | 12.7 % |
+| 14 | 65 | 20 | 16.76 | 3.83 | 3.23 | 0.60 | 15.7 % |
+| 15 | 65 | 30 | 18.27 | 4.72 | 3.84 | 0.88 | 18.6 % |
+| | | | | | **MAE** | **0.44** | |
+| | | | | | **MAPE** | | **11.8 %** |
+
+This accuracy is achieved **without unit-specific calibration** — the same code path applies to any CoolProp refrigerant and any operating envelope the cycle can physically close in. The parity plot and the table above are regenerated by [`scripts/validation/samsung_ehs_parity.py`](scripts/validation/samsung_ehs_parity.py), so anyone can reproduce the comparison from the source.
+
+> 📄 Jo, H. & Choi, W. _"Thermodynamic Modeling of Refrigerant Cycle in an Air-Source Heat Pump Boiler and Performance Validation"_, KJACR (2026, in press).
 >
-> 📘 Samsung Electronics, *EHS Mono HT Quiet R32 Technical Data Book* (2024) — [PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)
+> 📘 Samsung Electronics, _EHS Mono HT Quiet R32 Technical Data Book_ (2024) — [PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)
 
 ---
 
 ## Documentation
 
-- 📚 **[Full API reference](https://bet-lab.github.io/physics-heatpump-models/)** — Sphinx-generated docs
+- 📚 **[Full API reference](https://bet-lab.github.io/physics-heatpump-models/)**
 - 🔗 **[enex_analysis_engine](https://bet-lab.github.io/enex_analysis_engine/)** — sister energy / exergy analysis library, maintained in parallel
 
 ---

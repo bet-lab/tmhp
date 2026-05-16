@@ -10,10 +10,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
 from physics_hp import AirSourceHeatPumpBoiler
+
+# Pin clip-path IDs so re-running the script produces byte-identical SVG.
+mpl.rcParams["svg.hashsalt"] = "physics-hp.validation.samsung-ehs-parity"
 
 
 @dataclass(frozen=True)
@@ -136,23 +140,60 @@ def plot_parity(rows: list[tuple[OperatingPoint, float]], out_path: Path) -> Non
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
-    fig.savefig(out_path, format="svg", bbox_inches="tight")
+    # Pin the SVG metadata date so re-runs of this script produce
+    # byte-identical output (avoids noisy diffs on regeneration).
+    fig.savefig(
+        out_path,
+        format="svg",
+        bbox_inches="tight",
+        metadata={"Date": None},
+    )
     plt.close(fig)
 
     print(f"MAE  = {mae:.3f}")
     print(f"MAPE = {mape:.2f}%")
     print(f"SVG  = {out_path}")
-    print("ID  LWT  T0   Q_kW   Target  Predicted  AbsErr")
-    for op, cop in rows:
-        print(f"{op.id:2d}  {op.lwt_c:3.0f}  {op.t0_c:4.0f}  "
-              f"{op.q_cond_kw:5.2f}   {op.target_cop:5.2f}    {cop:5.2f}     "
-              f"{abs(cop - op.target_cop):5.2f}")
+
+
+def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
+    """Render a Markdown results table suitable for the README."""
+    target = np.array([op.target_cop for op, _ in rows])
+    pred = np.array([cop for _, cop in rows])
+    abs_err = np.abs(pred - target)
+    pct_err = abs_err / target * 100.0
+    mae = float(abs_err.mean())
+    mape = float(pct_err.mean())
+
+    header = (
+        "| ID | LWT [°C] | T₀ [°C] | Q̇<sub>cond</sub> [kW] | "
+        "Target COP | Predicted COP | \\|Δ\\| | \\|Δ\\| / Target |\n"
+        "|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|"
+    )
+    def _fmt_t0(t: float) -> str:
+        # Use a typographic minus / en-dash so the column reads cleanly.
+        return f"−{abs(t):.0f}" if t < 0 else f"{t:.0f}"
+
+    body_lines = [
+        (
+            f"| {op.id} | {op.lwt_c:.0f} | {_fmt_t0(op.t0_c)} | {op.q_cond_kw:.2f} | "
+            f"{op.target_cop:.2f} | {cop:.2f} | {ae:.2f} | {pe:.1f} % |"
+        )
+        for (op, cop), ae, pe in zip(rows, abs_err, pct_err, strict=True)
+    ]
+    footer = (
+        f"| | | | | | **MAE** | **{mae:.2f}** | |\n"
+        f"| | | | | | **MAPE** | | **{mape:.1f} %** |"
+    )
+    return "\n".join([header, *body_lines, footer])
 
 
 def main() -> None:
     rows = run_validation()
     out = Path(__file__).resolve().parents[2] / "docs" / "source" / "_static" / "validation_parity.svg"
     plot_parity(rows, out)
+    print()
+    print("Markdown table (paste into README):")
+    print(render_markdown_table(rows))
 
 
 if __name__ == "__main__":
