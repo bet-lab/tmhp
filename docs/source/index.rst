@@ -31,48 +31,12 @@ needing manufacturer-specific curve fits.
       :alt: Powered by CoolProp
       :target: http://www.coolprop.org
 
-.. grid:: 2 2 4 4
-   :gutter: 2
-   :class-container: hero-cta
+.. container:: hero-cta
 
-   .. grid-item::
-
-      .. button-ref:: getting-started/installation
-         :ref-type: doc
-         :color: secondary
-         :expand:
-         :outline:
-
-         Install
-
-   .. grid-item::
-
-      .. button-ref:: getting-started/quickstart
-         :ref-type: doc
-         :color: secondary
-         :expand:
-         :outline:
-
-         Quick start
-
-   .. grid-item::
-
-      .. button-ref:: validation/index
-         :ref-type: doc
-         :color: secondary
-         :expand:
-         :outline:
-
-         Validation
-
-   .. grid-item::
-
-      .. button-link:: https://github.com/bet-lab/physics-heatpump-models
-         :color: secondary
-         :expand:
-         :outline:
-
-         GitHub
+   :doc:`Install <getting-started/installation>`
+   :doc:`Quick start <getting-started/quickstart>`
+   :doc:`Validation <validation/index>`
+   `GitHub <https://github.com/bet-lab/physics-heatpump-models>`_
 
 .. grid:: 1 2 2 3
     :gutter: 3
