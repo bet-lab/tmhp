@@ -79,6 +79,7 @@ html_theme_options = {
     "nav_links": [
         {"title": "Getting Started", "url": "getting-started/index"},
         {"title": "Concepts", "url": "concepts/index"},
+        {"title": "Tutorials", "url": "tutorials/index"},
         {"title": "API Reference", "url": "api/index"},
     ],
     # Social-card image shown when the docs are linked on GitHub, Slack, etc.

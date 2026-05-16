@@ -10,7 +10,7 @@ Physics-Based Heat Pump Models
 
 This Python library provides physics-based dynamic heat pump models that solve the thermodynamic refrigerant cycle at every time step using CoolProp. Unlike conventional empirical curve-fit approaches used in EnergyPlus or TRNSYS, these models enable evaluation across a wide range of refrigerants and operating conditions without manufacturer-specific data.
 
-.. grid:: 3
+.. grid:: 2
     :gutter: 3
 
     .. grid-item-card:: 🚀 Getting Started
@@ -25,6 +25,13 @@ This Python library provides physics-based dynamic heat pump models that solve t
 
         Why physics-based, how the cycle is assembled, and how to
         read the diagnostic flags every call returns.
+
+    .. grid-item-card:: 🧪 Tutorials
+        :link: tutorials/index
+        :link-type: doc
+
+        Focused walkthroughs: swap refrigerants, drive realistic
+        schedules, compose subsystems.
 
     .. grid-item-card:: 🔧 API Reference
         :link: api/index
@@ -93,6 +100,7 @@ The ASHPB model has been validated against commercial catalogue data (Samsung EH
 
    getting-started/index
    concepts/index
+   tutorials/index
    api/index
 
 .. toctree::
