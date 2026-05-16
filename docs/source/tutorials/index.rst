@@ -30,6 +30,13 @@ one or two values, and you have a working starting point.
         Wire a ``SolarThermalCollector`` onto ``ASHPB_STC_preheat`` and
         feed irradiance schedules into ``analyze_dynamic``.
 
+    .. grid-item-card:: Visualize the cycle (P–h)
+        :link: visualize-the-cycle
+        :link-type: doc
+
+        Plot a solved refrigerant cycle on a pressure–enthalpy
+        chart using only CoolProp and Matplotlib.
+
 .. toctree::
     :maxdepth: 1
     :hidden:
@@ -37,3 +44,4 @@ one or two values, and you have a working starting point.
     swap-refrigerant
     realistic-dynamic-simulation
     compose-subsystems
+    visualize-the-cycle
