@@ -23,18 +23,61 @@ from physics_hp import AirSourceHeatPumpBoiler
 # output (matches the convention from samsung_ehs_parity.py).
 mpl.rcParams["svg.hashsalt"] = "physics-hp.visualization.mollier-ph-r32"
 
+# Use Matplotlib's built-in mathtext for LaTeX-style labels. No system
+# TeX install required; the STIX fontset matches the body text of the
+# Shibuya theme reasonably well.
+mpl.rcParams["text.usetex"] = False
+mpl.rcParams["mathtext.fontset"] = "stix"
+mpl.rcParams["font.family"] = "STIXGeneral"
+
 
 REF = "R32"
 OUTPUT_PATH = Path("docs/source/_static/mollier_ph_R32.svg")
 
+# Per-node label offsets (dx, dy) in points. Tuned so the superheat /
+# subcool pairs (1 next to 1*, 3 next to 3*) don't collide.
+LABEL_TEX: dict[str, str] = {
+    "1*": r"$1^{\star}$",
+    "1":  r"$1$",
+    "2":  r"$2$",
+    "2*": r"$2^{\star}$",
+    "3*": r"$3^{\star}$",
+    "3":  r"$3$",
+    "4":  r"$4$",
+}
+LABEL_OFFSET_PH: dict[str, tuple[int, int]] = {
+    "1*": (-14, -12),
+    "1":  (6, 4),
+    "2":  (6, 4),
+    "2*": (6, -12),
+    "3*": (6, 6),
+    "3":  (-14, -12),
+    "4":  (-12, -12),
+}
+
 
 def _saturation_envelope(refrigerant: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Liquid + vapour saturation curves on a P-h chart, in (kJ/kg, kPa)."""
+    """Liquid + vapour saturation curves on a P-h chart, in (kJ/kg, kPa).
+
+    The curves are explicitly closed at the critical point so the dome
+    is a single connected boundary rather than two dangling arcs.
+    """
     T_crit = CP.PropsSI("Tcrit", refrigerant)
-    T_grid = np.linspace(220.0, T_crit - 0.5, 200)
+    P_crit = CP.PropsSI("Pcrit", refrigerant) / 1_000  # kPa
+    # Stop a hair short of Tcrit; CoolProp gets unstable right at the
+    # critical isotherm.
+    T_grid = np.linspace(220.0, T_crit - 0.05, 200)
     h_liq = np.array([CP.PropsSI("H", "T", T, "Q", 0, refrigerant) for T in T_grid]) / 1_000
     h_vap = np.array([CP.PropsSI("H", "T", T, "Q", 1, refrigerant) for T in T_grid]) / 1_000
     p_sat = np.array([CP.PropsSI("P", "T", T, "Q", 0, refrigerant) for T in T_grid]) / 1_000
+
+    # Critical-point closure: at Tcrit the two saturation enthalpies
+    # collapse onto a single point. Use the average of the last two
+    # sampled values as a numerically stable proxy for h_crit.
+    h_crit = 0.5 * (h_liq[-1] + h_vap[-1])
+    h_liq = np.append(h_liq, h_crit)
+    h_vap = np.append(h_vap, h_crit)
+    p_sat = np.append(p_sat, P_crit)
     return h_liq, h_vap, p_sat
 
 
@@ -58,6 +101,9 @@ def _cycle_points(result: dict[str, float]) -> dict[str, tuple[float, float]]:
 def main() -> None:
     ashpb = AirSourceHeatPumpBoiler(ref=REF)
     result = ashpb.analyze_steady(T_tank_w=55.0, T0=5.0, Q_ref_cond=8_000.0)
+    # analyze_steady defaults to return_dict=True; narrow the union for
+    # the rest of this script.
+    assert isinstance(result, dict)
 
     h_liq, h_vap, p_sat = _saturation_envelope(REF)
     pts = _cycle_points(result)
@@ -80,22 +126,24 @@ def main() -> None:
         label="Refrigerant cycle",
     )
 
-    for label, (x, y) in pts.items():
+    for key, (x, y) in pts.items():
         ax.annotate(
-            label,
+            LABEL_TEX[key],
             (x, y),
-            xytext=(6, 6),
+            xytext=LABEL_OFFSET_PH[key],
             textcoords="offset points",
-            fontsize=9,
+            fontsize=10,
             color="#212529",
         )
 
     ax.set_yscale("log")
-    ax.set_xlabel("Enthalpy [kJ/kg]")
-    ax.set_ylabel("Pressure [kPa]")
+    ax.set_xlabel(r"Enthalpy $h$ [kJ/kg]")
+    ax.set_ylabel(r"Pressure $P$ [kPa]")
     ax.set_title(
-        f"P–h diagram — {REF} cycle\n"
-        f"T_tank = 55 °C, T_0 = 5 °C, Q_cond = 8 kW"
+        r"$P$–$h$ diagram — $\mathrm{R32}$ cycle" "\n"
+        r"$T_{\mathrm{tank}}=55\,^{\circ}\mathrm{C}$, "
+        r"$T_{0}=5\,^{\circ}\mathrm{C}$, "
+        r"$\dot{Q}_{\mathrm{cond}}=8\,\mathrm{kW}$"
     )
     ax.legend(loc="lower right", frameon=False)
     ax.grid(True, which="both", alpha=0.3)
