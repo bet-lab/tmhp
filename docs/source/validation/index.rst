@@ -2,13 +2,17 @@
 Validation
 ==========
 
+A physics-based model is only useful if its first-principles answers
+land close to the real machines it's meant to describe. This page is
+that check.
+
 :class:`~tmhp.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler`
-has been validated against the **Samsung EHS Mono HT Quiet R32 14 kW**
-catalogue across 15 operating points spanning
-:math:`T_{\mathrm{LWT}} \in \{40, 50, 65\}` °C and outdoor air
-temperatures from −10 to 30 °C, tracking the catalogue COP to a mean
-absolute error of 0.35 (MAPE 10.1 %) without any unit-specific
-calibration — the same code path applies to any CoolProp refrigerant.
+has been benchmarked against the **Samsung EHS Mono HT Quiet R32
+14 kW** catalogue across 15 operating points — :math:`T_{\mathrm{LWT}}
+\in \{40, 50, 65\}` °C paired with outdoor air temperatures from −10
+to 30 °C. The model tracks the catalogue COP to a mean absolute error
+of 0.35 (MAPE 10.1 %), with no unit-specific calibration — the same
+code path applies to any CoolProp refrigerant.
 
 Parity plot
 ===========
@@ -237,10 +241,10 @@ Scope
     operating points, but they have not yet been benchmarked
     against unit-specific data.
 
-The accuracy reported here is achieved **without unit-specific
-calibration** — the same code path applies to any CoolProp
-refrigerant and any operating envelope the cycle can physically
-close in.
+Because the shared cycle is what's being validated here — not a fit
+to one machine — the same accuracy budget is expected to carry across
+the rest of the family. Per-family catalogue comparisons will be
+added as the relevant data becomes available.
 
 Citations
 =========
