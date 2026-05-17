@@ -2,10 +2,12 @@
 Thermodynamic cycle architecture
 ================================
 
-Every model in ``tmhp`` is the same closed refrigerant cycle
-wrapped in a different source / sink pairing. This page sketches
-the shared structure and shows where each system family plugs into
-it.
+Every model in ``tmhp`` is the same closed refrigerant cycle wrapped
+in a different source / sink pairing. That single piece of shared
+machinery is what lets one library cover ASHPB, GSHPB, WSHPB, ASHP,
+GSHP, and every subsystem variant on top — without rewriting the
+thermodynamics each time. This page sketches the shared structure
+and shows where each system family plugs into it.
 
 The shared core
 ===============
@@ -309,10 +311,12 @@ These are documented under :doc:`../api/support/subsystems`.
 Why the structure matters
 =========================
 
-Because the cycle is the same code path for every system, a
-parameter sweep across refrigerants, source types, or subsystem
-combinations doesn't require re-implementing the model — it
-requires picking a different class and a different schedule. That
-also means the cycle-level invariants (energy balance, COP
-definitions, :doc:`failure_reason semantics <failure-reason-semantics>`)
-hold identically across the family.
+Because the cycle is the same code path for every system, a parameter
+sweep across refrigerants, source types, or subsystem combinations
+doesn't require re-implementing the model — it requires picking a
+different class and a different schedule. The cycle-level invariants
+(energy balance, COP definitions,
+:doc:`failure_reason semantics <failure-reason-semantics>`) therefore
+hold identically across the family, so a result from ASHPB is
+directly comparable to a result from GSHPB or WSHPB at the same
+operating point.

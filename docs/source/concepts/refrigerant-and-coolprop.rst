@@ -2,12 +2,14 @@
 Refrigerants and CoolProp
 =========================
 
-The refrigerant is a constructor argument across the whole
-library — every model takes ``ref="<name>"`` and routes its state
-queries to `CoolProp <http://www.coolprop.org>`_. This page covers
-what that means in practice: which refrigerants work out of the
-box, where the cycle assumptions break, and how to read CoolProp-
-related failures.
+"Refrigerant-agnostic" is one of the headline properties of
+``tmhp`` — and this is the page that makes it concrete. The
+refrigerant is a constructor argument on every model
+(``ref="<name>"``); state queries route through
+`CoolProp <http://www.coolprop.org>`_, which carries the
+equation-of-state heavy lifting. Below: which refrigerants work
+out of the box, where the cycle assumptions break, and how to read
+CoolProp-related failures.
 
 The contract
 ============

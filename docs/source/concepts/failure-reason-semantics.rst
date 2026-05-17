@@ -2,11 +2,12 @@
 ``failure_reason`` semantics
 ============================
 
-Every ``analyze_steady`` result carries a ``failure_reason`` key.
-It is a diagnostic *report* — independent of whether the result
-dict contains usable cycle numbers — that lets callers branch on
-*why* a step looks the way it does, without having to inspect the
-cycle internals.
+Every ``analyze_steady`` result carries a ``failure_reason`` key. It
+is a diagnostic *report* — independent of whether the result dict
+contains usable cycle numbers — that lets callers branch on *why* a
+step looks the way it does without having to inspect the cycle
+internals. This page is the reference for what each value means and
+when to branch on it.
 
 The four values
 ===============

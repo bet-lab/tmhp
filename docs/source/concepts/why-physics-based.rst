@@ -2,12 +2,17 @@
 Why physics-based?
 ==================
 
-Most building-energy simulators model a heat pump as an empirical
-curve fit — typically a polynomial in (outdoor temperature,
-leaving-water temperature) calibrated against the manufacturer's test
-points. That approach is cheap and accurate *inside the calibration
-envelope*, but it carries three structural limitations that this
-library was built to remove.
+The name "Thermodynamic Models for Heat Pumps" describes *what*
+``tmhp`` is — a library of thermodynamic cycle models. *How* those
+models are written is the part this page is about: every cycle is
+solved from first principles, not fitted against catalogue data.
+
+Most building-energy simulators take the opposite route. They model
+a heat pump as an empirical curve fit — typically a polynomial in
+(outdoor temperature, leaving-water temperature) calibrated against
+the manufacturer's test points. That approach is cheap and accurate
+*inside the calibration envelope*, but it carries three structural
+limitations that this library was built to remove.
 
 The three structural limits of curve fits
 ==========================================
@@ -81,6 +86,7 @@ steps per second on a single core for a vanilla ASHPB — fast enough
 that a year-long minute-resolution run takes hours, not minutes.
 
 If that is still too slow for your use case, a fitted surrogate is
-the right escape hatch. ``tmhp`` is calibrated against
-commercial catalogue data well enough that you can train the
-surrogate against this library itself, with no fresh bench data.
+the right escape hatch. ``tmhp`` tracks commercial catalogue data
+well enough (see :doc:`../validation/index`) that you can train the
+surrogate against this library itself, without collecting fresh
+bench data.
