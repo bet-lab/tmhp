@@ -23,6 +23,7 @@ The output
         reference lines marking the tank-water and outdoor-air
         temperatures.
     :align: center
+    :width: 100%
 
     R32 cycle at a realistic DHW operating point —
     :math:`T_{\mathrm{tank}}=60\,^{\circ}\mathrm{C}`,
@@ -32,6 +33,20 @@ The output
     exp,in / exp,out); open circles are the saturation-envelope
     crossings. Panel (b) overlays the tank-water and outdoor-air
     temperatures as the heat-sink and heat-source references.
+
+The T-s companion view
+======================
+
+.. figure:: ../_static/mollier_ts_R32.svg
+    :alt: Temperature-entropy diagram for the same R32 cycle, with
+        the saturation dome and the four cycle nodes.
+    :align: center
+    :width: 100%
+
+    Same cycle, plotted on a T-s plane. Compression (1→2) is a
+    near-vertical climb (the cycle is close to isentropic), while
+    isenthalpic expansion (3→4) generates entropy and sits visibly to
+    the right of point 3 on the saturation dome.
 
 How to read it
 ==============

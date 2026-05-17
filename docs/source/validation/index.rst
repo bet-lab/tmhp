@@ -22,7 +22,7 @@ Parity plot
         operating points of the Samsung EHS Mono HT Quiet R32
         catalogue.
     :align: center
-    :width: 70%
+    :width: 60%
 
     Predicted COP vs catalogue target COP. The 1 : 1 diagonal is
     the reference; points clustered around it indicate the model

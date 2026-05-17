@@ -273,6 +273,29 @@ Source side: where heat comes from
       - Water loop, prescribed inlet temperature
       - :doc:`../api/models/wshpb`
 
+The borehole g-function
+-----------------------
+
+For ground-source models, the source-side dynamics are encoded in a
+**g-function** — the dimensionless thermal response of a borehole
+field to a unit heat-extraction step. ``tmhp`` precomputes the
+g-function once via
+`pygfunction <https://github.com/MassimoCimmino/pygfunction>`_ and
+interpolates it during the simulation, so the per-step cost stays
+constant whether the field is one borehole or a hundred.
+
+.. figure:: ../_static/g_function_curve.svg
+    :alt: g-function vs ln(t/t_s) for three rectangular borehole
+        field geometries: 1×1, 2×2, and 4×4.
+    :align: center
+    :width: 100%
+
+    Dimensionless g-function for three rectangular borehole-field
+    geometries. The 1 × 1 field is the single-borehole baseline;
+    2 × 2 and 4 × 4 diverge as borehole-to-borehole thermal
+    interference accumulates over the multi-year horizon. Generated
+    by ``scripts/visualization/g_function_curve.py``.
+
 Sink side: where heat goes
 ==========================
 
