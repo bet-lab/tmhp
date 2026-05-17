@@ -3,8 +3,9 @@ API Reference
 =============
 
 Complete API documentation for the ``tmhp`` package, organized by
-module group. Each card below links to a sub-section that documents the
-classes and functions in that group.
+module group. The system-level **Models** come first — that's what
+most users instantiate — followed by the lower-level **Support
+modules** the models compose internally.
 
 Models
 ======

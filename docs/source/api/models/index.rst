@@ -2,9 +2,10 @@
 Models
 ======
 
-System-level heat pump models. Each subsection documents one family of
-models — the core cycle-plus-system model and any composed variants that
-add subsystems (solar thermal, PV, ESS) on top of the same core.
+System-level heat pump models — the classes you instantiate directly.
+Each subsection documents one family: the core cycle-plus-system
+model, plus any composed variants that bolt subsystems (solar
+thermal, PV, ESS) onto the same shared core.
 
 .. toctree::
     :maxdepth: 1
