@@ -4,17 +4,19 @@
 Thermodynamic Models for Heat Pumps
 ===================================
 
-A general-purpose, physics-based heat pump modeling library.
+A physics-based Python library for heat pump simulation.
 
 .. rst-class:: lead
 
    First-principles dynamic models for air-source, ground-source, and
-   water-source heat pump systems.
+   water-source heat pumps — covering DHW, space heating, and space
+   cooling.
 
-``tmhp`` solves the thermodynamic refrigerant cycle at every time
-step using `CoolProp <http://www.coolprop.org>`_, so the same model
-code applies across refrigerants and operating envelopes without
-needing manufacturer-specific curve fits.
+``tmhp`` solves the closed refrigerant cycle at every time step using
+`CoolProp <http://www.coolprop.org>`_ as the equation-of-state
+backend. The same model code applies across refrigerants and
+operating envelopes, with no manufacturer-specific curve fits and no
+per-unit recalibration.
 
 .. container:: hero-badges
 
