@@ -4,8 +4,9 @@ Quick start
 
 This page walks through a single steady-state evaluation of the
 ``AirSourceHeatPumpBoiler`` model — the cheapest call you can make
-against the library. Once this works, move on to the time-stepping
-flow in :doc:`first-dynamic-simulation`.
+against the library, and the fastest way to confirm your install
+works. Once this runs, move on to the time-stepping flow in
+:doc:`first-dynamic-simulation`.
 
 A single steady-state operating point
 =====================================

@@ -5,8 +5,10 @@ Your first dynamic simulation
 ``analyze_dynamic`` solves the same refrigerant cycle as
 ``analyze_steady`` at every time step, coupled to a tank-energy
 balance and any active subsystems. This page walks through the
-simplest possible call: 24 hours of operation against a constant
-outdoor temperature and zero DHW draw.
+simplest possible call — 24 hours of operation against a constant
+outdoor temperature and zero DHW draw — so you can see the shape of
+the per-step result before adding realistic schedules in the
+:doc:`tutorials <../tutorials/index>`.
 
 Minimum viable example
 ======================

@@ -17,9 +17,11 @@ Clone and install
    cd tmhp
    uv sync --locked
 
-``--locked`` tells ``uv`` to respect the committed ``uv.lock`` and
-fail rather than silently re-resolving versions. This is the same
-contract CI uses, so your local install matches what we test.
+The ``--locked`` flag tells ``uv`` to respect the committed
+``uv.lock`` and fail rather than silently re-resolve versions. This
+is the same contract CI uses, so your local environment matches the
+one we test against. (If you're hacking on dependencies and want to
+let ``uv`` re-resolve, drop ``--locked``.)
 
 Optional dependency groups
 ==========================

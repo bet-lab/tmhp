@@ -3,8 +3,10 @@ Getting Started
 ===============
 
 From a fresh ``uv`` environment to a working dynamic simulation in
-three short steps. Read in order; each page picks up where the last
-one left off.
+three short steps. Read in order — each page picks up where the
+previous one left off, and the three together get you from "I just
+cloned the repo" to "I'm reading per-step results out of a 24-hour
+DataFrame."
 
 .. grid:: 1 2 3 3
     :gutter: 3
