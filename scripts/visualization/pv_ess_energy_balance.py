@@ -99,9 +99,12 @@ def main() -> None:
     kwh_direct = float(direct.sum() * dt_h)
     kwh_dump   = max(0.0, kwh_pv - kwh_direct - kwh_chg)
 
+    # Aspect bumped up from 5/12 to 6/12 to leave headroom above the
+    # panel titles — at 5/12 the "(a)" / "(b)" prefixes were clipping
+    # against the canvas top.
     fig, (ax_t, ax_b) = plt.subplots(
         1, 2,
-        figsize=dm.figsize("17cm", 5 / 12),
+        figsize=dm.figsize("17cm", 6 / 12),
         gridspec_kw={"width_ratios": [3, 2]},
     )
 
@@ -119,7 +122,7 @@ def main() -> None:
     ax_t.set_xticks(np.arange(0, SIM_HOURS + 1, 3))
     ax_t.set_title("(a) Daily power timeseries", loc="left", fontsize=dm.fs(0))
     ax_t.grid(True, alpha=0.25, linewidth=dm.lw(-2))
-    ax_t.legend(loc="upper right", frameon=False, fontsize=dm.fs(-1))
+    ax_t.legend(loc="upper left", frameon=False, fontsize=dm.fs(-1))
 
     # --- (b) stacked ledger -------------------------------------------
     # Two bars: PV destinations vs. HP-load sources.
@@ -154,7 +157,7 @@ def main() -> None:
     ax_b.set_ylabel("Daily energy [kWh]")
     ax_b.set_title("(b) Daily energy ledger", loc="left", fontsize=dm.fs(0))
     ax_b.grid(True, alpha=0.25, linewidth=dm.lw(-2), axis="y")
-    ax_b.legend(loc="upper right", frameon=False, fontsize=dm.fs(-2))
+    ax_b.legend(loc="upper left", frameon=False, fontsize=dm.fs(-2))
 
     # Totals annotation
     ax_b.text(
