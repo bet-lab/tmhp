@@ -25,7 +25,7 @@ from tmhp import AirSourceHeatPumpBoiler
 
 # Pin SVG clip-path IDs so re-running the script produces byte-identical
 # output (matches the convention from samsung_ehs_parity.py).
-mpl.rcParams["svg.hashsalt"] = "physics-hp.visualization.mollier-cycle-r32"
+mpl.rcParams["svg.hashsalt"] = "tmhp.visualization.mollier-cycle-r32"
 
 # Use Matplotlib's built-in mathtext for LaTeX-style labels. No system
 # TeX install required; the STIX fontset matches the body text of the

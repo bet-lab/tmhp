@@ -17,7 +17,7 @@ import numpy as np
 from tmhp import AirSourceHeatPumpBoiler
 
 # Pin clip-path IDs so re-running the script produces byte-identical SVG.
-mpl.rcParams["svg.hashsalt"] = "physics-hp.validation.samsung-ehs-parity"
+mpl.rcParams["svg.hashsalt"] = "tmhp.validation.samsung-ehs-parity"
 
 
 @dataclass(frozen=True)

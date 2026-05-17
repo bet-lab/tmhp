@@ -2,7 +2,7 @@
 
 # Thermodynamic Models for Heat Pumps
 
-**A general-purpose, physics-based heat pump modeling library**
+**A physics-based Python library for heat pump simulation**
 
 _Refrigerant-agnostic · operating-condition-agnostic · first-principles from the cycle up_
 
@@ -20,9 +20,9 @@ Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/e
 
 ## Overview
 
-`tmhp` is a Python library for simulating air-source, ground-source, and water-source heat pump systems — for domestic hot water (DHW), space heating, and space cooling.
+`tmhp` is a Python library of **thermodynamic cycle models** for air-source, ground-source, and water-source heat pumps. The models cover domestic hot water (DHW), space heating, and space cooling.
 
-Unlike conventional simulators that rely on manufacturer-specific curve fits, this library **solves the thermodynamic refrigerant cycle at every time step**. The result is a single, unified modeling framework that produces reasonably accurate results across a wide range of refrigerants and operating conditions, without requiring proprietary catalogue data for every new configuration.
+Every model solves the same closed refrigerant cycle from first principles at every time step — no manufacturer-specific curve fits, no per-unit recalibration. Swap the refrigerant, change the source side, or move the operating point, and the same code path produces a coherent answer.
 
 > **In one line:** a refrigerant-agnostic, condition-agnostic heat pump model — one library, many systems.
 
@@ -30,7 +30,7 @@ Unlike conventional simulators that rely on manufacturer-specific curve fits, th
 
 ## Why physics-based?
 
-Empirical curve-fit models (typical in EnergyPlus, TRNSYS, and most BES tools) carry structural limitations:
+Most building-energy simulators (EnergyPlus, TRNSYS, and friends) model a heat pump as an empirical curve fit against the manufacturer's catalogue. That is cheap and accurate inside the calibration envelope, but it carries structural limits:
 
 | Curve-fit models                                      | This library                                             |
 | ----------------------------------------------------- | -------------------------------------------------------- |
@@ -39,7 +39,7 @@ Empirical curve-fit models (typical in EnergyPlus, TRNSYS, and most BES tools) c
 | Refrigerant state is hidden                           | Full thermodynamic state at every cycle node             |
 | Requires re-fitting for every new unit                | One model class, parameterized by geometry & components  |
 
-The trade-off is a few extra parameters and a slightly more expensive time step — in exchange for a model you can **trust outside its calibration range**.
+You pay for it with a few extra parameters and a slightly more expensive time step. What you get in return is a model you can **trust outside its calibration range** — across refrigerants, operating envelopes, and system topologies that no single catalogue covers.
 
 ---
 
@@ -61,7 +61,7 @@ The trade-off is a few extra parameters and a slightly more expensive time step 
 
 </div>
 
-Each time step solves a closed refrigerant cycle coupled to the surrounding system (tank, building, ground loop, etc.). The condenser duty is the target, and the evaporating temperature is found by internally minimizing compressor power, so the cycle closes physically rather than via fitted coefficients.
+Each time step solves a closed refrigerant cycle coupled to the surrounding system (tank, building, ground loop, …). The condenser duty is given; the evaporating temperature is the free variable, picked by minimizing compressor power. The cycle closes on a physical optimum, not on fitted coefficients.
 
 | Sub-model                | Method                                                                                                |
 | ------------------------ | ----------------------------------------------------------------------------------------------------- |
@@ -76,11 +76,11 @@ Each time step solves a closed refrigerant cycle coupled to the surrounding syst
 
 The same refrigerant cycle is reused across every system model. What varies between models is composed along three independent axes:
 
-- **Environmental medium** — air, ground, or water. Acts as the heat _source_ in heating mode and the heat _sink_ in cooling mode; the same loop, just with the direction of heat flow reversed.
+- **Environmental medium** — air, ground, or water. Acts as the heat _source_ in heating mode and the heat _sink_ in cooling mode; the same loop, with the direction of heat flow reversed.
 - **Demand side** — what the system has to deliver: a domestic-hot-water tank, a space-heating load, or a space-cooling load.
 - **Auxiliary subsystems** — parallel energy contributors that augment (not replace) the cycle: solar thermal collectors (STC) preheat the tank, photovoltaics (PV) offset compressor and fan electricity, and an energy storage system (ESS) buffers surplus PV generation.
 
-Each concrete model in the next section is a fixed combination of these three axes.
+Each concrete model in the [next section](#models) is a fixed combination of these three axes.
 
 ---
 
@@ -94,20 +94,22 @@ cd tmhp
 uv sync
 ```
 
-Runtime dependencies (resolved automatically by `uv sync`):
+That's it — `uv sync` reads `pyproject.toml` and resolves every dependency against the committed `uv.lock`.
+
+Runtime dependencies pulled in automatically:
 
 - [CoolProp](http://www.coolprop.org) · [NumPy](https://numpy.org) · [SciPy](https://scipy.org) · [pandas](https://pandas.pydata.org) · [Matplotlib](https://matplotlib.org)
 - [pvlib](https://pvlib-python.readthedocs.io) (PV / solar thermal subsystems) · [pygfunction](https://github.com/MassimoCimmino/pygfunction) (g-function borehole) · [tqdm](https://tqdm.github.io) (progress bars)
-- [dartwork-mpl](https://github.com/dartworklabs/dartwork-mpl) — matplotlib styling layer used by the `mollier_diagram` plotters; pulled from the upstream Git repo via `[tool.uv.sources]` (no PyPI release).
+- [dartwork-mpl](https://github.com/dartworklabs/dartwork-mpl) — a thin Matplotlib styling layer used by the Mollier-diagram plotters; pulled from the upstream Git repo via `[tool.uv.sources]` since it has no PyPI release.
 
-Optional dev / docs tooling is exposed via [PEP 735](https://peps.python.org/pep-0735/) dependency groups:
+Optional dev / docs tooling lives behind [PEP 735](https://peps.python.org/pep-0735/) dependency groups, so the runtime install stays lean:
 
 ```bash
 uv sync --group dev      # ruff, mypy, pytest, pytest-cov
-uv sync --group docs     # sphinx + shibuya theme + 14 authoring / UX extensions
+uv sync --group docs     # sphinx + shibuya theme + authoring / UX extensions
 ```
 
-See [`docs/source/getting-started/installation.rst`](docs/source/getting-started/installation.rst) for the full per-group breakdown.
+See the [installation guide](https://bet-lab.github.io/tmhp/getting-started/installation.html) for the full per-group breakdown and the CI-equivalent `--locked` workflow.
 
 ---
 
@@ -118,7 +120,7 @@ See [`docs/source/getting-started/installation.rst`](docs/source/getting-started
 ```python
 from tmhp import AirSourceHeatPumpBoiler
 
-# Build a model — refrigerant is just a parameter (default: R134a)
+# Build a model — the refrigerant is a constructor argument (default: R134a)
 ashpb = AirSourceHeatPumpBoiler(ref="R32")
 
 # Steady state: tank at 55 °C, ambient at 5 °C, target condenser duty 8 kW
@@ -136,7 +138,7 @@ print(f"Evap sat. temp.   : {result['T_ref_evap_sat [°C]']:.1f} °C")
 print(f"Cond sat. temp.   : {result['T_ref_cond_sat_v [°C]']:.1f} °C")
 ```
 
-Swap the refrigerant — no recalibration required:
+Swap the refrigerant by changing one argument — no recalibration, no manufacturer data:
 
 ```python
 ashpb_r290 = AirSourceHeatPumpBoiler(ref="R290")    # propane
@@ -246,7 +248,7 @@ df = ashpb.analyze_dynamic(
 
 ## Validation
 
-The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue data — the **Samsung EHS Mono HT Quiet R32 14 kW** unit ([Technical Data Book PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)) — across **15 operating points** spanning $T_{\mathrm{LWT}} \in \{40, 50, 65\}$ °C and outdoor air temperatures from −10 to 30 °C.
+`AirSourceHeatPumpBoiler` has been benchmarked against the **Samsung EHS Mono HT Quiet R32 14 kW** unit ([Technical Data Book PDF](https://www.theheatpumpwarehouse.co.uk/wp-content/uploads/2024/11/tdb-ehs-mono-ht-quiet-for-europe-r32-50hz-hp-ver.2.1-221005-compressed-compressed.pdf)) across **15 operating points** — $T_{\mathrm{LWT}} \in \{40, 50, 65\}$ °C paired with outdoor air temperatures from −10 to 30 °C. The model tracks the catalogue COP to MAE 0.35 (MAPE 10.1 %) without any unit-specific calibration.
 
 <div align="center">
 
@@ -282,10 +284,10 @@ The `AirSourceHeatPumpBoiler` model was validated against commercial catalogue d
 - <i>Q</i><sub>ref,cond</sub> — target condenser heat rate.
 - COP — system Coefficient of Performance, <i>Q</i><sub>ref,cond</sub> / (<i>E</i><sub>cmp</sub> + <i>E</i><sub>fan</sub>).
 - AE — Absolute Error, \|COP<sub>pred</sub> − COP<sub>target</sub>\|.
-- APE — Absolute Percentage Error, (AE / COP<sub>target</sub>) × 100 [%].
-- MAE / MAPE — mean of AE / APE over all 15 points.
+- APE — Absolute Percentage Error, (AE / COP<sub>target</sub>) × 100 %.
+- MAE / MAPE — mean AE / APE across the 15 points.
 
-This accuracy is achieved **without unit-specific calibration** — the same code path applies to any CoolProp refrigerant and any operating envelope the cycle can physically close in. The parity plot and the table above are regenerated by [`scripts/validation/samsung_ehs_parity.py`](scripts/validation/samsung_ehs_parity.py), so anyone can reproduce the comparison from the source.
+The parity plot and the table above are regenerated by [`scripts/validation/samsung_ehs_parity.py`](scripts/validation/samsung_ehs_parity.py), so anyone can reproduce the comparison from source.
 
 > **Scope.** Only `AirSourceHeatPumpBoiler` has been quantitatively validated against catalogue data. The other system classes (`GroundSourceHeatPumpBoiler`, `WaterSourceHeatPumpBoiler`, `AirSourceHeatPump`, `GroundSourceHeatPump`, and the subsystem-augmented variants) share the same refrigerant-cycle core and pass smoke tests on representative operating points, but they have not yet been benchmarked against unit-specific data.
 
@@ -297,8 +299,9 @@ This accuracy is achieved **without unit-specific calibration** — the same cod
 
 ## Documentation
 
-- 📚 **[Full API reference](https://bet-lab.github.io/tmhp/)**
-- 🔗 Sister project: **[Energy-Exergy Analysis Engine](https://bet-lab.github.io/enex-analysis-engine/)** — energy / exergy analysis library, maintained in parallel
+The full documentation — getting-started guide, concept pages, tutorials, API reference, and validation report — lives at **<https://bet-lab.github.io/tmhp/>**.
+
+If you're new to the library, start with the [getting-started guide](https://bet-lab.github.io/tmhp/getting-started/) for a three-step path from `uv sync` to your first dynamic simulation.
 
 ---
 
@@ -372,10 +375,10 @@ If you use this library in academic work, please cite the validation paper:
 
 ## Related work
 
-- Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/enex-analysis-engine) — energy / exergy analysis library, maintained in parallel (not currently consumed as a submodule)
+- Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/enex-analysis-engine) — an energy / exergy analysis library developed in parallel by the same team. It consumes simulation output from `tmhp` (or any other source) and computes the second-law balance; the two projects ship as separate packages.
 
 ---
 
 ## License
 
-MIT License © 2026 betlab — Habin Jo, Wonjun Choi
+MIT License © 2025 betlab (Habin Jo, Wonjun Choi). See [`LICENSE`](LICENSE) for the full text.
