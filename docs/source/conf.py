@@ -4,13 +4,13 @@
 import os
 import sys
 
-# Add the src directory to sys.path so autodoc can find the pbhp package.
+# Add the src directory to sys.path so autodoc can find the tmhp package.
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 sys.path.insert(0, src_path)
 
 # -- Project information -------------------------------------------------------
 
-project = "pbhp"
+project = "Thermodynamic Models for Heat Pumps"
 copyright = "2025, betlab"
 author = "Habin Jo, Wonjun Choi"
 release = "0.1.0"
@@ -64,10 +64,10 @@ myst_enable_extensions = [
 # -- HTML output ---------------------------------------------------------------
 
 html_theme = "shibuya"
-html_title = "pbhp"
+html_title = "Thermodynamic Models for Heat Pumps"
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
-html_baseurl = "https://bet-lab.github.io/pbhp/"
+html_baseurl = "https://bet-lab.github.io/tmhp/"
 
 # Hide the per-page "Show Source" link — the GitHub icon already gives readers
 # a path to the repo, and the in-tree .rst files aren't a useful artifact.
@@ -78,7 +78,7 @@ html_theme_options = {
     # Cool blue accent fits a thermodynamics / refrigerant-cycle library and
     # keeps headings, links, and the active-nav indicator on one consistent hue.
     "accent_color": "iris",
-    "github_url": "https://github.com/bet-lab/pbhp",
+    "github_url": "https://github.com/bet-lab/tmhp",
     # Expand top-level toctree captions in the sidebar by default so the four
     # planned sections (Getting Started, Concepts, Tutorials, API, Validation)
     # are visible without the reader hunting for them.
@@ -92,7 +92,7 @@ html_theme_options = {
     ],
     # Social-card image shown when the docs are linked on GitHub, Slack, etc.
     "og_image_url": (
-        "https://bet-lab.github.io/pbhp/"
+        "https://bet-lab.github.io/tmhp/"
         "_static/system_schematic.png"
     ),
 }
@@ -148,10 +148,10 @@ mermaid_init_js = (
 
 # -- Open Graph (social cards) ------------------------------------------------
 
-ogp_site_url = "https://bet-lab.github.io/pbhp/"
-ogp_site_name = "pbhp — Physics-Based Heat Pump"
+ogp_site_url = "https://bet-lab.github.io/tmhp/"
+ogp_site_name = "Thermodynamic Models for Heat Pumps"
 ogp_image = (
-    "https://bet-lab.github.io/pbhp/"
+    "https://bet-lab.github.io/tmhp/"
     "_static/system_schematic.png"
 )
 ogp_image_alt = "ASHPB refrigerant cycle schematic"
@@ -166,7 +166,7 @@ sitemap_url_scheme = "{link}"
 
 # Render relative to the docs root rather than the failing page's directory so
 # the sidebar / nav links resolve correctly on the served 404.
-notfound_urls_prefix = "/pbhp/"
+notfound_urls_prefix = "/tmhp/"
 
 # -- Last updated by git ------------------------------------------------------
 

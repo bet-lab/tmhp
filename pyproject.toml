@@ -1,7 +1,7 @@
 [project]
-name = "pbhp"
+name = "tmhp"
 version = "0.1.0"
-description = "pbhp — Physics-Based Heat Pump: a general-purpose, physics-based heat pump modeling library for air-source, ground-source, and water-source systems"
+description = "tmhp — Thermodynamic Models for Heat Pumps: a general-purpose, physics-based heat pump modeling library for air-source, ground-source, and water-source systems"
 readme = "README.md"
 authors = [
     { name = "Habin Jo", email = "habinjo0608@gmail.com" }
@@ -45,8 +45,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-# Source files live under src/pbhp/ (src layout).
-packages = ["src/pbhp"]
+# Source files live under src/tmhp/ (src layout).
+packages = ["src/tmhp"]
 
 [dependency-groups]
 dev = [
@@ -75,9 +75,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bet-lab/pbhp"
-Repository = "https://github.com/bet-lab/pbhp"
-Documentation = "https://bet-lab.github.io/pbhp/"
+Homepage = "https://github.com/bet-lab/tmhp"
+Repository = "https://github.com/bet-lab/tmhp"
+Documentation = "https://bet-lab.github.io/tmhp/"
 
 # ---------------------------------------------------------------------------
 # Tool configuration

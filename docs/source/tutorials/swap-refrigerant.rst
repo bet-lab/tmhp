@@ -3,7 +3,7 @@ Swap refrigerants
 ==================
 
 The refrigerant is a constructor argument on every model in
-``pbhp``. Changing it requires no recalibration and no
+``tmhp``. Changing it requires no recalibration and no
 manufacturer data — pick any name CoolProp recognises and the
 library re-solves the cycle from first principles.
 
@@ -29,7 +29,7 @@ Sweep
 
    import pandas as pd
 
-   from pbhp import AirSourceHeatPumpBoiler
+   from tmhp import AirSourceHeatPumpBoiler
 
    T_tank_w   = 55.0   # °C
    T0         = 5.0    # °C
@@ -419,7 +419,7 @@ Refrigerant catalogue
         expander details dominate COP; can't be analysed with a
         subcritical-condenser model — see
         :doc:`../concepts/refrigerant-and-coolprop` for how
-        ``pbhp`` currently treats this case.
+        ``tmhp`` currently treats this case.
 
         *Typical use*: sanitary-water heat pumps (Japan, Europe),
         commercial / supermarket refrigeration, transport
@@ -472,7 +472,7 @@ guide:
 
 *High-temperature industrial heat pump (LWT 80–95 °C)*
     R1234ze(E), R134a, or R717 (ammonia). R600a is occasionally
-    used for niche small units. ``pbhp`` solves these
+    used for niche small units. ``tmhp`` solves these
     subcritically as long as T\ :sub:`crit` clears the condenser
     by ~10 K; check ``failure_reason`` for ``cycle_invalid``.
 
@@ -485,7 +485,7 @@ guide:
 *Transcritical sanitary hot water (≥ 65 °C, cold return)*
     R744 — the only mainstream refrigerant whose cycle is
     optimised for this duty. Not subcritical, so the
-    ``pbhp`` result is a sanity check rather than a design;
+    ``tmhp`` result is a sanity check rather than a design;
     see :doc:`../concepts/refrigerant-and-coolprop`.
 
 *Industrial refrigeration and process cooling*

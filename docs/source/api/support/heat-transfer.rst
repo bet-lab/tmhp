@@ -8,7 +8,7 @@ model used by ASHP/ASHPB, and the borehole g-function used by GSHP/GSHPB.
 ε-NTU heat exchanger
 ====================
 
-.. automodule:: pbhp.heat_transfer
+.. automodule:: tmhp.heat_transfer
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,7 +16,7 @@ model used by ASHP/ASHPB, and the borehole g-function used by GSHP/GSHPB.
 Air-side fan & heat exchanger
 =============================
 
-.. automodule:: pbhp.hx_fan
+.. automodule:: tmhp.hx_fan
     :members:
     :undoc-members:
     :show-inheritance:
@@ -24,7 +24,7 @@ Air-side fan & heat exchanger
 Borehole g-function
 ===================
 
-.. automodule:: pbhp.g_function
+.. automodule:: tmhp.g_function
     :members:
     :undoc-members:
     :show-inheritance:

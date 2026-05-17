@@ -13,7 +13,7 @@ one left off.
         :link: installation
         :link-type: doc
 
-        Install ``pbhp`` with ``uv`` and verify the
+        Install ``tmhp`` with ``uv`` and verify the
         package imports cleanly.
 
     .. grid-item-card:: Quick start

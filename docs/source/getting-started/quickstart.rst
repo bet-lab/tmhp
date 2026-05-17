@@ -16,7 +16,7 @@ condenser duty 8 kW — without solving the tank energy balance.
 
 .. code-block:: python
 
-   from pbhp import AirSourceHeatPumpBoiler
+   from tmhp import AirSourceHeatPumpBoiler
 
    ashpb = AirSourceHeatPumpBoiler(ref="R32")
    result = ashpb.analyze_steady(

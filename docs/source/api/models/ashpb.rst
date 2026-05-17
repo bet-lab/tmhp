@@ -9,7 +9,7 @@ refrigerant cycle.
 Core model
 ==========
 
-.. automodule:: pbhp.air_source_heat_pump_boiler
+.. automodule:: tmhp.air_source_heat_pump_boiler
     :members:
     :undoc-members:
     :show-inheritance:
@@ -17,7 +17,7 @@ Core model
 STC preheat
 ===========
 
-.. automodule:: pbhp.ashpb_stc_preheat
+.. automodule:: tmhp.ashpb_stc_preheat
     :members:
     :undoc-members:
     :show-inheritance:
@@ -25,7 +25,7 @@ STC preheat
 STC with stratified tank
 ========================
 
-.. automodule:: pbhp.ashpb_stc_tank
+.. automodule:: tmhp.ashpb_stc_tank
     :members:
     :undoc-members:
     :show-inheritance:
@@ -33,7 +33,7 @@ STC with stratified tank
 PV + ESS
 ========
 
-.. automodule:: pbhp.ashpb_pv_ess
+.. automodule:: tmhp.ashpb_pv_ess
     :members:
     :undoc-members:
     :show-inheritance:

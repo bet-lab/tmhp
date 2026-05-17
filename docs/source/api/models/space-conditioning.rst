@@ -9,7 +9,7 @@ ASHPB / GSHPB families; what differs is the load side.
 Air-source heat pump
 ====================
 
-.. automodule:: pbhp.air_source_heat_pump
+.. automodule:: tmhp.air_source_heat_pump
     :members:
     :undoc-members:
     :show-inheritance:
@@ -17,7 +17,7 @@ Air-source heat pump
 Ground-source heat pump
 =======================
 
-.. automodule:: pbhp.ground_source_heat_pump
+.. automodule:: tmhp.ground_source_heat_pump
     :members:
     :undoc-members:
     :show-inheritance:

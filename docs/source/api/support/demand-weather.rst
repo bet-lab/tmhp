@@ -8,7 +8,7 @@ consumed by the dynamic simulation entry points.
 Weather
 =======
 
-.. automodule:: pbhp.weather
+.. automodule:: tmhp.weather
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,7 +16,7 @@ Weather
 Domestic hot water demand
 =========================
 
-.. automodule:: pbhp.dhw
+.. automodule:: tmhp.dhw
     :members:
     :undoc-members:
     :show-inheritance:

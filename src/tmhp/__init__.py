@@ -1,12 +1,12 @@
-"""pbhp — Physics-Based Heat Pump: a general-purpose, physics-based heat pump modeling library.
+"""tmhp — Thermodynamic Models for Heat Pumps: a general-purpose, physics-based heat pump modeling library.
 
 When installed as a standalone package (``uv pip install -e .``),
 import as::
 
-    from pbhp import AirSourceHeatPumpBoiler
+    from tmhp import AirSourceHeatPumpBoiler
 
 Wildcard re-exports below are intentional: each submodule defines its own
-``__all__`` so the surface of ``from pbhp import *`` is constrained
+``__all__`` so the surface of ``from tmhp import *`` is constrained
 by the submodules rather than by everything they happen to define.
 """
 

@@ -5,8 +5,8 @@ pair with one figure: panel (a) P-h, panel (b) T-h, sharing the same
 seven cycle nodes returned by analyze_steady().
 
 Uses only CoolProp and Matplotlib — both runtime dependencies of
-``pbhp`` already — so it runs in any environment that can
-``import pbhp``. No ``dartwork_mpl`` dependency.
+``tmhp`` already — so it runs in any environment that can
+``import tmhp``. No ``dartwork_mpl`` dependency.
 
 Operating point picks a realistic DHW operating condition:
 ``T_tank_w = 60 °C``, ``T0 = 12 °C``, ``Q_ref_cond = 8 kW``.
@@ -21,7 +21,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pbhp import AirSourceHeatPumpBoiler
+from tmhp import AirSourceHeatPumpBoiler
 
 # Pin SVG clip-path IDs so re-running the script produces byte-identical
 # output (matches the convention from samsung_ehs_parity.py).

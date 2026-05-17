@@ -7,7 +7,7 @@ Plotting facade and Mollier-style refrigerant diagrams (T-h, P-h, T-s).
 Plotting facade
 ===============
 
-.. automodule:: pbhp.visualization
+.. automodule:: tmhp.visualization
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ Plotting facade
 Mollier diagrams
 ================
 
-.. automodule:: pbhp.mollier_diagram
+.. automodule:: tmhp.mollier_diagram
     :members:
     :undoc-members:
     :show-inheritance:

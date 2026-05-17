@@ -2,7 +2,7 @@
 Concepts
 ========
 
-Background reading for ``pbhp``. These pages cover *why* the
+Background reading for ``tmhp``. These pages cover *why* the
 library is built the way it is — what physics-based cycle solving buys
 you, how the model pieces fit together, and how to interpret the
 diagnostic fields that come back from a steady-state call.

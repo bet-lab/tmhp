@@ -18,7 +18,7 @@ The three structural limits of curve fits
 
     * -
       - Curve-fit models
-      - ``pbhp``
+      - ``tmhp``
     * - **Operating range**
       - Tied to the manufacturer's test points; extrapolation is
         unreliable.
@@ -81,6 +81,6 @@ steps per second on a single core for a vanilla ASHPB — fast enough
 that a year-long minute-resolution run takes hours, not minutes.
 
 If that is still too slow for your use case, a fitted surrogate is
-the right escape hatch. ``pbhp`` is calibrated against
+the right escape hatch. ``tmhp`` is calibrated against
 commercial catalogue data well enough that you can train the
 surrogate against this library itself, with no fresh bench data.

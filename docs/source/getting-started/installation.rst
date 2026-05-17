@@ -13,8 +13,8 @@ Clone and install
 
 .. code-block:: bash
 
-   git clone https://github.com/bet-lab/pbhp.git
-   cd pbhp
+   git clone https://github.com/bet-lab/tmhp.git
+   cd tmhp
    uv sync --locked
 
 ``--locked`` tells ``uv`` to respect the committed ``uv.lock`` and
@@ -60,9 +60,9 @@ on every PR are:
 
 .. code-block:: bash
 
-   uv run ruff check src/pbhp tests
-   uv run mypy src/pbhp
-   uv run pytest --cov=pbhp
+   uv run ruff check src/tmhp tests
+   uv run mypy src/tmhp
+   uv run pytest --cov=tmhp
 
 Building the docs locally
 =========================

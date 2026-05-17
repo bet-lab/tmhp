@@ -6,7 +6,7 @@ They use single representative operating points; they are not validation
 against external data.
 """
 
-from pbhp import (
+from tmhp import (
     AirSourceHeatPump,
     AirSourceHeatPumpBoiler,
     GroundSourceHeatPump,

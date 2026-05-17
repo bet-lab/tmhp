@@ -15,7 +15,7 @@ Minimum viable example
 
    import numpy as np
 
-   from pbhp import AirSourceHeatPumpBoiler
+   from tmhp import AirSourceHeatPumpBoiler
 
    ashpb = AirSourceHeatPumpBoiler(ref="R32")
 

@@ -1,17 +1,17 @@
-.. pbhp documentation master file
+.. Thermodynamic Models for Heat Pumps documentation master file
 
-====
-pbhp
-====
+===================================
+Thermodynamic Models for Heat Pumps
+===================================
 
-**Physics-Based Heat Pump** — a general-purpose, physics-based heat pump modeling library.
+A general-purpose, physics-based heat pump modeling library.
 
 .. rst-class:: lead
 
    First-principles dynamic models for air-source, ground-source, and
    water-source heat pump systems.
 
-``pbhp`` solves the thermodynamic refrigerant cycle at every time
+``tmhp`` solves the thermodynamic refrigerant cycle at every time
 step using `CoolProp <http://www.coolprop.org>`_, so the same model
 code applies across refrigerants and operating envelopes without
 needing manufacturer-specific curve fits.
@@ -24,7 +24,7 @@ needing manufacturer-specific curve fits.
 
    .. image:: https://img.shields.io/badge/license-MIT-success
       :alt: MIT License
-      :target: https://github.com/bet-lab/pbhp/blob/main/LICENSE
+      :target: https://github.com/bet-lab/tmhp/blob/main/LICENSE
 
    .. image:: https://img.shields.io/badge/status-alpha-orange
       :alt: Development status — Alpha
@@ -34,7 +34,7 @@ needing manufacturer-specific curve fits.
    :doc:`Install <getting-started/installation>`
    :doc:`Quick start <getting-started/quickstart>`
    :doc:`Validation <validation/index>`
-   `GitHub <https://github.com/bet-lab/pbhp>`_
+   `GitHub <https://github.com/bet-lab/tmhp>`_
 
 .. grid:: 1 2 2 3
     :gutter: 3
@@ -66,7 +66,7 @@ needing manufacturer-specific curve fits.
         :link-type: doc
 
         Every model, support module, and helper exposed by the
-        ``pbhp`` package, with full type signatures.
+        ``tmhp`` package, with full type signatures.
 
     .. grid-item-card:: Validation
         :link: validation/index
@@ -98,5 +98,5 @@ needing manufacturer-specific curve fits.
    :caption: Project Links
    :hidden:
 
-   GitHub Repository <https://github.com/bet-lab/pbhp>
+   GitHub Repository <https://github.com/bet-lab/tmhp>
    Sister project — Energy-Exergy Analysis Engine <https://github.com/bet-lab/enex-analysis-engine>

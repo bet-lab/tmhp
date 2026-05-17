@@ -8,35 +8,35 @@ variants plug onto the core cycle, plus the UV-treatment subsystem.
 Solar thermal collector
 =======================
 
-.. autoclass:: pbhp.subsystems.SolarThermalCollector
+.. autoclass:: tmhp.subsystems.SolarThermalCollector
     :members:
     :show-inheritance:
 
 Photovoltaic system
 ===================
 
-.. autoclass:: pbhp.subsystems.PhotovoltaicSystem
+.. autoclass:: tmhp.subsystems.PhotovoltaicSystem
     :members:
     :show-inheritance:
 
 Energy storage system
 =====================
 
-.. autoclass:: pbhp.subsystems.EnergyStorageSystem
+.. autoclass:: tmhp.subsystems.EnergyStorageSystem
     :members:
     :show-inheritance:
 
 UV lamp
 =======
 
-.. autoclass:: pbhp.subsystems.UVLamp
+.. autoclass:: tmhp.subsystems.UVLamp
     :members:
     :show-inheritance:
 
 UV treatment
 ============
 
-.. automodule:: pbhp.uv_treatment
+.. automodule:: tmhp.uv_treatment
     :members:
     :undoc-members:
     :show-inheritance:

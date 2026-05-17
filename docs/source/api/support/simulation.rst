@@ -8,7 +8,7 @@ emitted at the end of a dynamic run.
 Per-step dynamic context
 ========================
 
-.. automodule:: pbhp.dynamic_context
+.. automodule:: tmhp.dynamic_context
     :members:
     :undoc-members:
     :show-inheritance:
@@ -17,7 +17,7 @@ Per-step dynamic context
 Energy & exergy helpers
 =======================
 
-.. automodule:: pbhp.enex_functions
+.. automodule:: tmhp.enex_functions
     :members:
     :undoc-members:
     :show-inheritance:
@@ -25,7 +25,7 @@ Energy & exergy helpers
 Simulation summary tables
 =========================
 
-.. automodule:: pbhp.simulation_summary
+.. automodule:: tmhp.simulation_summary
     :members:
     :undoc-members:
     :show-inheritance:
