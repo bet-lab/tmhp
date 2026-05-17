@@ -32,15 +32,15 @@ jobs:
         run: uv sync --group dev --locked
 
       - name: Ruff lint
-        run: uv run ruff check src/physics_hp tests
+        run: uv run ruff check src/pbhp tests
 
       - name: Mypy
-        run: uv run mypy src/physics_hp
+        run: uv run mypy src/pbhp
 
       - name: Pytest with coverage
         run: |
           uv run pytest -q \
-            --cov=physics_hp \
+            --cov=pbhp \
             --cov-report=term \
             --cov-report=xml
 

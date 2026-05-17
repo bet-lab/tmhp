@@ -7,7 +7,7 @@ Unit-conversion helpers and physical constants used across the package.
 Unit conversions
 ================
 
-.. automodule:: physics_hp.calc_util
+.. automodule:: pbhp.calc_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -15,7 +15,7 @@ Unit conversions
 Physical constants
 ==================
 
-.. automodule:: physics_hp.constants
+.. automodule:: pbhp.constants
     :members:
     :undoc-members:
     :show-inheritance:

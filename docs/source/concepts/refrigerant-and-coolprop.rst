@@ -66,7 +66,7 @@ CoolProp raises when state queries fall outside the EOS
 envelope — for example, asking for a saturation pressure above
 the critical point, or asking for a property at a state that
 crossed into two-phase by accident. These show up inside
-``physics_hp`` as:
+``pbhp`` as:
 
 - ``failure_reason == "cycle_invalid"`` when the cycle couldn't
   produce a coherent state at all (often the EOS itself rejected

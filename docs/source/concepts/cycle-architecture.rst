@@ -2,7 +2,7 @@
 Thermodynamic cycle architecture
 ================================
 
-Every model in ``physics_hp`` is the same closed refrigerant cycle
+Every model in ``pbhp`` is the same closed refrigerant cycle
 wrapped in a different source / sink pairing. This page sketches
 the shared structure and shows where each system family plugs into
 it.
@@ -90,7 +90,7 @@ Every system reuses the same closed cycle — only the blocks marked
    </div>
 
    <p class="cycle-arch-caption">
-     Data flow shared by every <code>physics_hp</code> model.  Bold blocks are
+     Data flow shared by every <code>pbhp</code> model.  Bold blocks are
      reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP.
    </p>
 
@@ -99,7 +99,7 @@ Every system reuses the same closed cycle — only the blocks marked
    (function () {
      if (!document.getElementById("cy-arch")) return;
 
-     // ─── Data extracted from physics_hp source ───────────────────────
+     // ─── Data extracted from pbhp source ───────────────────────
      //   ASHPB._calc_state, refrigerant.calc_ref_state, heat_transfer.py,
      //   _opt_utils.py (scalar minimizer over dT_ref_evap).
      const nodes = [
@@ -286,8 +286,8 @@ Sink side: where heat goes
         Used by every ``*HeatPumpBoiler`` class.
     * - **Building load**
       - Zone temperature / load proxy. Used by
-        :class:`~physics_hp.air_source_heat_pump.AirSourceHeatPump`
-        and :class:`~physics_hp.ground_source_heat_pump.GroundSourceHeatPump`.
+        :class:`~pbhp.air_source_heat_pump.AirSourceHeatPump`
+        and :class:`~pbhp.ground_source_heat_pump.GroundSourceHeatPump`.
 
 Composed subsystems
 ===================

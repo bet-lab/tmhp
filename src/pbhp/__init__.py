@@ -1,12 +1,12 @@
-"""Physics-Based Heat Pump Models — standalone package entry point.
+"""pbhp — Physics-Based Heat Pump: a general-purpose, physics-based heat pump modeling library.
 
 When installed as a standalone package (``uv pip install -e .``),
 import as::
 
-    from physics_hp import AirSourceHeatPumpBoiler
+    from pbhp import AirSourceHeatPumpBoiler
 
 Wildcard re-exports below are intentional: each submodule defines its own
-``__all__`` so the surface of ``from physics_hp import *`` is constrained
+``__all__`` so the surface of ``from pbhp import *`` is constrained
 by the submodules rather than by everything they happen to define.
 """
 

@@ -13,7 +13,7 @@ one left off.
         :link: installation
         :link-type: doc
 
-        Install ``physics_hp`` with ``uv`` and verify the
+        Install ``pbhp`` with ``uv`` and verify the
         package imports cleanly.
 
     .. grid-item-card:: Quick start

@@ -49,7 +49,7 @@ Running and saving
 
 .. code-block:: python
 
-   from physics_hp import AirSourceHeatPumpBoiler
+   from pbhp import AirSourceHeatPumpBoiler
 
    ashpb = AirSourceHeatPumpBoiler(ref="R32")
 

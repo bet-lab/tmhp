@@ -1,15 +1,17 @@
-.. Physics-Based Heat Pump Models documentation master file
+.. pbhp documentation master file
 
-==============================
-Physics-Based Heat Pump Models
-==============================
+====
+pbhp
+====
+
+**Physics-Based Heat Pump** — a general-purpose, physics-based heat pump modeling library.
 
 .. rst-class:: lead
 
    First-principles dynamic models for air-source, ground-source, and
    water-source heat pump systems.
 
-``physics_hp`` solves the thermodynamic refrigerant cycle at every time
+``pbhp`` solves the thermodynamic refrigerant cycle at every time
 step using `CoolProp <http://www.coolprop.org>`_, so the same model
 code applies across refrigerants and operating envelopes without
 needing manufacturer-specific curve fits.
@@ -22,21 +24,17 @@ needing manufacturer-specific curve fits.
 
    .. image:: https://img.shields.io/badge/license-MIT-success
       :alt: MIT License
-      :target: https://github.com/bet-lab/physics-heatpump-models/blob/main/LICENSE
+      :target: https://github.com/bet-lab/pbhp/blob/main/LICENSE
 
    .. image:: https://img.shields.io/badge/status-alpha-orange
       :alt: Development status — Alpha
-
-   .. image:: https://img.shields.io/badge/refrigerant-CoolProp-6366f1
-      :alt: Powered by CoolProp
-      :target: http://www.coolprop.org
 
 .. container:: hero-cta
 
    :doc:`Install <getting-started/installation>`
    :doc:`Quick start <getting-started/quickstart>`
    :doc:`Validation <validation/index>`
-   `GitHub <https://github.com/bet-lab/physics-heatpump-models>`_
+   `GitHub <https://github.com/bet-lab/pbhp>`_
 
 .. grid:: 1 2 2 3
     :gutter: 3
@@ -68,7 +66,7 @@ needing manufacturer-specific curve fits.
         :link-type: doc
 
         Every model, support module, and helper exposed by the
-        ``physics_hp`` package, with full type signatures.
+        ``pbhp`` package, with full type signatures.
 
     .. grid-item-card:: Validation
         :link: validation/index
@@ -100,5 +98,5 @@ needing manufacturer-specific curve fits.
    :caption: Project Links
    :hidden:
 
-   GitHub Repository <https://github.com/bet-lab/physics-heatpump-models>
-   enex_analysis_engine <https://github.com/bet-lab/enex_analysis_engine>
+   GitHub Repository <https://github.com/bet-lab/pbhp>
+   Sister project — Energy-Exergy Analysis Engine <https://github.com/bet-lab/enex-analysis-engine>

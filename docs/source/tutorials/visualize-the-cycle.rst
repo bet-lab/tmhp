@@ -60,7 +60,7 @@ The script
 
 The complete script lives at
 `scripts/visualization/mollier_cycle_R32.py
-<https://github.com/bet-lab/physics-heatpump-models/blob/main/scripts/visualization/mollier_cycle_R32.py>`_.
+<https://github.com/bet-lab/pbhp/blob/main/scripts/visualization/mollier_cycle_R32.py>`_.
 The core is a saturation-envelope sweep via CoolProp for each panel
 plus a dashed connector through the seven cycle points returned by
 ``analyze_steady``:
@@ -71,7 +71,7 @@ plus a dashed connector through the seven cycle points returned by
    import matplotlib.pyplot as plt
    import numpy as np
 
-   from physics_hp import AirSourceHeatPumpBoiler
+   from pbhp import AirSourceHeatPumpBoiler
 
    REF = "R32"
    ashpb = AirSourceHeatPumpBoiler(ref=REF)

@@ -14,7 +14,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from physics_hp import AirSourceHeatPumpBoiler
+from pbhp import AirSourceHeatPumpBoiler
 
 # Pin clip-path IDs so re-running the script produces byte-identical SVG.
 mpl.rcParams["svg.hashsalt"] = "physics-hp.validation.samsung-ehs-parity"

@@ -1,18 +1,18 @@
 <div align="center">
 
-# physics-heatpump-models
+# pbhp
 
-**A general-purpose, physics-based heat pump modeling library**
+**Physics-Based Heat Pump** — a general-purpose, physics-based heat pump modeling library
 
 _Refrigerant-agnostic · operating-condition-agnostic · first-principles from the cycle up_
 
 [![Python](https://img.shields.io/badge/python-≥3.10-3776AB?logo=python&logoColor=white)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
-[![Docs](https://img.shields.io/badge/docs-online-blue.svg)](https://bet-lab.github.io/physics-heatpump-models/)
+[![Docs](https://img.shields.io/badge/docs-online-blue.svg)](https://bet-lab.github.io/pbhp/)
 [![CoolProp](https://img.shields.io/badge/powered%20by-CoolProp-orange.svg)](http://www.coolprop.org)
 
-[**Documentation**](https://bet-lab.github.io/physics-heatpump-models/) ·
-[**Sister project**](https://github.com/bet-lab/enex_analysis_engine)
+[**Documentation**](https://bet-lab.github.io/pbhp/) ·
+Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/enex-analysis-engine)
 
 </div>
 
@@ -20,7 +20,7 @@ _Refrigerant-agnostic · operating-condition-agnostic · first-principles from t
 
 ## Overview
 
-`physics-heatpump-models` is a Python library for simulating air-source, ground-source, and water-source heat pump systems — for domestic hot water (DHW), space heating, and space cooling.
+`pbhp` is a Python library for simulating air-source, ground-source, and water-source heat pump systems — for domestic hot water (DHW), space heating, and space cooling.
 
 Unlike conventional simulators that rely on manufacturer-specific curve fits, this library **solves the thermodynamic refrigerant cycle at every time step**. The result is a single, unified modeling framework that produces reasonably accurate results across a wide range of refrigerants and operating conditions, without requiring proprietary catalogue data for every new configuration.
 
@@ -47,11 +47,11 @@ The trade-off is a few extra parameters and a slightly more expensive time step 
 
 <div align="center">
 
-<a href="https://bet-lab.github.io/physics-heatpump-models/concepts/cycle-architecture.html">
+<a href="https://bet-lab.github.io/pbhp/concepts/cycle-architecture.html">
   <img src="docs/source/_static/cycle-architecture.svg" alt="Cycle architecture: source → evaporator → compressor → condenser → expander, with a cycle-closure solver optimizing the evaporating-side approach temperature and compressor speed" width="900">
 </a>
 
-<sub><i>Shared cycle architecture — bold blocks are reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP. <a href="https://bet-lab.github.io/physics-heatpump-models/concepts/cycle-architecture.html">Open the interactive version →</a></i></sub>
+<sub><i>Shared cycle architecture — bold blocks are reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP. <a href="https://bet-lab.github.io/pbhp/concepts/cycle-architecture.html">Open the interactive version →</a></i></sub>
 
 <br/><br/>
 
@@ -89,8 +89,8 @@ Each concrete model in the next section is a fixed combination of these three ax
 Requires Python ≥ 3.10 and the [`uv`](https://github.com/astral-sh/uv) package manager.
 
 ```bash
-git clone https://github.com/bet-lab/physics-heatpump-models.git
-cd physics-heatpump-models
+git clone https://github.com/bet-lab/pbhp.git
+cd pbhp
 uv sync
 ```
 
@@ -116,7 +116,7 @@ See [`docs/source/getting-started/installation.rst`](docs/source/getting-started
 ### Steady-state operating point
 
 ```python
-from physics_hp import AirSourceHeatPumpBoiler
+from pbhp import AirSourceHeatPumpBoiler
 
 # Build a model — refrigerant is just a parameter (default: R134a)
 ashpb = AirSourceHeatPumpBoiler(ref="R32")
@@ -148,7 +148,7 @@ ashpb_r410 = AirSourceHeatPumpBoiler(ref="R410A")
 
 ```python
 import numpy as np
-from physics_hp import AirSourceHeatPumpBoiler
+from pbhp import AirSourceHeatPumpBoiler
 
 ashpb = AirSourceHeatPumpBoiler(ref="R32")
 
@@ -297,8 +297,8 @@ This accuracy is achieved **without unit-specific calibration** — the same cod
 
 ## Documentation
 
-- 📚 **[Full API reference](https://bet-lab.github.io/physics-heatpump-models/)**
-- 🔗 **[enex_analysis_engine](https://bet-lab.github.io/enex_analysis_engine/)** — sister energy / exergy analysis library, maintained in parallel
+- 📚 **[Full API reference](https://bet-lab.github.io/pbhp/)**
+- 🔗 Sister project: **[Energy-Exergy Analysis Engine](https://bet-lab.github.io/enex-analysis-engine/)** — energy / exergy analysis library, maintained in parallel
 
 ---
 
@@ -306,8 +306,8 @@ This accuracy is achieved **without unit-specific calibration** — the same cod
 <summary><b>Project layout</b></summary>
 
 ```text
-physics-heatpump-models/
-├── src/physics_hp/                # Importable package
+pbhp/
+├── src/pbhp/                # Importable package
 │   ├── __init__.py                # Public re-exports
 │   │
 │   ├── air_source_heat_pump.py            # ASHP (space conditioning)
@@ -372,7 +372,7 @@ If you use this library in academic work, please cite the validation paper:
 
 ## Related work
 
-- [`enex_analysis_engine`](https://github.com/bet-lab/enex_analysis_engine) — sister energy / exergy analysis library, maintained in parallel (not currently consumed as a submodule)
+- Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/enex-analysis-engine) — energy / exergy analysis library, maintained in parallel (not currently consumed as a submodule)
 
 ---
 

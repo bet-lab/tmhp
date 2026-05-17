@@ -8,7 +8,7 @@ ratio, isentropic efficiency, COP), and COP correlations.
 Refrigerant state points
 ========================
 
-.. automodule:: physics_hp.refrigerant
+.. automodule:: pbhp.refrigerant
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,7 +16,7 @@ Refrigerant state points
 Cycle analysis
 ==============
 
-.. automodule:: physics_hp.thermodynamics
+.. automodule:: pbhp.thermodynamics
     :members:
     :undoc-members:
     :show-inheritance:
@@ -24,7 +24,7 @@ Cycle analysis
 COP correlations
 ================
 
-.. automodule:: physics_hp.cop
+.. automodule:: pbhp.cop
     :members:
     :undoc-members:
     :show-inheritance:

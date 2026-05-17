@@ -13,8 +13,8 @@ Clone and install
 
 .. code-block:: bash
 
-   git clone https://github.com/bet-lab/physics-heatpump-models.git
-   cd physics-heatpump-models
+   git clone https://github.com/bet-lab/pbhp.git
+   cd pbhp
    uv sync --locked
 
 ``--locked`` tells ``uv`` to respect the committed ``uv.lock`` and
@@ -60,9 +60,9 @@ on every PR are:
 
 .. code-block:: bash
 
-   uv run ruff check src/physics_hp tests
-   uv run mypy src/physics_hp
-   uv run pytest --cov=physics_hp
+   uv run ruff check src/pbhp tests
+   uv run mypy src/pbhp
+   uv run pytest --cov=pbhp
 
 Building the docs locally
 =========================

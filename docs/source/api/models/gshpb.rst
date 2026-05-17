@@ -9,7 +9,7 @@ layer subsystems on top.
 Core model
 ==========
 
-.. automodule:: physics_hp.ground_source_heat_pump_boiler
+.. automodule:: pbhp.ground_source_heat_pump_boiler
     :members:
     :undoc-members:
     :show-inheritance:
@@ -17,7 +17,7 @@ Core model
 STC preheat
 ===========
 
-.. automodule:: physics_hp.gshpb_stc_preheat
+.. automodule:: pbhp.gshpb_stc_preheat
     :members:
     :undoc-members:
     :show-inheritance:
@@ -25,7 +25,7 @@ STC preheat
 STC with stratified tank
 ========================
 
-.. automodule:: physics_hp.gshpb_stc_tank
+.. automodule:: pbhp.gshpb_stc_tank
     :members:
     :undoc-members:
     :show-inheritance:
@@ -33,7 +33,7 @@ STC with stratified tank
 PV + ESS
 ========
 
-.. automodule:: physics_hp.gshpb_pv_ess
+.. automodule:: pbhp.gshpb_pv_ess
     :members:
     :undoc-members:
     :show-inheritance:

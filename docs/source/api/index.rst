@@ -2,7 +2,7 @@
 API Reference
 =============
 
-Complete API documentation for the ``physics_hp`` package, organized by
+Complete API documentation for the ``pbhp`` package, organized by
 module group. Each card below links to a sub-section that documents the
 classes and functions in that group.
 

@@ -12,12 +12,12 @@ before it reaches the DHW tank.
 The two pieces
 ==============
 
-The :class:`~physics_hp.subsystems.SolarThermalCollector` is a
+The :class:`~pbhp.subsystems.SolarThermalCollector` is a
 pure physics engine — given irradiance, ambient temperature, and
 flow, it returns collector outlet temperature and absorbed heat.
 It carries no simulation state.
 
-:class:`~physics_hp.ashpb_stc_preheat.ASHPB_STC_preheat` extends
+:class:`~pbhp.ashpb_stc_preheat.ASHPB_STC_preheat` extends
 ``AirSourceHeatPumpBoiler`` and owns the orchestration: when the
 collector is warmer than the mains supply, it overrides the
 tank-inlet temperature so the heat pump sees pre-heated water.
@@ -29,8 +29,8 @@ Putting them together
 
    import numpy as np
 
-   from physics_hp import ASHPB_STC_preheat
-   from physics_hp.subsystems import SolarThermalCollector
+   from pbhp import ASHPB_STC_preheat
+   from pbhp.subsystems import SolarThermalCollector
 
    # Collector geometry. SolarThermalCollector is a dataclass — all
    # parameters have sensible defaults; override only what differs.
@@ -94,7 +94,7 @@ Reading the contribution
    # but no solar — drive `AirSourceHeatPumpBoiler` with the same
    # schedules and difference the compressor energy.
 
-   from physics_hp import AirSourceHeatPumpBoiler
+   from pbhp import AirSourceHeatPumpBoiler
 
    base = AirSourceHeatPumpBoiler(ref="R32").analyze_dynamic(
        simulation_period_sec = n_steps * dt_s,
@@ -121,15 +121,15 @@ Other compositions
 Three other subsystems compose against ASHPB / GSHPB the same
 way:
 
-- :class:`~physics_hp.ashpb_stc_tank.ASHPB_STC_tank` — STC charges
+- :class:`~pbhp.ashpb_stc_tank.ASHPB_STC_tank` — STC charges
   the top node of a stratified storage tank instead of the
   mains feed.
-- :class:`~physics_hp.ashpb_pv_ess.ASHPB_PV_ESS` — photovoltaic
+- :class:`~pbhp.ashpb_pv_ess.ASHPB_PV_ESS` — photovoltaic
   generation + ESS supplies compressor and auxiliary loads
   before drawing grid power.
-- The :class:`~physics_hp.gshpb_stc_preheat.GSHPB_STC_preheat`,
-  :class:`~physics_hp.gshpb_stc_tank.GSHPB_STC_tank`, and
-  :class:`~physics_hp.gshpb_pv_ess.GSHPB_PV_ESS` mirrors on the
+- The :class:`~pbhp.gshpb_stc_preheat.GSHPB_STC_preheat`,
+  :class:`~pbhp.gshpb_stc_tank.GSHPB_STC_tank`, and
+  :class:`~pbhp.gshpb_pv_ess.GSHPB_PV_ESS` mirrors on the
   ground-source side.
 
 The constructor pattern is the same in every case: instantiate
