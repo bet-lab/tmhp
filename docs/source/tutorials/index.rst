@@ -3,8 +3,9 @@ Tutorials
 =========
 
 Focused, end-to-end walkthroughs that pick up where Getting Started
-leaves off. Each tutorial is self-contained — copy the snippet, change
-one or two values, and you have a working starting point.
+leaves off. Each tutorial is self-contained — copy the snippet,
+change one or two values, and you have a working starting point for
+your own analysis.
 
 .. grid:: 2
     :gutter: 3

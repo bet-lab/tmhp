@@ -3,8 +3,8 @@ Realistic dynamic simulation
 =============================
 
 :doc:`../getting-started/first-dynamic-simulation` runs
-``analyze_dynamic`` with flat schedules. Real runs almost never
-look like that.
+``analyze_dynamic`` with flat schedules — a clean sanity check, but
+real runs almost never look like that.
 
 This tutorial assembles a more representative 24-hour scenario:
 

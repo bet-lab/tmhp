@@ -2,15 +2,16 @@
 Swap refrigerants
 ==================
 
-The refrigerant is a constructor argument on every model in
-``tmhp``. Changing it requires no recalibration and no
-manufacturer data — pick any name CoolProp recognises and the
-library re-solves the cycle from first principles.
+The refrigerant is a constructor argument on every model in ``tmhp``.
+Changing it requires no recalibration and no manufacturer data —
+pick any name CoolProp recognises and the library re-solves the
+cycle from first principles. That's the single most concrete way to
+see what "refrigerant-agnostic" means in this library.
 
-This page is both a copy-runnable tutorial — sweep four
-refrigerants at one operating point and inspect the COP — and an
-engineering reference covering the ten working fluids that
-actually show up in modern heat-pump design.
+This page is both a copy-runnable tutorial — sweep four refrigerants
+at one operating point and inspect the COP — and an engineering
+reference covering the ten working fluids that actually show up in
+modern heat-pump design.
 
 .. note::
 
