@@ -3,21 +3,27 @@
 Compares predictions from `AirSourceHeatPumpBoiler` against the 15 catalogue
 operating points of the Samsung EHS Mono HT Quiet R32 14 kW unit, then writes a
 publication-quality SVG figure to ``docs/source/_static/validation_parity.svg``.
+
+The figure is rendered through the ``scientific`` dartwork-mpl preset so it
+shares typography, line weights, and colour tokens with the rest of the docs
+gallery.
 """
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import matplotlib as mpl
+import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 import numpy as np
 
 from tmhp import AirSourceHeatPumpBoiler
 
-# Pin clip-path IDs so re-running the script produces byte-identical SVG.
-mpl.rcParams["svg.hashsalt"] = "tmhp.validation.samsung-ehs-parity"
+# Make the shared visualization helpers importable when run from anywhere.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "visualization"))
+from _dmpl_common import COLORS, apply_style, finalize, static_path  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -59,15 +65,12 @@ CATALOGUE: tuple[OperatingPoint, ...] = (
 
 def build_model() -> AirSourceHeatPumpBoiler:
     """Configure ASHPB with the parameter set from the paper's Table 2."""
-    # Scroll compressor with clearance C = 0.035, k = 1.18 (R32).
     def eta_vol(pi: float) -> float:
         return float(1.0 - 0.035 * (pi ** (1.0 / 1.18) - 1.0))
 
-    # Reference isentropic efficiency 0.90, decay 0.02 per unit pressure ratio.
     def eta_isen(pi: float) -> float:
         return 0.90 - 0.02 * pi
 
-    # Combined motor + inverter efficiency, quadratic vs. rev/s (= Hz).
     def eta_mech(_pi: float, rps: float) -> float:
         return 0.90 - 6.25e-5 * (rps - 60.0) ** 2
 
@@ -104,7 +107,7 @@ def run_validation() -> list[tuple[OperatingPoint, float]]:
     return rows
 
 
-def plot_parity(rows: list[tuple[OperatingPoint, float]], out_path: Path) -> None:
+def plot_parity(rows: list[tuple[OperatingPoint, float]], out_stem: Path) -> None:
     target = np.array([op.target_cop for op, _ in rows])
     pred = np.array([cop for _, cop in rows])
 
@@ -115,53 +118,53 @@ def plot_parity(rows: list[tuple[OperatingPoint, float]], out_path: Path) -> Non
     lo, hi = 1.0, 8.0
     line = np.linspace(lo, hi, 200)
 
-    fig, ax = plt.subplots(figsize=(6.0, 6.0))
-    # ±20% and ±10% bands.
-    ax.fill_between(line, 0.80 * line, 1.20 * line, color="#d6d6d6", alpha=0.55,
-                    label="±20% Error", linewidth=0)
-    ax.fill_between(line, 0.90 * line, 1.10 * line, color="#9ec8e8", alpha=0.55,
-                    label="±10% Error", linewidth=0)
-    ax.plot(line, line, linestyle=":", color="#3b4a5a", linewidth=1.2)
+    fig, ax = plt.subplots(figsize=dm.figsize("11cm", "square"))
+    ax.fill_between(line, 0.80 * line, 1.20 * line, color=COLORS["band20"],
+                    alpha=0.55, label="±20 % error", linewidth=0)
+    ax.fill_between(line, 0.90 * line, 1.10 * line, color=COLORS["band10"],
+                    alpha=0.70, label="±10 % error", linewidth=0)
+    ax.plot(line, line, linestyle=":", color=COLORS["muted"], linewidth=dm.lw(0))
 
-    ax.scatter(target, pred, s=42, color="#1f2a36", zorder=4, edgecolor="white",
-               linewidth=0.6)
+    ax.scatter(target, pred, s=dm.fs(8), color=COLORS["accent"], zorder=4,
+               edgecolor="white", linewidth=dm.lw(-1))
     for (op, cop) in rows:
-        ax.annotate(str(op.id), (op.target_cop, cop),
-                    textcoords="offset points", xytext=(3, -3), fontsize=9.5,
-                    color="#1f2a36")
+        ax.annotate(
+            str(op.id),
+            (op.target_cop, cop),
+            textcoords="offset points",
+            xytext=(3, -3),
+            fontsize=dm.fs(-1),
+            color=COLORS["ink"],
+        )
 
     ax.set_xlim(lo, hi)
     ax.set_ylim(lo, hi)
-    ax.set_xlabel("Target COP", fontsize=11)
-    ax.set_ylabel("Predicted COP", fontsize=11)
-    ax.tick_params(axis="both", labelsize=11)
+    ax.set_xlabel("Target COP [-]")
+    ax.set_ylabel("Predicted COP [-]")
     ax.set_aspect("equal", adjustable="box")
-    ax.grid(True, alpha=0.25, linewidth=0.6)
-    ax.legend(loc="lower right", frameon=False, fontsize=9)
+    ax.grid(True, alpha=0.25, linewidth=dm.lw(-2))
+    ax.legend(loc="lower right", frameon=False, fontsize=dm.fs(-1))
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.tight_layout()
-    # Pin the SVG metadata date so re-runs of this script produce
-    # byte-identical output (avoids noisy diffs on regeneration).
-    fig.savefig(
-        out_path,
-        format="svg",
-        bbox_inches="tight",
-        metadata={"Date": None},
+    # Inline error budget — saves the reader a trip to the body table.
+    ax.text(
+        0.04, 0.96,
+        f"MAE = {mae:.2f}\nMAPE = {mape:.1f} %",
+        transform=ax.transAxes,
+        va="top", ha="left",
+        fontsize=dm.fs(-1),
+        color=COLORS["ink"],
     )
+
+    finalize(fig, out_stem)
     plt.close(fig)
 
     print(f"MAE  = {mae:.3f}")
     print(f"MAPE = {mape:.2f}%")
-    print(f"SVG  = {out_path}")
+    print(f"SVG  = {out_stem}.svg")
 
 
 def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
-    """Render a Markdown results table suitable for the README.
-
-    Column headers use GitHub-flavored LaTeX (``$...$``) so the rendered table
-    matches the symbols used in the paper and in the supporting modules.
-    """
+    """Render a Markdown results table suitable for the README."""
     target = np.array([op.target_cop for op, _ in rows])
     pred = np.array([cop for _, cop in rows])
     abs_err = np.abs(pred - target)
@@ -169,11 +172,6 @@ def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
     mae = float(abs_err.mean())
     mape = float(pct_err.mean())
 
-    # Wrap units in math too — the table-header bold otherwise makes plain
-    # "[°C]" / "[kW]" pop visually next to the MathJax-rendered symbols.
-    # Every header cell goes through MathJax so the <th> default bold
-    # cannot apply — GitHub-rendered MathJax glyphs ignore the surrounding
-    # font-weight, which keeps the header visually consistent.
     header = (
         "| $\\mathrm{ID}$ "
         "| $T_{\\mathrm{LWT}}~[^\\circ\\mathrm{C}]$ "
@@ -187,7 +185,6 @@ def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
     )
 
     def _fmt_t0(t: float) -> str:
-        # Typographic minus so the column reads cleanly when rendered.
         return f"−{abs(t):.0f}" if t < 0 else f"{t:.0f}"
 
     body_lines = [
@@ -202,9 +199,11 @@ def render_markdown_table(rows: list[tuple[OperatingPoint, float]]) -> str:
 
 
 def main() -> None:
+    apply_style("report", hashsalt="tmhp.validation.samsung-ehs-parity")
     rows = run_validation()
-    out = Path(__file__).resolve().parents[2] / "docs" / "source" / "_static" / "validation_parity.svg"
-    plot_parity(rows, out)
+    # save_formats appends extensions, so strip ".svg" from the stem.
+    out_stem = static_path("validation_parity.svg").with_suffix("")
+    plot_parity(rows, out_stem)
     print()
     print("Markdown table (paste into README):")
     print(render_markdown_table(rows))
