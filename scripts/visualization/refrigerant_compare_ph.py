@@ -104,19 +104,20 @@ def main() -> None:
 
     axes[0].set_ylabel("Pressure [kPa]")
 
-    # Shared legend across the strip (handles drawn on the leftmost axes).
-    h_liq_handle, = axes[0].plot([], [], color=COLORS["cool"],
-                                  linewidth=dm.lw(1), label="Sat. liquid")
-    h_vap_handle, = axes[0].plot([], [], color=COLORS["hot"],
-                                  linewidth=dm.lw(1), label="Sat. vapor")
-    h_cyc_handle, = axes[0].plot([], [], color=COLORS["ink"],
-                                  linewidth=dm.lw(0),
-                                  linestyle=(0, (2, 2)), label="Ref. cycle")
-    fig.legend(
+    # Single-column legend tucked into the lower-right of the rightmost
+    # panel (R134a) — that quadrant is in the superheated-vapor region
+    # so it sits clear of the dome and the cycle path.
+    h_liq_handle, = axes[-1].plot([], [], color=COLORS["cool"],
+                                   linewidth=dm.lw(1), label="Sat. liquid")
+    h_vap_handle, = axes[-1].plot([], [], color=COLORS["hot"],
+                                   linewidth=dm.lw(1), label="Sat. vapor")
+    h_cyc_handle, = axes[-1].plot([], [], color=COLORS["ink"],
+                                   linewidth=dm.lw(0),
+                                   linestyle=(0, (2, 2)), label="Ref. cycle")
+    axes[-1].legend(
         handles=[h_liq_handle, h_vap_handle, h_cyc_handle],
-        loc="lower center", ncol=3, frameon=False,
-        fontsize=dm.fs(-1),
-        bbox_to_anchor=(0.5, -0.02),
+        loc="lower right", frameon=False,
+        fontsize=dm.fs(-2),
     )
 
     out = static_path("refrigerant_compare_ph.svg").with_suffix("")
