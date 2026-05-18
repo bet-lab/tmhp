@@ -2,7 +2,11 @@
 Air-source heat pump (ASHP — space conditioning)
 ================================================
 
-ASHP conditions a building zone (heating + cooling) rather than
+.. |ashp| raw:: html
+
+   <span class="glossary" data-term="ashp">ASHP</span>
+
+|ashp| conditions a building zone (heating + cooling) rather than
 charging a DHW tank. The refrigerant cycle and outdoor-coil source
 side are shared with ASHPB; what differs is the load side — a zone
 energy balance instead of a tank.

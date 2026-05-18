@@ -970,6 +970,30 @@ button.copybtn:hover {
 }
 .composition-tabs .sd-tab-content { padding: var(--rx-space-4) 0; }
 /* --- Glossary popover (⑥) --- */
+.glossary {
+    border-bottom: 1px dashed var(--rx-accent-11);
+    cursor: help;
+    padding: 0 1px;
+}
+.glossary:hover, .glossary:focus { outline: none; background: var(--rx-accent-3); border-radius: 2px; }
+.glossary-pop {
+    position: absolute; z-index: 9999;
+    max-width: 280px;
+    padding: var(--rx-space-3);
+    background: var(--rx-gray-1);
+    color: var(--rx-ink);
+    border: 1px solid var(--rx-accent-6);
+    border-radius: var(--rx-radius-3);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    font-size: var(--rx-fs-2);
+    opacity: 0; pointer-events: none;
+    transition: opacity 100ms ease;
+}
+.glossary-pop.visible { opacity: 1; pointer-events: auto; }
+.glossary-pop .head  { font-weight: var(--rx-fw-bold); color: var(--rx-accent-11); }
+.glossary-pop .def   { margin-top: 4px; color: var(--rx-ink); }
+.glossary-pop .link  { display: inline-block; margin-top: 6px; color: var(--rx-accent-11); font-size: var(--rx-fs-1); text-decoration: none; }
+.glossary-pop .link:hover { text-decoration: underline; }
 /* --- Hero motion (⑦) --- */
 /* --- Cmd+K palette (⑧) --- */
 /* --- Reading progress + scroll-spy + anchor copy (⑨) --- */

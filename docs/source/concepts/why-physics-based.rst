@@ -2,6 +2,14 @@
 Why physics-based?
 ==================
 
+.. |cop| raw:: html
+
+   <span class="glossary" data-term="cop">COP</span>
+
+.. |epsilon-ntu| raw:: html
+
+   <span class="glossary" data-term="epsilon-ntu">ε-NTU</span>
+
 The name "Thermodynamic Models for Heat Pumps" describes *what*
 ``tmhp`` is — a library of thermodynamic cycle models. *How* those
 models are written is the part this page is about: every cycle is
@@ -35,7 +43,7 @@ The three structural limits of curve fits
       - The refrigerant is a constructor argument
         (``ref="R290"``). Anything CoolProp supports works.
     * - **State visibility**
-      - Cycle state is hidden behind the fit. You see COP; you
+      - Cycle state is hidden behind the fit. You see |cop|; you
         don't see why.
       - Every cycle node (compressor in/out, expander in/out,
         evaporator / condenser saturation) is in the result frame
@@ -83,7 +91,7 @@ on a physical optimum rather than on fitted coefficients.
     * - Compressor work
       - Isentropic + volumetric + mechanical efficiency.
     * - Condenser / evaporator
-      - ε-NTU heat exchanger model.
+      - |epsilon-ntu| heat exchanger model.
     * - Outdoor unit fan
       - ASHRAE 90.1-style VSD power curve, air-side ε-NTU.
     * - Borehole (GSHP)

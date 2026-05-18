@@ -2,6 +2,14 @@
 Thermodynamic cycle architecture
 ================================
 
+.. |epsilon-ntu| raw:: html
+
+   <span class="glossary" data-term="epsilon-ntu">ε-NTU</span>
+
+.. |cop| raw:: html
+
+   <span class="glossary" data-term="cop">COP</span>
+
 Every model in ``tmhp`` is the same closed refrigerant cycle wrapped
 in a different source / sink pairing. That single piece of shared
 machinery is what lets one library cover ASHPB, GSHPB, WSHPB, ASHP,
@@ -247,7 +255,7 @@ Every system reuses the same closed cycle — only the blocks marked
 The cycle solves four refrigerant state points (compressor in /
 out, expander in / out) plus the evaporator and condenser
 saturation states. Heat transfer at each heat exchanger is solved
-with an ε-NTU model. The evaporating temperature is left as a
+with an |epsilon-ntu| model. The evaporating temperature is left as a
 free parameter and chosen by minimizing compressor power, so the
 cycle closes on a physical optimum rather than on a fitted
 coefficient.
@@ -281,7 +289,7 @@ Because the cycle is the same code path for every system, a parameter
 sweep across refrigerants, source types, or subsystem combinations
 doesn't require re-implementing the model — it requires picking a
 different class and a different schedule. The cycle-level invariants
-(energy balance, COP definitions,
+(energy balance, |cop| definitions,
 :doc:`failure_reason semantics <failure-reason-semantics>`) therefore
 hold identically across the family, so a result from ASHPB is
 directly comparable to a result from GSHPB or WSHPB at the same

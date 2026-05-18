@@ -2,7 +2,11 @@
 Ground-source heat pump (GSHP — space conditioning)
 ===================================================
 
-GSHP conditions a building zone, drawing or rejecting heat through
+.. |gshp| raw:: html
+
+   <span class="glossary" data-term="gshp">GSHP</span>
+
+|gshp| conditions a building zone, drawing or rejecting heat through
 the same g-function borehole heat exchanger as GSHPB.
 
 Overview

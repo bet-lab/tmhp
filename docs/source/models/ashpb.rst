@@ -2,6 +2,10 @@
 Air-source heat pump boiler (ASHPB)
 ====================================
 
+.. |ashpb| raw:: html
+
+   <span class="glossary" data-term="ashpb">ASHPB</span>
+
 The ``ASHPB`` family pairs the shared refrigerant cycle with an
 outdoor-coil source side and a DHW tank sink side. This is the
 default first stop and the model the Getting Started flow uses.
@@ -9,7 +13,7 @@ default first stop and the model the Getting Started flow uses.
 Overview
 ========
 
-ASHPB solves the closed refrigerant cycle every step against an
+|ashpb| solves the closed refrigerant cycle every step against an
 outdoor coil (ε-NTU air-side) and a tank-coupled condenser. The
 class is :class:`tmhp.AirSourceHeatPumpBoiler`. Three composed
 variants extend it with subsystems:

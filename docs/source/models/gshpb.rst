@@ -2,6 +2,10 @@
 Ground-source heat pump boiler (GSHPB)
 ======================================
 
+.. |gshpb| raw:: html
+
+   <span class="glossary" data-term="gshpb">GSHPB</span>
+
 The ``GSHPB`` family pairs the shared refrigerant cycle with a
 ground-loop source side (vertical borehole field) and the same DHW
 tank sink as ASHPB.
@@ -9,7 +13,7 @@ tank sink as ASHPB.
 Overview
 ========
 
-GSHPB solves the closed refrigerant cycle against a borehole heat
+|gshpb| solves the closed refrigerant cycle against a borehole heat
 exchanger characterised by a precomputed **g-function**. The class is
 :class:`tmhp.GroundSourceHeatPumpBoiler`. Three composed variants
 extend it the same way ASHPB's do:

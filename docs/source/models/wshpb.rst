@@ -2,6 +2,10 @@
 Water-source heat pump boiler (WSHPB)
 =====================================
 
+.. |wshpb| raw:: html
+
+   <span class="glossary" data-term="wshpb">WSHPB</span>
+
 Source side is a water loop with a prescribed inlet temperature;
 sink side is the same DHW tank used by ASHPB / GSHPB.
 
@@ -9,7 +13,7 @@ Overview
 ========
 
 The class is :class:`tmhp.WaterSourceHeatPumpBoiler`. Unlike GSHPB,
-WSHPB takes the source-side inlet temperature as a schedule input
+|wshpb| takes the source-side inlet temperature as a schedule input
 rather than computing it from a borehole field — useful when the
 water loop is driven by an external simulation or measurement.
 

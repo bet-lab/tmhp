@@ -10,6 +10,9 @@
  */
 (function () {
   "use strict";
-  // Pattern hooks register themselves below.
-  // (intentionally empty — populated by Phase 2 commits)
+
+  // ⑥ glossary
+  if (window.tmhpGlossary && typeof window.tmhpGlossary.attach === "function") {
+    document.addEventListener("DOMContentLoaded", window.tmhpGlossary.attach);
+  }
 })();
