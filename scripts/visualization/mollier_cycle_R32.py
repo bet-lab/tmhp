@@ -20,7 +20,7 @@ import numpy as np
 
 from tmhp import AirSourceHeatPumpBoiler
 
-from _dmpl_common import COLORS, apply_style, finalize, static_path
+from _dmpl_common import COLORS, apply_style, finalize, panel_letter, static_path
 
 REF = "R32"
 T_TANK_W = 60.0   # °C
@@ -132,13 +132,6 @@ def _draw_cycle(ax, pts: dict[str, tuple[float, float]],
                     fontsize=dm.fs(-1), color=COLORS["ink"])
 
 
-def _panel_letter(ax, letter: str) -> None:
-    ax.text(0.02, 0.97, letter,
-            transform=ax.transAxes,
-            fontsize=dm.fs(3), fontweight=dm.fw(2),
-            va="top", ha="left")
-
-
 def main() -> None:
     apply_style("report", hashsalt="tmhp.visualization.mollier-cycle-r32")
 
@@ -168,7 +161,7 @@ def main() -> None:
     ax_ph.legend(loc="upper left", frameon=False, ncol=3,
                  bbox_to_anchor=(0.06, 1.0), fontsize=dm.fs(-1))
     ax_ph.grid(True, which="both", alpha=0.25, linewidth=dm.lw(-2))
-    _panel_letter(ax_ph, "a")
+    panel_letter(ax_ph, "a")
 
     # --- Panel (b): T-h --------------------------------------------------
     _draw_envelope(ax_th, h_liq_th, h_vap_th, T_sat)
@@ -192,7 +185,7 @@ def main() -> None:
     ax_th.legend(loc="upper left", frameon=False, ncol=3,
                  bbox_to_anchor=(0.06, 1.0), fontsize=dm.fs(-1))
     ax_th.grid(True, which="both", alpha=0.25, linewidth=dm.lw(-2))
-    _panel_letter(ax_th, "b")
+    panel_letter(ax_th, "b")
 
     finalize(fig, OUTPUT_STEM)
     print(f"wrote {OUTPUT_STEM}.svg")

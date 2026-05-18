@@ -84,6 +84,24 @@ def _assert_no_overflow(fig: Figure, tol_in: float = 1.0 / 144.0) -> None:
         )
 
 
+def panel_letter(ax, letter: str) -> None:
+    """Place a bold subplot index (e.g. ``"a"``) above ``ax``'s upper-left.
+
+    The canonical typography for subplot indexing across the docs gallery —
+    ``dm.fs(3)`` / ``dm.fw(2)`` anchored at axes-fraction ``(-0.05, 1.0)``
+    with ``va="bottom"`` so the letter sits just above the axes top edge,
+    flush with the y-axis label gutter (journal-style). The overflow
+    guard in :func:`finalize` will catch any layout that doesn't leave
+    enough headroom; bump ``mt``/``ml`` if it fires.
+    """
+    ax.text(
+        -0.05, 1.0, letter,
+        transform=ax.transAxes,
+        fontsize=dm.fs(3), fontweight=dm.fw(2),
+        va="bottom", ha="left",
+    )
+
+
 def apply_style(preset: str = "report", *, hashsalt: str | None = None) -> None:
     """Activate a dartwork-mpl composite preset for figure scripts.
 
