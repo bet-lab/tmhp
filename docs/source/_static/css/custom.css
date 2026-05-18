@@ -890,6 +890,25 @@ button.copybtn:hover {
     .parity-plot .parity-wrap { grid-template-columns: 1fr; }
 }
 
+.ts-scrub .ts-wrap {
+    display: grid; grid-template-columns: 1fr 220px;
+    gap: var(--rx-space-4); align-items: start;
+}
+.ts-scrub .ts-readout {
+    padding: var(--rx-space-3);
+    border: 1px solid var(--rx-hairline);
+    border-radius: var(--rx-radius-3);
+    background: var(--rx-gray-1);
+    font-size: var(--rx-fs-2);
+}
+.ts-scrub .ts-readout .head { font-weight: var(--rx-fw-bold); color: var(--rx-accent-11); margin-bottom: var(--rx-space-2); font-variant-numeric: tabular-nums; }
+.ts-scrub .ts-readout dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 0; }
+.ts-scrub .ts-readout dt { color: var(--rx-ink-muted); }
+.ts-scrub .ts-readout dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) {
+    .ts-scrub .ts-wrap { grid-template-columns: 1fr; }
+}
+
 /* --- Table widget (④) --- */
 /* --- Tabs (⑤) --- */
 /* --- Glossary popover (⑥) --- */
