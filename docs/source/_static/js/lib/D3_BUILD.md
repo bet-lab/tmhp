@@ -6,8 +6,25 @@ the modules used by the interactive docs layer. It exposes one global
 
 ## Modules
 
-- d3-array, d3-axis, d3-color, d3-format, d3-interpolate
-- d3-scale, d3-selection, d3-shape, d3-transition
+The bundle uses **explicit named re-exports** rather than `export *`, so
+Rollup's tree-shaker can drop unused d3-scale entry points (`scaleTime`,
+`scaleUtc`) and their `d3-time` / `d3-time-format` transitive dependencies.
+The d3-scale dependency is on **v4**; tree-shaking is what trims the bundle,
+not the major-version pin (v3 has the same `d3-time` transitives).
+
+Symbols re-exported, by source module:
+
+- `d3-array`: `extent`, `max`, `bisector`
+- `d3-axis`: `axisBottom`, `axisLeft`
+- `d3-scale` (v4): `scaleLinear`, `scaleLog`, `scaleOrdinal`
+- `d3-selection`: `select`, `selectAll`, `pointer`
+- `d3-shape`: `line`, `area`, `curveCatmullRom`
+- `d3-transition`: `transition`
+- `d3-format`: `format`
+
+`d3-color` and `d3-interpolate` are not directly re-exported; Rollup
+still bundles the parts of them that d3-scale depends on internally. If
+a future widget calls those symbols directly, add them to `entry.js`.
 
 ## Rebuilding
 
