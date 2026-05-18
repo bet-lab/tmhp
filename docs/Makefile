@@ -3,13 +3,22 @@ SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
+REPOROOT      = $(abspath $(CURDIR)/..)
 
-.PHONY: help Makefile html clean
+.PHONY: help Makefile html clean data
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-html:
+# Build-time JSON data consumed by the interactive UX layer.
+# Re-run any time scripts/data/*.py changes or refrigerant set is bumped.
+data:
+	cd "$(REPOROOT)" && uv run python -m scripts.data.gen_glossary
+	cd "$(REPOROOT)" && uv run python -m scripts.data.gen_refrigerant_data
+	cd "$(REPOROOT)" && uv run python -m scripts.data.gen_validation_data
+	cd "$(REPOROOT)" && uv run python -m scripts.data.gen_timeseries_data
+
+html: data
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 clean:
