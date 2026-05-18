@@ -29,7 +29,7 @@ Every system reuses the same closed cycle — only the blocks marked
      }
      #cy-arch {
        width: 100%;
-       height: 380px;
+       height: 320px;
        border-radius: 6px;
      }
      .cycle-arch-toolbar {
