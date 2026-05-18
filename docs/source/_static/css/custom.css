@@ -839,6 +839,11 @@ button.copybtn:hover {
 .ph-chart .ph-chrome input[type="range"] {
     accent-color: var(--rx-accent-9);
 }
+.ph-chart .ph-chrome output {
+    font-variant-numeric: tabular-nums;
+    min-width: 3.5ch;
+    display: inline-block;
+}
 .ph-chart .ph-canvas-wrap {
     display: grid; grid-template-columns: 1fr 160px;
     gap: var(--rx-space-4); margin-top: var(--rx-space-3);

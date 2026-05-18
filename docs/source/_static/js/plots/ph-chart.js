@@ -18,7 +18,11 @@
   "use strict";
   const mount = document.getElementById("ph-chart-mount");
   if (!mount) return;
-  const { tokens, loadJson, bilinear, staticDir } = window.tmhpPlot;
+  if (!window.tmhpPlot) {
+    console.warn("ph-chart: tmhpPlot helpers missing — load _plot-common.js before ph-chart.js");
+    return;
+  }
+  const { tokens, loadJson, bilinear, staticDir, domeLookup } = window.tmhpPlot;
 
   const REFS = (mount.dataset.refrigerants || "R32").split(",");
   const DEFAULT_REF = mount.dataset.default || REFS[0];
@@ -55,9 +59,12 @@
   sliderCond.value = 45;
 
   let payload = null;
-
+  let loadToken = 0;
   async function load(ref) {
-    payload = await loadJson(`${staticDir()}/data/refrigerants/${ref}.json`);
+    const token = ++loadToken;
+    const data = await loadJson(`${staticDir()}/data/refrigerants/${ref}.json`);
+    if (token !== loadToken) return;
+    payload = data;
     render();
   }
 
@@ -129,16 +136,8 @@
     }
     const P_evap = P_sat(te, "evap"), P_cond = P_sat(tc, "cond");
 
-    function h_at(P, q) {
-      let best = dome[0], bestErr = Math.abs(dome[0].P_kpa - P);
-      for (const d of dome) {
-        const e = Math.abs(d.P_kpa - P);
-        if (e < bestErr) { best = d; bestErr = e; }
-      }
-      return q < 0.5 ? best.h_liq_kjkg : best.h_vap_kjkg;
-    }
-    const h1 = h_at(P_evap, 1);
-    const h3 = h_at(P_cond, 0);
+    const h1 = domeLookup(dome, P_evap, 1);
+    const h3 = domeLookup(dome, P_cond, 0);
     const h4 = h3;
     const cop = bilinear(xs, ys, grid.cop, te, tc);
 

@@ -55,6 +55,23 @@
           + z11 * tx       * ty);
   }
 
+  /** Linear-interpolated dome lookup.
+   *  Returns h_liq (q < 0.5) or h_vap (q >= 0.5) at pressure `P_kpa`, by
+   *  bracketing the two adjacent dome rows in pressure and lerping.
+   *  Falls back to the nearest end if `P_kpa` is outside the dome range.
+   */
+  function domeLookup(dome, P_kpa, q) {
+    const field = q < 0.5 ? "h_liq_kjkg" : "h_vap_kjkg";
+    for (let i = 0; i < dome.length - 1; i++) {
+      const a = dome[i], b = dome[i + 1];
+      if (P_kpa >= a.P_kpa && P_kpa <= b.P_kpa) {
+        const f = (P_kpa - a.P_kpa) / (b.P_kpa - a.P_kpa);
+        return a[field] + f * (b[field] - a[field]);
+      }
+    }
+    return P_kpa <= dome[0].P_kpa ? dome[0][field] : dome[dome.length - 1][field];
+  }
+
   function staticDir() {
     const here = window.location.pathname.replace(/\/$/, "");
     const parts = here.split("/").filter(Boolean);
@@ -62,5 +79,5 @@
     return up + "_static";
   }
 
-  root.tmhpPlot = { tokens, loadJson, bilinear, staticDir };
+  root.tmhpPlot = { tokens, loadJson, bilinear, domeLookup, staticDir };
 })(window);
