@@ -70,6 +70,8 @@ test-results/
 docs/build/
 docs/source/_build/
 docs/source/api/generated/
+# Vendor JS libs are intentionally tracked (the `lib/` rule above is for Python build artefacts)
+!docs/source/_static/js/lib/
 
 # ===========================
 # Jupyter Notebooks
