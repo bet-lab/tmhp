@@ -11,6 +11,7 @@
 **Spec deviations from `2026-05-18-docs-interactive-ux-design.md`:**
 - Build-time scripts live at `scripts/data/` (not `docs/source/_scripts/`) to follow the existing `scripts/validation/` and `scripts/visualization/` convention and to reuse `CATALOGUE` from `scripts/validation/samsung_ehs_parity.py`.
 - `gen_timeseries_data.py` runs a real ASHPB dynamic simulation via the tmhp library to produce realistic data.
+- `cycle_grid` in the per-refrigerant JSON ships only `{t_evap_c, t_cond_c, cop}` — the originally-planned `m_dot_kgs` and `q_cond_kw` arrays were dropped in commit `f8bcdfa` after code review showed they were anchored to a placeholder 0.5 kg/s and produced ~180 kW per cell. ṁ and Q_cond are heat-pump-system outputs, not refrigerant-cycle properties; they belong on the model pages, not the P–h widget. Task 6 (`ph-chart.js`) accordingly shows only COP in the side panel. The plan code blocks below for Task 6 still reference the dropped keys; the actual implementation reflects this deviation.
 
 ---
 
