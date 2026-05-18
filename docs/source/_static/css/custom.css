@@ -803,3 +803,30 @@ button.copybtn {
 button.copybtn:hover {
     opacity: 1;
 }
+
+/* ===========================================================================
+ * Interactive layer hooks (filled in by Phase 1 + Phase 2 commits).
+ *
+ * Sections that ship empty here are *placeholders for landmark comments*,
+ * not for unfinished code. Each pattern's commit adds its own rules under
+ * the matching section header below, so all interactive-layer CSS stays
+ * grouped at the bottom of the file and the existing Radix-DNA layer above
+ * remains untouched.
+ * ------------------------------------------------------------------------- */
+
+/* --- Plot containers (① ② ③) --- */
+.tmhp-plot-mount {
+    margin: 1.5em 0;
+    font-family: var(--rx-font-sans);
+}
+.tmhp-plot-mount svg { display: block; max-width: 100%; height: auto; }
+.tmhp-plot-mount .axis text { font-size: 12px; fill: var(--rx-ink-muted); }
+.tmhp-plot-mount .axis line,
+.tmhp-plot-mount .axis path { stroke: var(--rx-hairline); }
+
+/* --- Table widget (④) --- */
+/* --- Tabs (⑤) --- */
+/* --- Glossary popover (⑥) --- */
+/* --- Hero motion (⑦) --- */
+/* --- Cmd+K palette (⑧) --- */
+/* --- Reading progress + scroll-spy + anchor copy (⑨) --- */
