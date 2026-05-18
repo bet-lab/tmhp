@@ -24,13 +24,6 @@ your own analysis.
         Extend the 24-hour Getting Started example with a real DHW
         draw profile, a sinusoidal outdoor schedule, and CSV output.
 
-    .. grid-item-card:: Compose subsystems
-        :link: compose-subsystems
-        :link-type: doc
-
-        Wire a ``SolarThermalCollector`` onto ``ASHPB_STC_preheat`` and
-        feed irradiance schedules into ``analyze_dynamic``.
-
     .. grid-item-card:: Visualize the thermodynamic cycle
         :link: visualize-the-cycle
         :link-type: doc
@@ -44,5 +37,4 @@ your own analysis.
 
     swap-refrigerant
     realistic-dynamic-simulation
-    compose-subsystems
     visualize-the-cycle

@@ -94,8 +94,8 @@ Common next moves
   subclass (``ASHPB_STC_preheat``, ``ASHPB_STC_tank``, ``ASHPB_PV_ESS``,
   or the GSHPB counterparts) and pass the additional schedules
   (``I_DN_schedule``, ``I_dH_schedule``, ``T_sup_w_schedule``) as
-  documented under :doc:`../api/models/ashpb` and
-  :doc:`../api/models/gshpb`.
+  documented under :doc:`../models/ashpb` and
+  :doc:`../models/gshpb`.
 
 .. note::
 

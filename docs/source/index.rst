@@ -56,6 +56,14 @@ per-unit recalibration.
         Why first-principles, how the cycle is assembled, and
         how to read the diagnostic flags every call returns.
 
+    .. grid-item-card:: Models
+        :link: models/index
+        :link-type: doc
+
+        ASHPB / GSHPB / WSHPB plus the space-conditioning ASHP /
+        GSHP — each one a 1-stop page with source-side mechanics,
+        composed subsystem variants, and API reference.
+
     .. grid-item-card:: Tutorials
         :link: tutorials/index
         :link-type: doc
@@ -91,6 +99,7 @@ per-unit recalibration.
 
    getting-started/index
    concepts/index
+   models/index
    tutorials/index
    api/index
    validation/index

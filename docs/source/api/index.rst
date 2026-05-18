@@ -2,52 +2,15 @@
 API Reference
 =============
 
-Complete API documentation for the ``tmhp`` package, organized by
-module group. The system-level **Models** come first — that's what
-most users instantiate — followed by the lower-level **Support
-modules** the models compose internally.
-
-Models
-======
-
-System-level heat pump models. Each model couples a refrigerant cycle to a
-source side (air, ground, water) and a sink side (DHW tank, building load,
-hybrid PV / STC / ESS configurations).
-
-.. grid:: 2
-    :gutter: 3
-
-    .. grid-item-card:: Air-source heat pump boilers
-        :link: models/ashpb
-        :link-type: doc
-
-        ASHPB core model plus three composed variants:
-        STC preheat, STC stratified tank, PV + ESS.
-
-    .. grid-item-card:: Ground-source heat pump boilers
-        :link: models/gshpb
-        :link-type: doc
-
-        GSHPB core model with g-function borehole, plus
-        STC preheat, STC stratified tank, PV + ESS variants.
-
-    .. grid-item-card:: Water-source heat pump boiler
-        :link: models/wshpb
-        :link-type: doc
-
-        Dynamic WSHPB model.
-
-    .. grid-item-card:: Space-conditioning heat pumps
-        :link: models/space-conditioning
-        :link-type: doc
-
-        Air-source and ground-source heat pumps for
-        building heating and cooling loads.
+Reference for the ``tmhp`` package's support modules — the
+lower-level building blocks the system models compose internally.
+For the system-level models you instantiate directly (ASHPB, GSHPB,
+WSHPB, ASHP, GSHP), see :doc:`../models/index`.
 
 Support modules
 ===============
 
-Lower-level building blocks used by the system models above.
+Lower-level building blocks used by the system models.
 
 .. grid:: 2
     :gutter: 3
@@ -104,5 +67,4 @@ Lower-level building blocks used by the system models above.
     :maxdepth: 2
     :hidden:
 
-    models/index
     support/index

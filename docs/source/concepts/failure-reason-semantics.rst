@@ -148,7 +148,8 @@ Where this is defined in the code
 The diagnostic flag is set inside ``analyze_steady`` for the five
 core models. See the docstrings under:
 
-- :doc:`../api/models/ashpb`
-- :doc:`../api/models/gshpb`
-- :doc:`../api/models/wshpb`
-- :doc:`../api/models/space-conditioning`
+- :doc:`../models/ashpb`
+- :doc:`../models/gshpb`
+- :doc:`../models/wshpb`
+- :doc:`../models/ashp`
+- :doc:`../models/gshp`

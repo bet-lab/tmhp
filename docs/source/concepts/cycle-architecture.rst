@@ -107,13 +107,13 @@ Every system reuses the same closed cycle — only the blocks marked
      const nodes = [
        { id: "SRC",  type: "src",    title: "Source side",      sub: "air · ground · water",
          code: "ashpb.py / gshpb.py / wshpb.py — outdoor coil, borehole g-function, prescribed water inlet",
-         api:  "cycle-architecture.html#source-side-where-heat-comes-from" },
+         api:  "../models/index.html" },
        { id: "EVAP", type: "cycle",  title: "Evaporator HX",    sub: "ε-NTU",
          code: "_calc_state: T_evap_sat_K = T0_K − dT_ref_evap",
          api:  "../api/support/heat-transfer.html" },
        { id: "CMP",  type: "cycle",  title: "Compressor",       sub: "η_is · η_vol · η_mech",
          code: "_calc_state lines 410–471: h_cmp_out via η_isen, m_dot = V_disp·ρ·η_vol·rps",
-         api:  "../api/models/ashpb.html" },
+         api:  "../models/ashpb.html" },
        { id: "COND", type: "cycle",  title: "Condenser HX",     sub: "ε-NTU",
          code: "_calc_state: T_cond_sat_K = T_tank_w_K + dT_ref_cond, UA_cond_design",
          api:  "../api/support/heat-transfer.html" },
@@ -252,67 +252,10 @@ free parameter and chosen by minimizing compressor power, so the
 cycle closes on a physical optimum rather than on a fitted
 coefficient.
 
-Source side: where heat comes from
-==================================
-
-.. list-table::
-    :header-rows: 1
-    :widths: 25 35 40
-
-    * - Source
-      - Component
-      - Model class family
-    * - **Air**
-      - Outdoor coil + variable-speed fan, ε-NTU air side
-      - :doc:`../api/models/ashpb`,
-        :doc:`../api/models/space-conditioning`
-    * - **Ground**
-      - Borehole field, g-function dynamics
-      - :doc:`../api/models/gshpb`
-    * - **Water**
-      - Water loop, prescribed inlet temperature
-      - :doc:`../api/models/wshpb`
-
-The borehole g-function
------------------------
-
-For ground-source models, the source-side dynamics are encoded in a
-**g-function** — the dimensionless thermal response of a borehole
-field to a unit heat-extraction step. ``tmhp`` precomputes the
-g-function once via
-`pygfunction <https://github.com/MassimoCimmino/pygfunction>`_ and
-interpolates it during the simulation, so the per-step cost stays
-constant whether the field is one borehole or a hundred.
-
-.. figure:: ../_static/g_function_curve.svg
-    :alt: g-function vs ln(t/t_s) for three rectangular borehole
-        field geometries: 1×1, 2×2, and 4×4.
-    :align: center
-    :width: 100%
-
-    Dimensionless g-function for three rectangular borehole-field
-    geometries. The 1 × 1 field is the single-borehole baseline;
-    2 × 2 and 4 × 4 diverge as borehole-to-borehole thermal
-    interference accumulates over the multi-year horizon. Generated
-    by ``scripts/visualization/g_function_curve.py``.
-
-Sink side: where heat goes
-==========================
-
-.. list-table::
-    :header-rows: 1
-    :widths: 30 70
-
-    * - Sink
-      - What's modelled on top of the cycle
-    * - **DHW tank**
-      - Single-node or stratified tank energy balance, draw
-        schedule, mains supply temperature, optional UV treatment.
-        Used by every ``*HeatPumpBoiler`` class.
-    * - **Building load**
-      - Zone temperature / load proxy. Used by
-        :class:`~tmhp.air_source_heat_pump.AirSourceHeatPump`
-        and :class:`~tmhp.ground_source_heat_pump.GroundSourceHeatPump`.
+Per-source mechanics — the outdoor coil for ASHP, the g-function
+borehole for GSHP, the prescribed water inlet for WSHP — live on
+each model's page under :doc:`../models/index`. The sink side
+(DHW tank or building load) is documented the same way.
 
 Composed subsystems
 ===================

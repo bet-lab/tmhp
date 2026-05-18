@@ -79,13 +79,14 @@ html_theme_options = {
     # keeps headings, links, and the active-nav indicator on one consistent hue.
     "accent_color": "iris",
     "github_url": "https://github.com/bet-lab/tmhp",
-    # Expand top-level toctree captions in the sidebar by default so the four
-    # planned sections (Getting Started, Concepts, Tutorials, API, Validation)
-    # are visible without the reader hunting for them.
+    # Expand top-level toctree captions in the sidebar by default so the six
+    # planned sections (Getting Started, Concepts, Models, Tutorials, API,
+    # Validation) are visible without the reader hunting for them.
     "globaltoc_expand_depth": 1,
     "nav_links": [
         {"title": "Getting Started", "url": "getting-started/index"},
         {"title": "Concepts", "url": "concepts/index"},
+        {"title": "Models", "url": "models/index"},
         {"title": "Tutorials", "url": "tutorials/index"},
         {"title": "API Reference", "url": "api/index"},
         {"title": "Validation", "url": "validation/index"},
