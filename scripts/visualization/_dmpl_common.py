@@ -22,15 +22,66 @@ DEFAULT_MARGIN = "2%"
 
 
 def finalize(fig: Figure, out_stem: Path, *, margin: str | float = DEFAULT_MARGIN,
+             ml: str | float | None = None,
+             mr: str | float | None = None,
+             mt: str | float | None = None,
+             mb: str | float | None = None,
              formats: tuple[str, ...] = ("svg",)) -> None:
     """Apply the standard layout buffer and save through ``dm.save_formats``.
 
     ``out_stem`` is a path without extension (``dm.save_formats`` appends
     them itself). ``margin`` is forwarded to ``dm.simple_layout`` — pass a
-    smaller value (e.g. ``"1%"``) for ultra-tight gallery thumbnails.
+    smaller value (e.g. ``"1%"``) for ultra-tight gallery thumbnails. The
+    per-side ``ml/mr/mt/mb`` overrides forward to ``simple_layout`` for
+    cases where one edge needs extra headroom (e.g. wide-aspect figures
+    with ``set_title(loc="left")`` — ``simple_layout``'s measurement of
+    ``_left_title`` is unreliable on those, so pass ``mt`` explicitly).
+
+    After layout we verify nothing extends past the canvas: ``simple_layout``
+    occasionally undercounts the headroom needed by left-aligned titles or
+    legends, and rather than silently shipping a clipped figure we raise
+    so the script fails loudly and the caller picks a margin that fits.
     """
-    dm.simple_layout(fig, margin=margin)
+    dm.simple_layout(fig, margin=margin, ml=ml, mr=mr, mt=mt, mb=mb)
+    _assert_no_overflow(fig)
     dm.save_formats(fig, str(out_stem), formats=formats)
+
+
+def _assert_no_overflow(fig: Figure, tol_in: float = 1.0 / 144.0) -> None:
+    """Raise if any artist's tight bbox extends past the figure canvas.
+
+    ``get_tightbbox()`` returns a ``TransformedBbox`` whose coordinates
+    are in inches (the inverse-dpi affine sits on top of the pixel-space
+    inner bbox), so we compare against ``fig.get_size_inches()`` rather
+    than ``fig.bbox.size`` (pixels) to keep the units aligned. The
+    default ``tol_in`` is ½ px at 72 dpi — small enough that genuine
+    overflows fire while floating-point dust on a flush layout doesn't.
+    """
+    fig.canvas.draw()
+    fw_in, fh_in = fig.get_size_inches()
+    tb = fig.get_tightbbox()
+    over = {
+        "left":   max(0.0, -tb.x0),
+        "bottom": max(0.0, -tb.y0),
+        "right":  max(0.0, tb.x1 - fw_in),
+        "top":    max(0.0, tb.y1 - fh_in),
+    }
+    worst = max(over.values())
+    if worst > tol_in:
+        # Inches → display pixels for the diagnostic, so the number lines
+        # up with what a user sees when they zoom into the SVG preview.
+        dpi = fig.dpi
+        bumps = ", ".join(
+            f"{side}={ov * dpi:.1f}px" for side, ov in over.items() if ov > tol_in
+        )
+        side_to_kw = {"left": "ml", "bottom": "mb", "right": "mr", "top": "mt"}
+        worst_side = max(over, key=over.__getitem__)
+        raise RuntimeError(
+            f"Figure content overflows canvas ({bumps}; "
+            f"canvas={fw_in * dpi:.0f}x{fh_in * dpi:.0f}px). "
+            f"Increase the corresponding side margin — e.g. pass "
+            f"`{side_to_kw[worst_side]}=\"<larger %>\"` to finalize()."
+        )
 
 
 def apply_style(preset: str = "report", *, hashsalt: str | None = None) -> None:

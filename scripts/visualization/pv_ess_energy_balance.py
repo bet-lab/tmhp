@@ -99,9 +99,6 @@ def main() -> None:
     kwh_direct = float(direct.sum() * dt_h)
     kwh_dump   = max(0.0, kwh_pv - kwh_direct - kwh_chg)
 
-    # Aspect bumped up from 5/12 to 6/12 to leave headroom above the
-    # panel titles — at 5/12 the "(a)" / "(b)" prefixes were clipping
-    # against the canvas top.
     fig, (ax_t, ax_b) = plt.subplots(
         1, 2,
         figsize=dm.figsize("17cm", 6 / 12),
@@ -174,7 +171,12 @@ def main() -> None:
     )
 
     out = static_path("pv_ess_energy_balance.svg").with_suffix("")
-    finalize(fig, out, margin="3%")
+    # mt bumped to 8% because the wide-aspect (6/12) canvas leaves
+    # ``simple_layout`` undercounting the headroom needed by the
+    # ``set_title(loc="left")`` text — the union bbox it measures
+    # converges before the ``_left_title`` artist's final position is
+    # accounted for, so the title overshoots the canvas top at 3%.
+    finalize(fig, out, margin="3%", mt="8%")
     plt.close(fig)
     print(f"wrote {out}.svg")
 
