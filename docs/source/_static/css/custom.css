@@ -824,6 +824,44 @@ button.copybtn:hover {
 .tmhp-plot-mount .axis line,
 .tmhp-plot-mount .axis path { stroke: var(--rx-hairline); }
 
+.ph-chart .ph-chrome {
+    display: flex; gap: var(--rx-space-4);
+    flex-wrap: wrap; align-items: center;
+    padding: var(--rx-space-3); border: 1px solid var(--rx-hairline);
+    border-radius: var(--rx-radius-3);
+    background: var(--rx-gray-1);
+}
+.ph-chart .ph-chrome label {
+    display: flex; gap: var(--rx-space-2); align-items: center;
+    font-size: var(--rx-fs-2); color: var(--rx-ink-muted);
+}
+.ph-chart .ph-chrome select,
+.ph-chart .ph-chrome input[type="range"] {
+    accent-color: var(--rx-accent-9);
+}
+.ph-chart .ph-canvas-wrap {
+    display: grid; grid-template-columns: 1fr 160px;
+    gap: var(--rx-space-4); margin-top: var(--rx-space-3);
+    align-items: start;
+}
+.ph-chart .ph-readout {
+    display: flex; flex-direction: column; gap: var(--rx-space-2);
+    padding: var(--rx-space-3);
+    background: var(--rx-accent-3);
+    border-radius: var(--rx-radius-3);
+}
+.ph-chart .ph-readout .metric {
+    display: flex; justify-content: space-between; font-size: var(--rx-fs-2);
+}
+.ph-chart .ph-readout .metric .label { color: var(--rx-ink-muted); }
+.ph-chart .ph-readout .metric .value {
+    color: var(--rx-accent-11); font-weight: var(--rx-fw-medium);
+    font-variant-numeric: tabular-nums;
+}
+@media (max-width: 720px) {
+    .ph-chart .ph-canvas-wrap { grid-template-columns: 1fr; }
+}
+
 /* --- Table widget (④) --- */
 /* --- Tabs (⑤) --- */
 /* --- Glossary popover (⑥) --- */

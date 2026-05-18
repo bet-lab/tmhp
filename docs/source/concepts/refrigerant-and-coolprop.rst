@@ -14,6 +14,15 @@ CoolProp-related failures.
 The contract
 ============
 
+.. raw:: html
+
+   <div id="ph-chart-mount"
+        data-refrigerants="R32,R290,R134a,R1234yf"
+        data-default="R32"></div>
+   <script src="../_static/js/lib/d3.v7.custom.min.js"></script>
+   <script src="../_static/js/plots/_plot-common.js"></script>
+   <script src="../_static/js/plots/ph-chart.js"></script>
+
 Any refrigerant CoolProp supports as a pure fluid or a mixture
 that CoolProp can resolve via its built-in alias table is usable
 out of the box:
