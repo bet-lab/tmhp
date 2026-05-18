@@ -60,6 +60,67 @@ cycle.
 Composed variants
 =================
 
+.. tab-set::
+   :class: composition-tabs
+
+   .. tab-item:: Base
+
+      The standalone ASHPB: outdoor coil ε-NTU evaporator, R32 cycle,
+      DHW tank charge.
+
+      .. code-block:: python
+
+         from tmhp import AirSourceHeatPumpBoiler
+
+         ashpb = AirSourceHeatPumpBoiler(ref="R32")
+         result = ashpb.analyze_steady(
+             T_tank_w=55.0,
+             T0=7.0,
+             Q_ref_cond=8_000,
+         )
+
+   .. tab-item:: + STC preheat
+
+      Adds a flat-plate STC that preheats mains water entering the
+      tank. Reduces the tank-charge duty the heat pump has to deliver.
+
+      .. code-block:: python
+
+         from tmhp import ASHPB_STC_preheat
+         from tmhp.subsystems import SolarThermalCollector
+
+         stc = SolarThermalCollector(A_stc=4.0, stc_tilt=35.0, stc_azimuth=180.0)
+         model = ASHPB_STC_preheat(stc=stc, ref="R32")
+
+   .. tab-item:: + STC stratified
+
+      STC charges a separate top node of a stratified tank; the heat
+      pump charges the bottom. Top-of-tank water is drawn first.
+
+      .. code-block:: python
+
+         from tmhp import ASHPB_STC_tank
+         from tmhp.subsystems import SolarThermalCollector
+
+         stc = SolarThermalCollector(A_stc=4.0, stc_tilt=35.0, stc_azimuth=180.0)
+         model = ASHPB_STC_tank(stc=stc, ref="R32")
+
+   .. tab-item:: + PV / ESS
+
+      Photovoltaic generation + ESS preferentially feeds the
+      compressor and auxiliaries.
+
+      .. code-block:: python
+
+         from tmhp import ASHPB_PV_ESS
+         from tmhp.subsystems import EnergyStorageSystem, PhotovoltaicSystem
+
+         model = ASHPB_PV_ESS(
+             pv=PhotovoltaicSystem(),
+             ess=EnergyStorageSystem(),
+             ref="R32",
+         )
+
 STC preheat
 -----------
 

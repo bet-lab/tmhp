@@ -953,6 +953,22 @@ button.copybtn:hover {
 .hidden-by-js { display: none !important; }
 
 /* --- Tabs (⑤) --- */
+/* sphinx-design tabs reskin to match Radix-DNA accent. */
+.composition-tabs .sd-tab-set { border-bottom: 1px solid var(--rx-hairline); }
+.composition-tabs .sd-tab-label {
+    padding: var(--rx-space-2) var(--rx-space-4);
+    font-size: var(--rx-fs-2);
+    color: var(--rx-ink-muted);
+    border-bottom: 2px solid transparent;
+    transition: color 120ms ease, border-color 120ms ease;
+}
+.composition-tabs .sd-tab-label:hover { color: var(--rx-ink); }
+.composition-tabs input.sd-tab-input:checked + label.sd-tab-label {
+    color: var(--rx-accent-11);
+    border-bottom-color: var(--rx-accent-9);
+    font-weight: var(--rx-fw-medium);
+}
+.composition-tabs .sd-tab-content { padding: var(--rx-space-4) 0; }
 /* --- Glossary popover (⑥) --- */
 /* --- Hero motion (⑦) --- */
 /* --- Cmd+K palette (⑧) --- */

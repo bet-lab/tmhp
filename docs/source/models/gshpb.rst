@@ -72,6 +72,72 @@ Usage patterns for the three variants are identical to ASHPB's —
 see :doc:`ashpb` for full STC preheat and PV + ESS examples. Only
 the base class swaps; the schedules and routing are unchanged.
 
+.. tab-set::
+   :class: composition-tabs
+
+   .. tab-item:: Base
+
+      The standalone GSHPB: borehole-field g-function source, R32 cycle,
+      DHW tank charge.
+
+      .. code-block:: python
+
+         from tmhp import GroundSourceHeatPumpBoiler
+
+         gshpb = GroundSourceHeatPumpBoiler(
+             ref="R410A",
+             N_1=1, N_2=1,
+             H_b=150.0,
+         )
+         result = gshpb.analyze_steady(
+             T_tank_w=55.0,
+             T_source=10.0,
+             Q_ref_cond=8_000,
+         )
+
+   .. tab-item:: + STC preheat
+
+      Adds a flat-plate STC that preheats mains water entering the
+      tank. Reduces the tank-charge duty the heat pump has to deliver.
+
+      .. code-block:: python
+
+         from tmhp import GSHPB_STC_preheat
+         from tmhp.subsystems import SolarThermalCollector
+
+         stc = SolarThermalCollector(A_stc=4.0, stc_tilt=35.0, stc_azimuth=180.0)
+         model = GSHPB_STC_preheat(stc=stc, ref="R410A", N_1=1, N_2=1, H_b=150.0)
+
+   .. tab-item:: + STC stratified
+
+      STC charges a separate top node of a stratified tank; the heat
+      pump charges the bottom. Top-of-tank water is drawn first.
+
+      .. code-block:: python
+
+         from tmhp import GSHPB_STC_tank
+         from tmhp.subsystems import SolarThermalCollector
+
+         stc = SolarThermalCollector(A_stc=4.0, stc_tilt=35.0, stc_azimuth=180.0)
+         model = GSHPB_STC_tank(stc=stc, ref="R410A", N_1=1, N_2=1, H_b=150.0)
+
+   .. tab-item:: + PV / ESS
+
+      Photovoltaic generation + ESS preferentially feeds the
+      compressor and auxiliaries.
+
+      .. code-block:: python
+
+         from tmhp import GSHPB_PV_ESS
+         from tmhp.subsystems import EnergyStorageSystem, PhotovoltaicSystem
+
+         model = GSHPB_PV_ESS(
+             pv=PhotovoltaicSystem(),
+             ess=EnergyStorageSystem(),
+             ref="R410A",
+             N_1=1, N_2=1, H_b=150.0,
+         )
+
 STC preheat
 -----------
 
