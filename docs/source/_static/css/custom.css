@@ -1017,4 +1017,41 @@ button.copybtn:hover {
     .hero-sketch { opacity: 1; transform: none; transition: none; }
 }
 /* --- Cmd+K palette (⑧) --- */
+.cmdk-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.35);
+    display: none; align-items: flex-start; justify-content: center;
+    padding-top: 12vh;
+}
+.cmdk-overlay.open { display: flex; }
+.cmdk-modal {
+    width: min(560px, 92vw);
+    background: var(--rx-gray-1);
+    border: 1px solid var(--rx-hairline);
+    border-radius: var(--rx-radius-4);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    overflow: hidden;
+}
+.cmdk-input {
+    width: 100%; padding: 14px 18px; border: 0;
+    font-family: var(--rx-font-sans); font-size: var(--rx-fs-4);
+    background: transparent; color: var(--rx-ink);
+    border-bottom: 1px solid var(--rx-hairline);
+}
+.cmdk-input:focus { outline: none; }
+.cmdk-list {
+    list-style: none; margin: 0; padding: 4px;
+    max-height: 50vh; overflow-y: auto;
+}
+.cmdk-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px; border-radius: var(--rx-radius-2);
+    font-size: var(--rx-fs-3); cursor: pointer;
+    color: var(--rx-ink);
+}
+.cmdk-item .cmdk-doc {
+    font-family: var(--rx-font-mono); font-size: var(--rx-fs-1);
+    color: var(--rx-ink-muted);
+}
+.cmdk-item.active { background: var(--rx-accent-3); color: var(--rx-accent-11); }
 /* --- Reading progress + scroll-spy + anchor copy (⑨) --- */

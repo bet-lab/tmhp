@@ -15,4 +15,6 @@
   if (window.tmhpGlossary && typeof window.tmhpGlossary.attach === "function") {
     document.addEventListener("DOMContentLoaded", window.tmhpGlossary.attach);
   }
+
+  // ⑧ cmdk — module self-wires its keydown listener; nothing to do here.
 })();
