@@ -43,6 +43,12 @@ KJACR 2026 paper (see citations below). Predicted values come
 from re-running the released code via
 ``scripts/validation/samsung_ehs_parity.py``.
 
+.. raw:: html
+
+   <div id="validation-table-mount"></div>
+   <script src="../_static/js/plots/_plot-common.js"></script>
+   <script src="../_static/js/widgets/validation-table.js"></script>
+
 .. dropdown:: Show all 15 operating points
     :icon: table
     :color: primary
@@ -51,7 +57,7 @@ from re-running the released code via
     .. list-table::
         :header-rows: 1
         :widths: 5 12 10 14 14 14 8 10
-        :class: validation-table
+        :class: validation-table-static
 
         * - ID
           - :math:`T_{\mathrm{LWT}}\ [\mathrm{°C}]`

@@ -479,13 +479,13 @@ table.docutils th {
 
 /* Validation table: tighten numeric columns and right-align numbers so the
  * per-point grid is scannable instead of zig-zagging. */
-table.validation-table td,
-table.validation-table th {
+table.validation-table-static td,
+table.validation-table-static th {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
-table.validation-table td:first-child,
-table.validation-table th:first-child {
+table.validation-table-static td:first-child,
+table.validation-table-static th:first-child {
     text-align: center;
 }
 
@@ -910,6 +910,48 @@ button.copybtn:hover {
 }
 
 /* --- Table widget (④) --- */
+.validation-table .vt-chrome {
+    display: flex; gap: var(--rx-space-3); margin-bottom: var(--rx-space-3);
+    flex-wrap: wrap; align-items: center;
+}
+.validation-table .vt-filter {
+    flex: 1; min-width: 200px; padding: 6px 10px;
+    border: 1px solid var(--rx-hairline); border-radius: var(--rx-radius-3);
+    font-family: var(--rx-font-sans); font-size: var(--rx-fs-2);
+    background: var(--rx-gray-1); color: var(--rx-ink);
+}
+.validation-table .vt-chip {
+    padding: 4px 10px; border: 1px solid var(--rx-hairline);
+    background: var(--rx-gray-1); border-radius: var(--rx-radius-full);
+    font-size: var(--rx-fs-1); cursor: pointer;
+    color: var(--rx-ink-muted);
+}
+.validation-table .vt-chip.active {
+    background: var(--rx-accent-3); border-color: var(--rx-accent-6);
+    color: var(--rx-accent-11); font-weight: var(--rx-fw-medium);
+}
+.validation-table .vt-table {
+    width: 100%; border-collapse: collapse; font-size: var(--rx-fs-2);
+}
+.validation-table .vt-table th,
+.validation-table .vt-table td {
+    padding: 6px 8px; text-align: right;
+    border-bottom: 1px solid var(--rx-hairline-soft);
+    font-variant-numeric: tabular-nums;
+}
+.validation-table .vt-table th:first-child,
+.validation-table .vt-table td:first-child,
+.validation-table .vt-table th:nth-child(2),
+.validation-table .vt-table td:nth-child(2) { text-align: left; }
+.validation-table .vt-table th {
+    cursor: pointer; user-select: none;
+    color: var(--rx-ink-muted); font-weight: var(--rx-fw-medium);
+}
+.validation-table .vt-row.is-selected { background: var(--rx-accent-3); }
+.validation-table .vt-table td.ok   { color: var(--rx-green-11); }
+.validation-table .vt-table td.warn { color: var(--rx-amber-11); }
+.hidden-by-js { display: none !important; }
+
 /* --- Tabs (⑤) --- */
 /* --- Glossary popover (⑥) --- */
 /* --- Hero motion (⑦) --- */
