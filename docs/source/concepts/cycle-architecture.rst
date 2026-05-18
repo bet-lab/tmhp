@@ -96,7 +96,7 @@ Every system reuses the same closed cycle — only the blocks marked
      reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP.
    </p>
 
-   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.0/dist/cytoscape.min.js"></script>
+   <script src="../_static/js/lib/cytoscape.min.js"></script>
    <script>
    (function () {
      if (!document.getElementById("cy-arch")) return;
