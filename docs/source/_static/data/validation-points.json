@@ -6,9 +6,9 @@
     "t_sink_c": 40,
     "t_tank_c": 37.5,
     "q_cat_kw": 13.45,
-    "q_mod_kw": 13.45,
+    "q_mod_kw": 13.449999999999998,
     "cop_cat": 2.3,
-    "cop_mod": 2.879907322965041,
+    "cop_mod": 2.369889672093654,
     "failure_reason": "none"
   },
   {
@@ -20,7 +20,7 @@
     "q_cat_kw": 12.42,
     "q_mod_kw": 12.42,
     "cop_cat": 3.04,
-    "cop_mod": 3.614610969155659,
+    "cop_mod": 3.825583802558175,
     "failure_reason": "none"
   },
   {
@@ -30,9 +30,9 @@
     "t_sink_c": 40,
     "t_tank_c": 37.5,
     "q_cat_kw": 14.65,
-    "q_mod_kw": 14.650000000000002,
+    "q_mod_kw": 14.65,
     "cop_cat": 5.07,
-    "cop_mod": 4.354077457596011,
+    "cop_mod": 4.667100206786435,
     "failure_reason": "none"
   },
   {
@@ -42,9 +42,9 @@
     "t_sink_c": 40,
     "t_tank_c": 37.5,
     "q_cat_kw": 15.69,
-    "q_mod_kw": 15.689999999999998,
+    "q_mod_kw": 15.69,
     "cop_cat": 6.48,
-    "cop_mod": 5.235986837396933,
+    "cop_mod": 5.649865311639171,
     "failure_reason": "none"
   },
   {
@@ -54,9 +54,9 @@
     "t_sink_c": 40,
     "t_tank_c": 37.5,
     "q_cat_kw": 16.98,
-    "q_mod_kw": 16.979999999999997,
+    "q_mod_kw": 16.98,
     "cop_cat": 7.68,
-    "cop_mod": 6.411598433757618,
+    "cop_mod": 7.431128032802156,
     "failure_reason": "none"
   },
   {
@@ -68,7 +68,7 @@
     "q_cat_kw": 13.89,
     "q_mod_kw": 13.89,
     "cop_cat": 2.0,
-    "cop_mod": 2.474926554283265,
+    "cop_mod": 1.8445012565743728,
     "failure_reason": "none"
   },
   {
@@ -80,7 +80,7 @@
     "q_cat_kw": 13.27,
     "q_mod_kw": 13.27,
     "cop_cat": 2.56,
-    "cop_mod": 2.985679173588997,
+    "cop_mod": 3.044064908168496,
     "failure_reason": "none"
   },
   {
@@ -92,7 +92,7 @@
     "q_cat_kw": 14.76,
     "q_mod_kw": 14.76,
     "cop_cat": 3.86,
-    "cop_mod": 3.5073852761519575,
+    "cop_mod": 3.7082675578472832,
     "failure_reason": "none"
   },
   {
@@ -102,9 +102,9 @@
     "t_sink_c": 50,
     "t_tank_c": 47.5,
     "q_cat_kw": 15.97,
-    "q_mod_kw": 15.97,
+    "q_mod_kw": 15.970000000000004,
     "cop_cat": 4.78,
-    "cop_mod": 4.05483849305718,
+    "cop_mod": 4.3403267851241765,
     "failure_reason": "none"
   },
   {
@@ -116,7 +116,7 @@
     "q_cat_kw": 17.48,
     "q_mod_kw": 17.48,
     "cop_cat": 5.95,
-    "cop_mod": 4.996029796591609,
+    "cop_mod": 5.367194848416621,
     "failure_reason": "none"
   },
   {
@@ -126,9 +126,9 @@
     "t_sink_c": 65,
     "t_tank_c": 60.0,
     "q_cat_kw": 13.97,
-    "q_mod_kw": 13.970000000000004,
+    "q_mod_kw": 13.97,
     "cop_cat": 1.73,
-    "cop_mod": 2.0858828087640773,
+    "cop_mod": 1.4234068871206957,
     "failure_reason": "none"
   },
   {
@@ -140,7 +140,7 @@
     "q_cat_kw": 13.71,
     "q_mod_kw": 13.71,
     "cop_cat": 2.04,
-    "cop_mod": 2.4293997419683153,
+    "cop_mod": 2.3692275033267496,
     "failure_reason": "none"
   },
   {
@@ -150,9 +150,9 @@
     "t_sink_c": 65,
     "t_tank_c": 60.0,
     "q_cat_kw": 16.38,
-    "q_mod_kw": 16.379999999999995,
+    "q_mod_kw": 16.38,
     "cop_cat": 2.84,
-    "cop_mod": 2.7227102218383257,
+    "cop_mod": 2.7340578621824383,
     "failure_reason": "none"
   },
   {
@@ -162,9 +162,9 @@
     "t_sink_c": 65,
     "t_tank_c": 60.0,
     "q_cat_kw": 17.48,
-    "q_mod_kw": 17.48,
+    "q_mod_kw": 17.480000000000004,
     "cop_cat": 3.34,
-    "cop_mod": 3.047488310708896,
+    "cop_mod": 3.1684362792487155,
     "failure_reason": "none"
   },
   {
@@ -176,7 +176,7 @@
     "q_cat_kw": 18.84,
     "q_mod_kw": 18.84,
     "cop_cat": 4.04,
-    "cop_mod": 3.5740789938866055,
+    "cop_mod": 3.791646230888324,
     "failure_reason": "none"
   }
 ]

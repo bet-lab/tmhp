@@ -38,9 +38,7 @@ def test_saturation_dome_h_liquid_lt_h_vapor():
 def test_cycle_grid_shape():
     payload = build_refrigerant_payload("R32")
     grid = payload["cycle_grid"]
-    assert "t_evap_c" in grid and "t_cond_c" in grid
-    assert "cop" in grid and "m_dot_kgs" in grid
-    assert "q_cond_kw" in grid
+    assert set(grid.keys()) == {"t_evap_c", "t_cond_c", "cop"}
     n_evap = len(grid["t_evap_c"])
     n_cond = len(grid["t_cond_c"])
     assert len(grid["cop"]) == n_evap
@@ -56,3 +54,5 @@ def test_writes_per_refrigerant_files(tmp_path, monkeypatch):
         assert out.exists(), out
         payload = json.loads(out.read_text())
         assert payload["refrigerant"] == ref
+        assert {"saturation_dome", "isotherms", "cycle_grid"} <= payload.keys()
+        assert len(payload["cycle_grid"]["cop"]) == 21

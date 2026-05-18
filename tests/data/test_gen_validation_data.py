@@ -30,3 +30,5 @@ def test_writes_validation_json(tmp_path, monkeypatch):
     assert out.exists()
     payload = json.loads(out.read_text())
     assert len(payload) == 15
+    first = payload[0]
+    assert {"case_id", "refrigerant", "q_cat_kw", "q_mod_kw", "cop_cat", "cop_mod"} <= first.keys()

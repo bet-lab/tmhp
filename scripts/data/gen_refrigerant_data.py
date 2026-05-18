@@ -5,10 +5,12 @@ Output (per refrigerant) is written to
 
 * ``saturation_dome``  ~80 points along (T_red → P, h_liq, h_vap)
 * ``isotherms``        a handful of constant-T lines spanning [-30, +75 °C]
-* ``cycle_grid``       a 21×21 grid of (T_evap, T_cond) → COP, m_dot, Q_cond
+* ``cycle_grid``       a 21×21 grid of (T_evap, T_cond) → COP
 
 The frontend renders the dome + cycle points by bilinear-interpolating on
-the grid, so we don't need runtime CoolProp.
+the grid, so we don't need runtime CoolProp. COP is a property of the
+refrigerant cycle alone; Q_cond and ṁ are system-level outputs and live
+in the validation / timeseries payloads instead.
 """
 
 from __future__ import annotations
@@ -97,43 +99,35 @@ def cycle_at(refrigerant: str, t_evap_c: float, t_cond_c: float) -> dict[str, fl
     q_cond = h_2 - h_3
     cop = q_cond / w_comp if w_comp > 0 else float("nan")
 
-    m_dot = 0.5
-
     return {
         "h_1": h_1 / 1000.0, "h_2": h_2 / 1000.0,
         "h_3": h_3 / 1000.0, "h_4": h_4 / 1000.0,
         "P_evap_kpa": P_evap / 1000.0,
         "P_cond_kpa": P_cond / 1000.0,
         "cop": cop,
-        "m_dot_kgs": m_dot,
-        "q_cond_kw": m_dot * (q_cond / 1000.0),
     }
 
 
 def cycle_grid(refrigerant: str) -> dict:
     t_evap = np.linspace(*T_EVAP_RANGE_C, GRID_N).tolist()
     t_cond = np.linspace(*T_COND_RANGE_C, GRID_N).tolist()
-    cop = []
-    m_dot = []
-    q_cond = []
+    cop: list[list[float | None]] = []
+    skipped = 0
     for te in t_evap:
-        row_cop, row_m, row_q = [], [], []
+        row_cop: list[float | None] = []
         for tc in t_cond:
             try:
-                c = cycle_at(refrigerant, te, tc)
+                row_cop.append(cycle_at(refrigerant, te, tc)["cop"])
             except ValueError:
-                row_cop.append(None); row_m.append(None); row_q.append(None)
-                continue
-            row_cop.append(c["cop"])
-            row_m.append(c["m_dot_kgs"])
-            row_q.append(c["q_cond_kw"])
-        cop.append(row_cop); m_dot.append(row_m); q_cond.append(row_q)
+                row_cop.append(None)
+                skipped += 1
+        cop.append(row_cop)
+    if skipped:
+        print(f"  [{refrigerant}] cycle_grid: {skipped} cells skipped (CoolProp ValueError — typically near dome edges)")
     return {
         "t_evap_c": t_evap,
         "t_cond_c": t_cond,
         "cop": cop,
-        "m_dot_kgs": m_dot,
-        "q_cond_kw": q_cond,
     }
 
 

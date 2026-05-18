@@ -1,25 +1,17 @@
 """Reuse the CATALOGUE constant from samsung_ehs_parity and emit
 docs/source/_static/data/validation-points.json with the same 15 points,
-each evaluated by ASHPB so the docs widget reads off pre-computed numbers
-instead of re-running the simulation in the browser.
+each evaluated by the calibrated ASHPB so the docs widget reads off
+pre-computed numbers instead of re-running the simulation in the browser.
 """
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "scripts" / "validation"))
-from samsung_ehs_parity import CATALOGUE  # noqa: E402
-
-from tmhp import AirSourceHeatPumpBoiler  # noqa: E402
-
 from scripts.data._common import write_json
+from scripts.validation.samsung_ehs_parity import CATALOGUE, build_model
 
 
 def build_validation_points() -> list[dict]:
-    ashpb = AirSourceHeatPumpBoiler(ref="R32")
+    ashpb = build_model()
     out: list[dict] = []
     for op in CATALOGUE:
         result = ashpb.analyze_steady(

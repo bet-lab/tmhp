@@ -33,3 +33,5 @@ def test_writes_timeseries_json(tmp_path, monkeypatch):
     assert out.exists()
     payload = json.loads(out.read_text())
     assert len(payload["series"]) == 144
+    first = payload["series"][0]
+    assert {"t_min", "t_amb_c", "q_heat_kw", "p_cmp_kw"} <= first.keys()
