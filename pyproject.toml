@@ -119,5 +119,13 @@ ignore_missing_imports = true
 # explicitly allow it.
 allow_redefinition = true
 
+[tool.ty.environment]
+# Point Astral's ``ty`` type checker (used by Cursor/VSCode integrations)
+# at the project's ``.venv`` so it resolves numpy / matplotlib / dartwork
+# stubs. Without this ``ty`` falls back to a bare environment and emits
+# spurious "No attribute `ndarray` in module `numpy`" diagnostics on
+# every numpy call site.
+python = ".venv"
+
 [tool.uv.sources]
 dartwork-mpl = { git = "https://github.com/dartworklabs/dartwork-mpl" }
