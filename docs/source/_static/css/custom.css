@@ -1055,3 +1055,29 @@ button.copybtn:hover {
 }
 .cmdk-item.active { background: var(--rx-accent-3); color: var(--rx-accent-11); }
 /* --- Reading progress + scroll-spy + anchor copy (⑨) --- */
+.reading-progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0;
+    background: linear-gradient(90deg, var(--rx-accent-9), var(--rx-violet-9));
+    z-index: 10001; pointer-events: none;
+    transition: width 80ms ease-out;
+}
+.sy-rside a.is-active,
+nav.toc a.is-active,
+.toc-list a.is-active {
+    color: var(--rx-accent-11);
+    background: var(--rx-accent-3);
+    border-radius: var(--rx-radius-2);
+    padding: 0 6px;
+    font-weight: var(--rx-fw-medium);
+}
+.anchor-copy {
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--rx-ink-muted); margin-left: 6px;
+    font-size: 0.85em; opacity: 0; transition: opacity 100ms;
+    padding: 0 4px; border-radius: var(--rx-radius-1);
+}
+h2:hover .anchor-copy, h3:hover .anchor-copy { opacity: 1; }
+.anchor-copy:hover { color: var(--rx-accent-11); background: var(--rx-accent-3); }
+.anchor-copy.copied::after {
+    content: " copied"; font-size: 0.8em; color: var(--rx-green-11);
+}

@@ -17,4 +17,7 @@
   }
 
   // ⑧ cmdk — module self-wires its keydown listener; nothing to do here.
+
+  // ⑨ reading-progress + scroll-spy + anchor-copy — all three modules
+  // self-wire on load; nothing to do here.
 })();
