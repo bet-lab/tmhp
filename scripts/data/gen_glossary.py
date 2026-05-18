@@ -1,0 +1,101 @@
+"""Build docs/source/_static/data/glossary.json from a curated term list."""
+
+from __future__ import annotations
+
+from scripts.data._common import write_json
+
+
+TERMS: dict[str, dict[str, str]] = {
+    "epsilon-ntu": {
+        "name": "ε-NTU method",
+        "def": "Heat-exchanger effectiveness expressed as a function of NTU "
+               "and heat-capacity ratio C_r. Used for evaporator and "
+               "condenser heat transfer.",
+        "link": "concepts/cycle-architecture.html#the-shared-core",
+    },
+    "cop": {
+        "name": "COP (coefficient of performance)",
+        "def": "Useful heat output divided by electrical input. tmhp "
+               "distinguishes cycle COP from system COP (includes pumps/fans).",
+        "link": "concepts/why-physics-based.html",
+    },
+    "exv": {
+        "name": "EXV (electronic expansion valve)",
+        "def": "The expansion device that drops refrigerant pressure between "
+               "condenser and evaporator. Modeled as isenthalpic in tmhp.",
+        "link": "concepts/cycle-architecture.html",
+    },
+    "ashpb": {
+        "name": "ASHPB (air-source heat pump boiler)",
+        "def": "Air-source heat pump charging a DHW tank. Source side: "
+               "outdoor coil with prescribed air state.",
+        "link": "models/ashpb.html",
+    },
+    "gshpb": {
+        "name": "GSHPB (ground-source heat pump boiler)",
+        "def": "Ground-source heat pump charging a DHW tank. Source side: "
+               "borehole field via g-function.",
+        "link": "models/gshpb.html",
+    },
+    "wshpb": {
+        "name": "WSHPB (water-source heat pump boiler)",
+        "def": "Water-source heat pump charging a DHW tank. Source side: "
+               "prescribed water inlet temperature.",
+        "link": "models/wshpb.html",
+    },
+    "ashp": {
+        "name": "ASHP (air-source heat pump, space conditioning)",
+        "def": "Air-source heat pump driving a building load. "
+               "Same core cycle as ASHPB; sink swaps to a building model.",
+        "link": "models/ashp.html",
+    },
+    "gshp": {
+        "name": "GSHP (ground-source heat pump, space conditioning)",
+        "def": "Ground-source heat pump driving a building load. "
+               "Same core cycle as GSHPB; sink swaps to a building model.",
+        "link": "models/gshp.html",
+    },
+    "m-dot": {
+        "name": "ṁ (mass flow rate)",
+        "def": "Refrigerant mass flow. Set by compressor displacement, "
+               "volumetric efficiency, rotational speed, and suction density.",
+        "link": "concepts/cycle-architecture.html",
+    },
+    "dt-evap": {
+        "name": "ΔT_evap (evaporator approach)",
+        "def": "Difference between source-side fluid and evaporating "
+               "refrigerant. tmhp solves it as a free parameter that "
+               "minimizes compressor power.",
+        "link": "concepts/cycle-architecture.html#the-shared-core",
+    },
+    "eta-is": {
+        "name": "η_is (isentropic efficiency)",
+        "def": "Ratio of ideal (isentropic) compression work to actual work.",
+        "link": "models/ashpb.html",
+    },
+    "eta-vol": {
+        "name": "η_vol (volumetric efficiency)",
+        "def": "Fraction of compressor displacement volume actually filled "
+               "with refrigerant on each stroke.",
+        "link": "models/ashpb.html",
+    },
+    "eta-mech": {
+        "name": "η_mech (mechanical efficiency)",
+        "def": "Shaft-to-compression work ratio. Captures bearing and "
+               "transmission losses.",
+        "link": "models/ashpb.html",
+    },
+}
+
+
+def build_glossary() -> dict[str, dict[str, str]]:
+    """Return the canonical glossary mapping (term-id → entry)."""
+    return TERMS
+
+
+def main() -> None:
+    write_json("glossary.json", build_glossary())
+
+
+if __name__ == "__main__":
+    main()
