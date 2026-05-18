@@ -4,12 +4,15 @@ Runs a one-day dynamic simulation with a representative clear-day
 irradiance profile and a moderate DHW draw, then renders two side-by-
 side panels:
 
-  (a) timeseries — PV generation, ESS state-of-charge proxy
-      (cumulative net energy in/out), and HP electrical load.
+  (a) timeseries — PV generation, HP electrical load, grid import,
+      ESS charge and ESS discharge power. Storing and releasing share
+      a colour family (light vs. dark teal) so the eye links them.
   (b) stacked-bar daily energy ledger — kWh of PV that went directly
       to HP load, that charged the ESS, that was dumped; plus how much
       of the HP load came from PV, from ESS discharge, and from grid
-      import.
+      import. ``PV→ESS`` and ``ESS→HP`` use the same teal pair as the
+      timeseries lines, so the reader can trace the two flows across
+      panels at a glance.
 
 The second panel is what makes the design tradeoff readable: a small
 ESS dumps a lot of midday PV; a small PV system pulls in a lot of grid.
@@ -28,11 +31,37 @@ from tmhp import ASHPB_PV_ESS
 from tmhp.subsystems import EnergyStorageSystem, PhotovoltaicSystem
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _dmpl_common import COLORS, apply_style, finalize, static_path  # noqa: E402
+from _dmpl_common import COLORS, apply_style, finalize, panel_letter, static_path  # noqa: E402
 
 SIM_HOURS = 24
 DT_S = 60
 N_STEPS = SIM_HOURS * 3600 // DT_S
+
+# Same hue, different value: storing (PV→ESS) is the lighter shade,
+# releasing (ESS→HP) the darker — so the two flows read as related
+# without being confused with each other. The left-panel timeseries
+# uses saturated line colours; the right-panel bars use the same hue
+# family one-to-three steps lighter so the per-segment kWh
+# annotations sit on top of legible negative space without losing
+# the visual link across panels.
+ESS_CHG_COLOR = "oc.teal4"
+ESS_DIS_COLOR = "oc.teal8"
+PV_BAR_COLOR  = "oc.yellow3"
+ESS_CHG_BAR   = "oc.teal2"
+ESS_DIS_BAR   = "oc.teal5"
+DUMP_BAR      = "oc.gray3"
+GRID_BAR      = "oc.indigo4"
+
+# Defaults (A_pv=5 m², 1 kWh) leave 75% of midday PV unused. Sizing
+# was tuned together so the ledger shows movement on every column:
+# the 8 kWh ESS soaks up most of the midday surplus from 10 m² of PV
+# (≈10 kWh/day) without saturating immediately, the evening HP peak
+# is partly covered by the discharged ESS, and grid import still
+# accounts for the morning peak — the regime where the tradeoff is
+# legible. Pushing PV/ESS further drives dump → 0 and grid → 0, which
+# is a less interesting design point to illustrate.
+A_PV_M2  = 10.0
+C_ESS_J  = 28_800_000  # 8 kWh
 
 
 def _dhw_profile(n: int) -> np.ndarray:
@@ -59,8 +88,8 @@ def _clearsky_irradiance(n: int) -> tuple[np.ndarray, np.ndarray]:
 def main() -> None:
     apply_style("report", hashsalt="tmhp.visualization.pv-ess-energy-balance")
 
-    pv = PhotovoltaicSystem()
-    ess = EnergyStorageSystem()
+    pv = PhotovoltaicSystem(A_pv=A_PV_M2)
+    ess = EnergyStorageSystem(C_ess_max=C_ESS_J)
     model = ASHPB_PV_ESS(pv=pv, ess=ess, ref="R32")
 
     dhw = _dhw_profile(N_STEPS)
@@ -112,14 +141,19 @@ def main() -> None:
               label="HP electrical load")
     ax_t.plot(t_h, e_grid, color=COLORS["accent"], linewidth=dm.lw(0),
               linestyle=(0, (3, 3)), label="Grid import")
+    ax_t.plot(t_h, e_chg,  color=ESS_CHG_COLOR,    linewidth=dm.lw(0),
+              label="ESS charge")
+    ax_t.plot(t_h, e_dis,  color=ESS_DIS_COLOR,    linewidth=dm.lw(0),
+              label="ESS discharge")
     ax_t.fill_between(t_h, 0, e_pv, color=COLORS["pv"], alpha=0.20, linewidth=0)
     ax_t.set_xlabel("Time of day [h]")
     ax_t.set_ylabel("Power [kW]")
     ax_t.set_xlim(0, SIM_HOURS)
     ax_t.set_xticks(np.arange(0, SIM_HOURS + 1, 3))
-    ax_t.set_title("(a) Daily power timeseries", loc="left", fontsize=dm.fs(0))
     ax_t.grid(True, alpha=0.25, linewidth=dm.lw(-2))
-    ax_t.legend(loc="upper left", frameon=False, fontsize=dm.fs(-1))
+    ax_t.legend(loc="upper left", bbox_to_anchor=(0.06, 1.0),
+                frameon=False, fontsize=dm.fs(-1), ncol=2)
+    panel_letter(ax_t, "a")
 
     # --- (b) stacked ledger -------------------------------------------
     # Two bars: PV destinations vs. HP-load sources.
@@ -127,56 +161,72 @@ def main() -> None:
     x = np.arange(len(x_labels))
     width = 0.55
 
+    def _annot(xpos: float, bottom: float, height: float) -> None:
+        """Centered numeric label — unit elided since y-axis already carries it."""
+        if height <= 0:
+            return
+        ax_b.text(
+            xpos, bottom + height / 2,
+            f"{height:.1f}",
+            ha="center", va="center",
+            fontsize=dm.fs(-1), color=COLORS["ink"],
+        )
+
     # PV destinations stack
     bottom_pv = 0.0
     ax_b.bar(x[0], kwh_direct, width=width, bottom=bottom_pv,
-             color=COLORS["pv"], label="PV to HP (direct)")
+             color=PV_BAR_COLOR, label="PV to HP (direct)")
+    _annot(x[0], bottom_pv, kwh_direct)
     bottom_pv += kwh_direct
     ax_b.bar(x[0], kwh_chg, width=width, bottom=bottom_pv,
-             color=COLORS["ess"], label="PV to ESS")
+             color=ESS_CHG_BAR, label="PV to ESS")
+    _annot(x[0], bottom_pv, kwh_chg)
     bottom_pv += kwh_chg
     ax_b.bar(x[0], kwh_dump, width=width, bottom=bottom_pv,
-             color=COLORS["muted"], label="PV to dump")
+             color=DUMP_BAR, label="PV to dump")
+    _annot(x[0], bottom_pv, kwh_dump)
 
     # HP-load sources stack
     bottom_hp = 0.0
     ax_b.bar(x[1], kwh_direct, width=width, bottom=bottom_hp,
-             color=COLORS["pv"])
+             color=PV_BAR_COLOR)
+    _annot(x[1], bottom_hp, kwh_direct)
     bottom_hp += kwh_direct
     ax_b.bar(x[1], kwh_dis, width=width, bottom=bottom_hp,
-             color=COLORS["ess"], label="ESS to HP")
+             color=ESS_DIS_BAR, label="ESS to HP")
+    _annot(x[1], bottom_hp, kwh_dis)
     bottom_hp += kwh_dis
     ax_b.bar(x[1], kwh_grid, width=width, bottom=bottom_hp,
-             color=COLORS["accent"], label="Grid to HP")
+             color=GRID_BAR, label="Grid to HP")
+    _annot(x[1], bottom_hp, kwh_grid)
 
     ax_b.set_xticks(x)
-    ax_b.set_xticklabels(x_labels, fontsize=dm.fs(-1))
+    # No xlabel on this panel — the categorical tick labels are doing
+    # the axis-label job, so keep them at the default ``axes.labelsize``
+    # to match the left panel's "Time of day [h]" / "Power [kW]".
+    ax_b.set_xticklabels(x_labels)
     ax_b.set_ylabel("Daily energy [kWh]")
-    ax_b.set_title("(b) Daily energy ledger", loc="left", fontsize=dm.fs(0))
     ax_b.grid(True, alpha=0.25, linewidth=dm.lw(-2), axis="y")
-    ax_b.legend(loc="upper left", frameon=False, fontsize=dm.fs(-2))
+    ax_b.legend(loc="upper left", bbox_to_anchor=(0.06, 1.0),
+                frameon=False, fontsize=dm.fs(-2))
+    panel_letter(ax_b, "b")
 
-    # Totals annotation
+    # Totals sit above each bar — unit elided to match segment labels.
+    top_pv = bottom_pv + kwh_dump
+    top_hp = bottom_hp + kwh_grid
     ax_b.text(
-        x[0], bottom_pv + 0.2,
-        f"{kwh_pv:.1f} kWh",
+        x[0], top_pv + 0.2, f"{kwh_pv:.1f}",
         ha="center", va="bottom",
-        fontsize=dm.fs(-1), color=COLORS["ink"],
+        fontsize=dm.fs(0), color=COLORS["ink"],
     )
     ax_b.text(
-        x[1], bottom_hp + 0.2,
-        f"{kwh_hp:.1f} kWh",
+        x[1], top_hp + 0.2, f"{kwh_hp:.1f}",
         ha="center", va="bottom",
-        fontsize=dm.fs(-1), color=COLORS["ink"],
+        fontsize=dm.fs(0), color=COLORS["ink"],
     )
 
     out = static_path("pv_ess_energy_balance.svg").with_suffix("")
-    # mt bumped to 8% because the wide-aspect (6/12) canvas leaves
-    # ``simple_layout`` undercounting the headroom needed by the
-    # ``set_title(loc="left")`` text — the union bbox it measures
-    # converges before the ``_left_title`` artist's final position is
-    # accounted for, so the title overshoots the canvas top at 3%.
-    finalize(fig, out, margin="3%", mt="8%")
+    finalize(fig, out, margin="3%")
     plt.close(fig)
     print(f"wrote {out}.svg")
 
