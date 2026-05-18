@@ -1,4 +1,9 @@
 # ===========================
+# Superpowers brainstorm cache (visual companion sessions)
+# ===========================
+.superpowers/
+
+# ===========================
 # Python
 # ===========================
 __pycache__/
