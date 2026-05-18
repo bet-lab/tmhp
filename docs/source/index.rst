@@ -38,6 +38,26 @@ per-unit recalibration.
    :doc:`Validation <validation/index>`
    `GitHub <https://github.com/bet-lab/tmhp>`_
 
+.. raw:: html
+
+   <div id="hero-motion-root" class="hero">
+     <div class="hero-stats">
+       <div class="hero-stat"><span class="hero-metric" data-target="15">0</span>
+         <span class="hero-stat-label">benchmark points</span></div>
+       <div class="hero-stat"><span class="hero-metric" data-target="5">0</span>
+         <span class="hero-stat-label">model families</span></div>
+       <div class="hero-stat"><span class="hero-metric" data-target="0">0</span>
+         <span class="hero-stat-label">fitted curves</span></div>
+     </div>
+     <svg class="hero-sketch" viewBox="0 0 300 140" aria-hidden="true">
+       <path d="M 20 110 Q 30 70 70 55 Q 110 40 150 40 Q 190 40 220 55 Q 250 70 260 110"
+             fill="#edf2fe" stroke="#3a5bc7" stroke-width="1"/>
+       <path d="M 40 90 L 40 50 L 210 50 L 210 90 Z"
+             fill="none" stroke="#3e63dd" stroke-width="2"/>
+     </svg>
+   </div>
+   <script src="_static/js/widgets/hero-motion.js" defer></script>
+
 .. grid:: 1 2 2 3
     :gutter: 3
     :class-container: landing-cards
