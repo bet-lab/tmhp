@@ -867,6 +867,29 @@ button.copybtn:hover {
     .ph-chart .ph-canvas-wrap { grid-template-columns: 1fr; }
 }
 
+.parity-plot .parity-wrap {
+    display: grid; grid-template-columns: 1fr 220px;
+    gap: var(--rx-space-4); align-items: start;
+}
+.parity-plot .parity-readout {
+    padding: var(--rx-space-3);
+    border: 1px solid var(--rx-hairline);
+    border-radius: var(--rx-radius-3);
+    background: var(--rx-gray-1);
+    font-size: var(--rx-fs-2);
+}
+.parity-plot .parity-readout .empty { color: var(--rx-ink-muted); font-style: italic; }
+.parity-plot .parity-readout .head { font-weight: var(--rx-fw-bold); color: var(--rx-accent-11); margin-bottom: var(--rx-space-2); }
+.parity-plot .parity-readout dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 0; }
+.parity-plot .parity-readout dt { color: var(--rx-ink-muted); }
+.parity-plot .parity-readout dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.parity-plot .parity-readout .delta { margin-top: var(--rx-space-2); font-weight: var(--rx-fw-medium); font-size: var(--rx-fs-3); }
+.parity-plot .parity-readout .delta.ok   { color: var(--rx-green-11); }
+.parity-plot .parity-readout .delta.warn { color: var(--rx-amber-11); }
+@media (max-width: 720px) {
+    .parity-plot .parity-wrap { grid-template-columns: 1fr; }
+}
+
 /* --- Table widget (④) --- */
 /* --- Tabs (⑤) --- */
 /* --- Glossary popover (⑥) --- */

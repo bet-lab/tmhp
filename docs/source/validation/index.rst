@@ -17,6 +17,13 @@ code path applies to any CoolProp refrigerant.
 Parity plot
 ===========
 
+.. raw:: html
+
+   <div id="parity-plot-mount"></div>
+   <script src="../_static/js/lib/d3.v7.custom.min.js"></script>
+   <script src="../_static/js/plots/_plot-common.js"></script>
+   <script src="../_static/js/plots/parity-plot.js"></script>
+
 .. figure:: ../_static/validation_parity.svg
     :alt: Parity plot — predicted vs target COP across 15
         operating points of the Samsung EHS Mono HT Quiet R32
