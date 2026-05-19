@@ -976,27 +976,6 @@ button.copybtn:hover {
 .glossary-pop .link  { display: inline-block; margin-top: 6px; color: var(--rx-accent-11); font-size: var(--rx-fs-1); text-decoration: none; }
 .glossary-pop .link:hover { text-decoration: underline; }
 /* --- Hero motion (⑦) --- */
-.hero { margin: var(--rx-space-6) 0; }
-.hero-stats { display: flex; gap: var(--rx-space-6); flex-wrap: wrap; }
-.hero-stat { display: flex; flex-direction: column; gap: 2px; }
-.hero-stat .hero-metric {
-    font-size: var(--rx-fs-7); font-weight: var(--rx-fw-bold);
-    color: var(--rx-accent-11); font-variant-numeric: tabular-nums;
-}
-.hero-stat .hero-stat-label {
-    font-size: var(--rx-fs-1); color: var(--rx-ink-muted);
-    text-transform: uppercase; letter-spacing: 0.05em;
-}
-.hero-sketch {
-    margin-top: var(--rx-space-4);
-    max-width: 360px; height: auto;
-    opacity: 0; transform: translateY(8px);
-    transition: opacity 600ms ease, transform 600ms ease;
-}
-.hero-sketch.is-visible { opacity: 1; transform: translateY(0); }
-@media (prefers-reduced-motion: reduce) {
-    .hero-sketch { opacity: 1; transform: none; transition: none; }
-}
 /* --- Cmd+K palette (⑧) --- */
 .cmdk-overlay {
     position: fixed; inset: 0; z-index: 10000;
