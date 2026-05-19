@@ -64,7 +64,7 @@ myst_enable_extensions = [
 # -- HTML output ---------------------------------------------------------------
 
 html_theme = "shibuya"
-html_title = "Thermodynamic Models for Heat Pumps"
+html_title = "TMHP"
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
 html_baseurl = "https://bet-lab.github.io/tmhp/"
