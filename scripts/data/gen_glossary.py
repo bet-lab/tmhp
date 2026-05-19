@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from scripts.data._common import write_json
 
-
 TERMS: dict[str, dict[str, str]] = {
     "epsilon-ntu": {
         "name": "ε-NTU method",

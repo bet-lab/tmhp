@@ -7,10 +7,8 @@ from __future__ import annotations
 
 import math
 
-from tmhp import AirSourceHeatPumpBoiler
-
 from scripts.data._common import write_json
-
+from tmhp import AirSourceHeatPumpBoiler
 
 STEP_MIN = 10
 N_STEPS = (24 * 60) // STEP_MIN  # 144

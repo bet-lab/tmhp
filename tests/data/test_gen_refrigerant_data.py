@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import json
-import pytest
 
+import pytest
 from scripts.data.gen_refrigerant_data import (
     REFRIGERANTS,
     build_refrigerant_payload,

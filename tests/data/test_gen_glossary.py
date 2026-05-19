@@ -6,7 +6,6 @@ import json
 
 from scripts.data.gen_glossary import build_glossary
 
-
 REQUIRED_TERMS = (
     "epsilon-ntu", "cop", "exv",
     "ashpb", "gshpb", "wshpb", "ashp", "gshp",

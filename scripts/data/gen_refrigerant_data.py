@@ -20,7 +20,6 @@ from CoolProp.CoolProp import PropsSI
 
 from scripts.data._common import write_json
 
-
 REFRIGERANTS: tuple[str, ...] = ("R32", "R290", "R134a", "R1234yf")
 
 T_EVAP_RANGE_C = (-20.0, 20.0)
@@ -63,7 +62,7 @@ def isotherm(refrigerant: str, T_c: float, n_points: int = 40) -> list[dict[str,
     """Return one isotherm line (P, h) sweeping h across the dome and beyond."""
     T = T_c + 273.15
     t_crit = PropsSI("T_critical", refrigerant)
-    if T < t_crit:
+    if t_crit > T:
         P_sat = PropsSI("P", "T", T, "Q", 0, refrigerant)
         P_range = np.geomspace(P_sat * 0.1, P_sat * 5.0, n_points)
     else:
