@@ -17,10 +17,9 @@ import CoolProp.CoolProp as CP
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 import numpy as np
+from _dmpl_common import COLORS, apply_style, finalize, panel_letter, static_path
 
 from tmhp import AirSourceHeatPumpBoiler
-
-from _dmpl_common import COLORS, apply_style, finalize, panel_letter, static_path
 
 REF = "R32"
 T_TANK_W = 60.0   # °C

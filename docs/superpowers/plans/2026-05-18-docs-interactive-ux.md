@@ -1,5 +1,14 @@
 # Docs interactive UX implementation plan
 
+> **Status (2026-05-19): partially shipped.** Tasks 1, 4–11, 13, 14
+> (foundation, P–h chart, validation table, composition tabs, glossary,
+> Cmd+K, reading progress, scroll-spy) all landed on `main`. Tasks
+> reverted after the live look-through: ② parity widget (Task 7),
+> ③ 24h scrub (Task 8), ⑦ hero motion (Task 12), and the anchor-copy
+> half of Task 14. The static SVG / rst fallbacks each reverted pattern
+> sits on top of are now the page's only rendering. See the design
+> spec's "Shipped state" header for the full table.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Land nine isolated, individually-rollback-able interactive UX patterns on top of the existing Sphinx docs without rewriting any prose.

@@ -1,7 +1,31 @@
 # Docs interactive UX — design
 
 **Date:** 2026-05-18
-**Status:** Draft (pending user review)
+**Status:** Shipped (with partial roll-back — see note below)
+
+> **Shipped state (2026-05-19)**
+>
+> Six of the nine designed patterns landed and survived a polish review.
+> Three were rolled back after a live look on the deployed branch:
+>
+> | # | Pattern | Status | Note |
+> |---|---|---|---|
+> | ① | Live P–h chart | shipped | refrigerant selector, sliders, COP readout inside SVG |
+> | ② | Interactive parity plot | reverted | static SVG (matplotlib) retained, JS overlay removed |
+> | ③ | 24-hour timeseries scrub | reverted | not enough information density to justify the JS |
+> | ④ | Filterable validation table | shipped | compares COP_cat vs COP_pred, not Q (audit fix) |
+> | ⑤ | Composition variant tabs | shipped | ASHPB and GSHPB only (others have no STC/PV variants) |
+> | ⑥ | Inline glossary popovers | shipped | viewport-aware placement, hover-bridge timer |
+> | ⑦ | Hero motion + counters | reverted | decorative, didn't earn its place |
+> | ⑧ | Cmd+K palette | shipped | discoverability hint added next to header search |
+> | ⑨a | Reading progress bar | shipped | 3 px gradient, top of viewport |
+> | ⑨b | Scroll-spy right-TOC | shipped | active section pill |
+> | ⑨c | Heading # anchor copy | reverted | hover noise on every h2/h3 |
+>
+> Foundation tasks (1–5: build-time CoolProp JSON, self-hosted D3 +
+> cytoscape, Makefile wiring, global JS entry) all shipped. The
+> design body below describes the original intent — see git log for
+> the actual implementation path.
 
 ## Why
 
