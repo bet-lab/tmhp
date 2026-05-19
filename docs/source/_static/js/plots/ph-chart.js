@@ -76,8 +76,36 @@
     const innerW = W - margin.left - margin.right;
     const innerH = H - margin.top - margin.bottom;
 
+    // Compute cycle h-points up-front so the x-axis can include h2 (the
+    // compressor outlet, which sits well to the right of the saturation
+    // dome's vapor side for typical R32 cycles). Without this the
+    // chart's right edge clips the cycle's upper horizontal leg.
+    const te0 = +sliderEvap.value, tc0 = +sliderCond.value;
+    const xs0 = grid.t_evap_c, ys0 = grid.t_cond_c;
+    function P_sat_pre(T_target, side) {
+      for (let i = 0; i < dome.length - 1; i++) {
+        const a = dome[i], b = dome[i + 1];
+        if (T_target >= a.T_c && T_target <= b.T_c) {
+          const f = (T_target - a.T_c) / (b.T_c - a.T_c);
+          return a.P_kpa + f * (b.P_kpa - a.P_kpa);
+        }
+      }
+      return side === "evap" ? dome[0].P_kpa : dome[dome.length - 1].P_kpa;
+    }
+    const P_evap_pre = P_sat_pre(te0, "evap");
+    const P_cond_pre = P_sat_pre(tc0, "cond");
+    const h1_pre = domeLookup(dome, P_evap_pre, 1);
+    const h3_pre = domeLookup(dome, P_cond_pre, 0);
+    const h4_pre = h3_pre;
+    const cop_pre = bilinear(xs0, ys0, grid.cop, te0, tc0);
+    const h2_pre = (cop_pre && cop_pre > 1.05)
+      ? h3_pre + (h1_pre - h4_pre) * cop_pre / (cop_pre - 1)
+      : h1_pre + 30;
+
     const allH = dome.flatMap(d => [d.h_liq_kjkg, d.h_vap_kjkg]);
-    const xExtent = [Math.min(...allH) - 20, Math.max(...allH) + 50];
+    const xMin = Math.min(...allH) - 20;
+    const xMax = Math.max(Math.max(...allH), h2_pre) + 30;
+    const xExtent = [xMin, xMax];
     const pMin = Math.max(50, Math.min(...dome.map(d => d.P_kpa)) * 0.3);
     const pMax = Math.max(...dome.map(d => d.P_kpa)) * 1.2;
 
