@@ -103,7 +103,7 @@ def main() -> None:
               color=COLORS["muted"], fontsize=dm.fs(-2),
               va="top", ha="left")
     ax_t.set_ylabel("Tank water temp [°C]")
-    panel_letter(ax_t, "a")
+    panel_letter(ax_t, "a", x=-0.06)
 
     # --- (b) heat + power ---------------------------------------------
     ax_p.plot(t_h, q_cond_kw, color=COLORS["hot"],  linewidth=dm.lw(0),
@@ -121,7 +121,7 @@ def main() -> None:
     ax_p.set_yticks(np.arange(0, 17, 4))
     ax_p.legend(loc="upper right", frameon=False, ncol=2,
                 fontsize=dm.fs(-1))
-    panel_letter(ax_p, "b")
+    panel_letter(ax_p, "b", x=-0.06)
 
     # --- (c) COP -------------------------------------------------------
     # ``cop_sys`` is NaN whenever the HP is off (~89% of the day), so a
@@ -139,7 +139,7 @@ def main() -> None:
     ax_c.set_xticks(np.arange(0, SIM_HOURS + 1, 3))
     ax_c.legend(loc="upper right", frameon=False, ncol=2,
                 fontsize=dm.fs(-1))
-    panel_letter(ax_c, "c")
+    panel_letter(ax_c, "c", x=-0.06)
 
     for ax in (ax_t, ax_p, ax_c):
         ax.grid(True, alpha=0.25, linewidth=dm.lw(-2))

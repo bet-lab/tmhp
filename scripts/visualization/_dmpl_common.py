@@ -84,18 +84,20 @@ def _assert_no_overflow(fig: Figure, tol_in: float = 1.0 / 144.0) -> None:
         )
 
 
-def panel_letter(ax, letter: str) -> None:
+def panel_letter(ax, letter: str, *, x: float = -0.10, y: float = 1.03) -> None:
     """Place a bold subplot index (e.g. ``"a"``) above ``ax``'s upper-left.
 
     The canonical typography for subplot indexing across the docs gallery —
-    ``dm.fs(3)`` / ``dm.fw(2)`` anchored at axes-fraction ``(-0.05, 1.0)``
-    with ``va="bottom"`` so the letter sits just above the axes top edge,
-    flush with the y-axis label gutter (journal-style). The overflow
-    guard in :func:`finalize` will catch any layout that doesn't leave
-    enough headroom; bump ``mt``/``ml`` if it fires.
+    ``dm.fs(3)`` / ``dm.fw(2)`` anchored at axes-fraction ``(-0.10, 1.03)``
+    with ``va="bottom"`` so the letter sits clear of the top y-tick label
+    and the y-axis gutter (journal-style). Pass ``x``/``y`` to nudge the
+    anchor when a particular layout needs a different gutter (e.g. shorter
+    y-tick labels can take a smaller ``|x|``). The overflow guard in
+    :func:`finalize` will catch any layout that doesn't leave enough
+    headroom; bump ``mt``/``ml`` if it fires.
     """
     ax.text(
-        -0.05, 1.0, letter,
+        x, y, letter,
         transform=ax.transAxes,
         fontsize=dm.fs(3), fontweight=dm.fw(2),
         va="bottom", ha="left",
