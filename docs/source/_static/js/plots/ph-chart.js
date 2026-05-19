@@ -7,12 +7,13 @@
  *   - the four cycle state points (1: comp in, 2: comp out, 3: cond out,
  *     4: throttle out) with connecting line segments
  *
- * The COP at the chosen (T_evap, T_cond) is shown in a side panel and
- * refreshes as the sliders move via bilinear interpolation on the
- * cycle_grid — no runtime CoolProp. We deliberately do not surface ṁ
- * or Q_cond: a P–h diagram describes the refrigerant cycle, not the
- * heat-pump system; those system-level outputs depend on a particular
- * compressor displacement / fan rating, which lives on the model pages.
+ * The COP at the chosen (T_evap, T_cond) is rendered inline at the
+ * top-left of the plot area (no side panel — keeps the plot full-width).
+ * Sliders interpolate the cycle_grid bilinearly — no runtime CoolProp.
+ *
+ * A clipPath constrains every drawn shape to the inner plot rectangle
+ * so the Catmull-Rom curve on the saturation dome cannot overshoot the
+ * axes (which would otherwise paint the fill below the x-axis).
  */
 (function () {
   "use strict";
@@ -42,9 +43,6 @@
     </div>
     <div class="ph-canvas-wrap">
       <svg class="ph-canvas" viewBox="0 0 720 420" preserveAspectRatio="xMidYMid meet"></svg>
-      <aside class="ph-readout">
-        <div class="metric"><span class="label">COP</span><span class="value" data-k="cop">—</span></div>
-      </aside>
     </div>
   `;
   const sel = mount.querySelector(".ph-ref");
@@ -53,7 +51,6 @@
   const outEvap = mount.querySelector(".ph-t-evap-out");
   const outCond = mount.querySelector(".ph-t-cond-out");
   const svg = mount.querySelector("svg.ph-canvas");
-  const readout = mount.querySelector(".ph-readout");
   sel.value = DEFAULT_REF;
   sliderEvap.value = -5;
   sliderCond.value = 45;
@@ -88,7 +85,15 @@
     const yP = d3.scaleLog().domain([pMin, pMax]).range([innerH, 0]);
 
     svg.innerHTML = "";
-    const root = d3.select(svg)
+    const svgSel = d3.select(svg);
+
+    // clipPath keeps the dome fill and cycle path inside the plot box,
+    // so the Catmull-Rom interpolation can't paint below the x-axis.
+    const clipId = "ph-clip-" + Math.random().toString(36).slice(2, 8);
+    svgSel.append("defs").append("clipPath").attr("id", clipId)
+      .append("rect").attr("width", innerW).attr("height", innerH);
+
+    const root = svgSel
       .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Axes
@@ -105,13 +110,16 @@
         .attr("text-anchor", "middle").attr("fill", t.muted)
         .text("Pressure P [kPa, log]");
 
+    // Everything past this point sits inside the clip rectangle.
+    const clipped = root.append("g").attr("clip-path", `url(#${clipId})`);
+
     // Saturation dome: liq side + vap side, joined.
     const domePath = d3.line()
       .x(d => x(d.h)).y(d => yP(d.P))
       .curve(d3.curveCatmullRom);
     const liq = dome.map(d => ({ h: d.h_liq_kjkg, P: d.P_kpa }));
     const vap = dome.map(d => ({ h: d.h_vap_kjkg, P: d.P_kpa })).reverse();
-    root.append("path")
+    clipped.append("path")
       .attr("d", domePath([...liq, ...vap]))
       .attr("fill", t.accent3).attr("fill-opacity", 0.5)
       .attr("stroke", t.accent11).attr("stroke-width", 1.2);
@@ -141,11 +149,6 @@
     const h4 = h3;
     const cop = bilinear(xs, ys, grid.cop, te, tc);
 
-    // h2 follows from the COP: q_cond_per_kg = h1 - h4 + w_per_kg
-    //                          w_per_kg     = q_cond_per_kg / cop
-    // → solve: q_cond_pkg (cop - 1) = (h1 - h4) cop  →  q_cond_pkg = (h1-h4) cop / (cop-1)
-    // and h2 = h3 + q_cond_pkg = h3 + (h1 - h4) * cop / (cop - 1).
-    // Guarded against cop <= 1 so the chart doesn't NaN at extreme corners.
     const h2 = (cop && cop > 1.05)
       ? h3 + (h1 - h4) * cop / (cop - 1)
       : h1 + 30;   // visual fallback so the cycle still draws sensibly
@@ -158,11 +161,11 @@
     ];
     const cycleClosed = [...cyclePoints, cyclePoints[0]];
     const cycleLine = d3.line().x(d => x(d.h)).y(d => yP(d.P));
-    root.append("path")
+    clipped.append("path")
       .attr("d", cycleLine(cycleClosed))
       .attr("fill", "none").attr("stroke", t.accent).attr("stroke-width", 1.8);
 
-    root.selectAll(".pt").data(cyclePoints).enter().append("g")
+    clipped.selectAll(".pt").data(cyclePoints).enter().append("g")
       .attr("class", "pt")
       .attr("transform", d => `translate(${x(d.h)},${yP(d.P)})`)
       .call(g => {
@@ -171,9 +174,14 @@
           .attr("font-size", 12).attr("font-weight", 600).text(d => d.label);
       });
 
-    // Readout (COP only — see module docstring for why)
-    readout.querySelector('[data-k="cop"]').textContent =
-      cop ? cop.toFixed(2) : "—";
+    // Inline COP readout — top-left inside the plot, no background.
+    const copText = cop ? cop.toFixed(2) : "—";
+    root.append("text").attr("class", "ph-cop-inline")
+      .attr("x", 12).attr("y", 16)
+      .attr("fill", t.accent11)
+      .attr("font-size", 18).attr("font-weight", 700)
+      .style("font-variant-numeric", "tabular-nums")
+      .text(`COP ${copText}`);
   }
 
   sel.addEventListener("change", () => load(sel.value));
