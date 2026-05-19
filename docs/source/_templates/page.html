@@ -13,11 +13,6 @@
 {%- endif %}
 {%- endblock -%}
 
-{%- block extrahead -%}
-{{ super() }}
-<script src="{{ pathto('_static/js/core/glossary.js', 1) }}" defer></script>
-<script src="{{ pathto('_static/js/core/cmdk.js', 1) }}" defer></script>
-<script src="{{ pathto('_static/js/core/reading-progress.js', 1) }}" defer></script>
-<script src="{{ pathto('_static/js/core/scroll-spy.js', 1) }}" defer></script>
-<script src="{{ pathto('_static/js/core/global.js', 1) }}" defer></script>
-{%- endblock -%}
+{#- Interactive-layer JS modules are registered in conf.py
+    (`html_js_files`) so Sphinx adds a content-hash `?v=` to each
+    URL, defeating stale browser caches when a module changes. -#}

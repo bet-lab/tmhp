@@ -67,6 +67,20 @@ html_theme = "shibuya"
 html_title = "TMHP"
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
+
+# Interactive-layer JS modules. Registered here (rather than injected via
+# `_templates/page.html`) so Sphinx adds a content-hash `?v=` to each URL —
+# without that, an edit to (say) `scroll-spy.js` would ride the browser's
+# stale-cached copy until a hard refresh. Order matters: `global.js` runs
+# after every module-defining file so the wiring side sees `window.tmhp*`.
+_DEFER = {"defer": "defer"}
+html_js_files = [
+    ("js/core/glossary.js", _DEFER),
+    ("js/core/cmdk.js", _DEFER),
+    ("js/core/reading-progress.js", _DEFER),
+    ("js/core/scroll-spy.js", _DEFER),
+    ("js/core/global.js", _DEFER),
+]
 html_baseurl = "https://bet-lab.github.io/tmhp/"
 
 # Hide the per-page "Show Source" link — the GitHub icon already gives readers
