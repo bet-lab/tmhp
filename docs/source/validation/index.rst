@@ -39,6 +39,7 @@ from re-running the released code via
 .. raw:: html
 
    <div id="validation-table-mount"></div>
+   <script src="../_static/js/plots/_plot-common.js"></script>
    <script src="../_static/js/widgets/validation-table.js"></script>
 
 .. dropdown:: Show all 15 operating points
