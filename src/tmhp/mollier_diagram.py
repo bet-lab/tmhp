@@ -26,6 +26,7 @@ def _draw_cycle_lines_and_annotations(
     color_off: str = "oc.gray6",
     tol_atol: float = 0.1,
     tol_y_atol: float | None = None,
+    point_labels: dict[str, str] | None = None,
 ) -> None:
     """Draw heat pump cycle lines, scatter markers, and aligned text annotations."""
     cycle_markerfacecolor = color_on if is_on else color_off
@@ -105,7 +106,8 @@ def _draw_cycle_lines_and_annotations(
         "4": (-4, 0, "right", "center"),
     }
 
-    label_map = {"1": "cmp,in", "2": "cmp,out", "3": "exp,in", "4": "exp,out"}
+    if point_labels is None:
+        point_labels = {"1": "cmp,in", "2": "cmp,out", "3": "exp,in", "4": "exp,out"}
 
     fig = ax.figure
 
@@ -147,7 +149,7 @@ def _draw_cycle_lines_and_annotations(
         )
 
         dx, dy, ha, va = text_cfg.get(key, (0, 4, "center", "bottom"))
-        text_str = str(label_map.get(key, key))
+        text_str = str(point_labels.get(key, key))
 
         if fig is not None:
             cfig = cast(mfigure.Figure, fig)
@@ -217,6 +219,10 @@ def plot_th_diagram(
     T_evap_bound: dict[str, float | str] | None = None,
     fontsize: float | None = None,
     tick_pad: float | None = None,
+    sat_liquid_label: str = "Sat. liquid",
+    sat_vapor_label: str = "Sat. vapor",
+    ref_cycle_label: str = "Ref. cycle",
+    point_labels: dict[str, str] | None = None,
 ) -> None:
     """Plot T-h diagram on given axis."""
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray5"
@@ -244,8 +250,8 @@ def plot_th_diagram(
     if np.isnan(h3_star) and not np.isnan(h3):
         h3_star, T3_star = h3, T3
 
-    ax.plot(h_liq, temps, color=color1, label="Sat. liquid", linewidth=dm.lw(0))
-    ax.plot(h_vap, temps, color=color2, label="Sat. vapor", linewidth=dm.lw(0))
+    ax.plot(h_liq, temps, color=color1, label=sat_liquid_label, linewidth=dm.lw(0))
+    ax.plot(h_vap, temps, color=color2, label=sat_vapor_label, linewidth=dm.lw(0))
 
     pts_x = {"1_star": h1_star, "1": h1, "2": h2, "2_star": h2_star, "3_star": h3_star, "3": h3, "4": h4}
     pts_y = {"1_star": T1_star, "1": T1, "2": T2, "2_star": T2_star, "3_star": T3_star, "3": T3, "4": T4}
@@ -259,7 +265,7 @@ def plot_th_diagram(
     #               (superheat / subcool) segments stay visible.
     _draw_cycle_lines_and_annotations(
         ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4,
-        tol_atol=0.5, tol_y_atol=0.5,
+        tol_atol=0.5, tol_y_atol=0.5, point_labels=point_labels,
     )
 
 
@@ -313,8 +319,8 @@ def plot_th_diagram(
         ax.yaxis.set_major_locator(ticker.MultipleLocator(40))
 
     legend_handles = [
-        ax.plot([], [], color=color1, linewidth=dm.lw(0), label="Sat. liquid")[0],
-        ax.plot([], [], color=color2, linewidth=dm.lw(0), label="Sat. vapor")[0],
+        ax.plot([], [], color=color1, linewidth=dm.lw(0), label=sat_liquid_label)[0],
+        ax.plot([], [], color=color2, linewidth=dm.lw(0), label=sat_vapor_label)[0],
         ax.plot(
             [],
             [],
@@ -326,7 +332,7 @@ def plot_th_diagram(
             markerfacecolor=color3,
             markeredgecolor=color3,
             markeredgewidth=dm.lw(0),
-            label="Ref. cycle",
+            label=ref_cycle_label,
         )[0],
     ]
     ax.legend(
@@ -346,6 +352,10 @@ def plot_ph_diagram(
     refrigerant: str,
     fontsize: float | None = None,
     tick_pad: float | None = None,
+    sat_liquid_label: str = "Sat. liquid",
+    sat_vapor_label: str = "Sat. vapor",
+    ref_cycle_label: str = "Ref. cycle",
+    point_labels: dict[str, str] | None = None,
 ) -> None:
     """Plot P-h diagram on given axis."""
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray4"
@@ -375,13 +385,13 @@ def plot_ph_diagram(
     if np.isnan(h3_star) and not np.isnan(h3):
         h3_star, P3_star = h3, P3
 
-    ax.plot(h_liq, p_sat, color=color1, label="Sat. liquid", linewidth=dm.lw(0))
-    ax.plot(h_vap, p_sat, color=color2, label="Sat. vapor", linewidth=dm.lw(0))
+    ax.plot(h_liq, p_sat, color=color1, label=sat_liquid_label, linewidth=dm.lw(0))
+    ax.plot(h_vap, p_sat, color=color2, label=sat_vapor_label, linewidth=dm.lw(0))
 
     pts_x = {"1_star": h1_star, "1": h1, "2": h2, "2_star": h2_star, "3_star": h3_star, "3": h3, "4": h4}
     pts_y = {"1_star": P1_star, "1": P1, "2": P2, "2_star": P2_star, "3_star": P3_star, "3": P3, "4": P4}
     is_on = bool(result.get("hp_is_on", result.get("is_on", False)))
-    _draw_cycle_lines_and_annotations(ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.5, tol_y_atol=None)
+    _draw_cycle_lines_and_annotations(ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.5, tol_y_atol=None, point_labels=point_labels)
 
     ax.set_xlabel("Enthalpy [kJ/kg]")
     ax.set_ylabel("Pressure [kPa]")
@@ -390,8 +400,8 @@ def plot_ph_diagram(
     ax.set_yscale("log")
 
     legend_handles = [
-        ax.plot([], [], color=color1, linewidth=dm.lw(0), label="Sat. liquid")[0],
-        ax.plot([], [], color=color2, linewidth=dm.lw(0), label="Sat. vapor")[0],
+        ax.plot([], [], color=color1, linewidth=dm.lw(0), label=sat_liquid_label)[0],
+        ax.plot([], [], color=color2, linewidth=dm.lw(0), label=sat_vapor_label)[0],
         ax.plot(
             [],
             [],
@@ -403,7 +413,7 @@ def plot_ph_diagram(
             markerfacecolor=color3,
             markeredgecolor=color3,
             markeredgewidth=dm.lw(0),
-            label="Ref. cycle",
+            label=ref_cycle_label,
         )[0],
     ]
     ax.legend(
@@ -423,6 +433,10 @@ def plot_ts_diagram(
     refrigerant: str,
     T_cond_bound: dict[str, float | str] | None = None,
     T_evap_bound: dict[str, float | str] | None = None,
+    sat_liquid_label: str = "Sat. liquid",
+    sat_vapor_label: str = "Sat. vapor",
+    ref_cycle_label: str = "Ref. cycle",
+    point_labels: dict[str, str] | None = None,
 ) -> None:
     """Plot T-s diagram on given axis with super heating/cooling considered."""
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray5"
@@ -430,8 +444,8 @@ def plot_ts_diagram(
 
     temps, _, _, _, s_liq, s_vap = _get_saturation_curves(refrigerant)
 
-    ax.plot(s_liq, temps, color=color1, label="Sat. liquid", linewidth=dm.lw(0))
-    ax.plot(s_vap, temps, color=color2, label="Sat. vapor", linewidth=dm.lw(0))
+    ax.plot(s_liq, temps, color=color1, label=sat_liquid_label, linewidth=dm.lw(0))
+    ax.plot(s_vap, temps, color=color2, label=sat_vapor_label, linewidth=dm.lw(0))
 
     s1_star = (result.get("s_ref_evap_sat [J/(kg·K)]") or result.get("s1_star [J/(kg·K)]", np.nan)) / 1000
     s1 = (result.get("s_ref_cmp_in [J/(kg·K)]") or result.get("s1 [J/(kg·K)]", np.nan)) / 1000
@@ -458,7 +472,7 @@ def plot_ts_diagram(
     pts_y = {"1_star": T1_star, "1": T1, "2": T2, "2_star": T2_star, "3_star": T3_star, "3": T3, "4": T4}
     is_on = bool(result.get("hp_is_on", result.get("is_on", False)))
     _draw_cycle_lines_and_annotations(
-        ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.05, tol_y_atol=0.5
+        ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.05, tol_y_atol=0.5, point_labels=point_labels
     )
 
     trans = ax.get_yaxis_transform()
@@ -512,8 +526,8 @@ def plot_ts_diagram(
         ax.yaxis.set_major_locator(ticker.MultipleLocator(40))
 
     legend_handles = [
-        ax.plot([], [], color=color1, linewidth=dm.lw(0), label="Sat. liquid")[0],
-        ax.plot([], [], color=color2, linewidth=dm.lw(0), label="Sat. vapor")[0],
+        ax.plot([], [], color=color1, linewidth=dm.lw(0), label=sat_liquid_label)[0],
+        ax.plot([], [], color=color2, linewidth=dm.lw(0), label=sat_vapor_label)[0],
         ax.plot(
             [],
             [],
@@ -525,7 +539,7 @@ def plot_ts_diagram(
             markerfacecolor=color3,
             markeredgecolor=color3,
             markeredgewidth=dm.lw(0),
-            label="Ref. cycle",
+            label=ref_cycle_label,
         )[0],
     ]
     ax.legend(
