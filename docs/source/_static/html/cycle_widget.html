@@ -336,6 +336,7 @@
         <div class="cw-overlay" id="cwOverlay"></div>
         <div class="cw-tooltip" id="cwTooltip"></div>
     </div>
+    <div class="cw-status" id="cwStatus"></div>
 </div>
 
 <script>
@@ -602,14 +603,13 @@
                 drawCycle(svg, tf, ai, state);
                 drawMetrics(svg, state);
                 overlay.style.display = "none";
-                statusEl.classList.remove("cw-error");
+                if (statusEl) statusEl.classList.remove("cw-error");
             } else {
                 overlay.style.display = "flex";
                 overlay.innerHTML = "This parameter combination is thermodynamically unreachable " +
                     "(e.g. the condensing temperature exceeds the refrigerant critical point). " +
                     "Try a lower sink temperature, lower load, or a larger UA.";
-                statusEl.classList.add("cw-error");
-                statusEl.textContent = `${ref} · selected state unavailable`;
+                if (statusEl) { statusEl.classList.add("cw-error"); statusEl.textContent = `${ref} · selected state unavailable`; }
             }
 
             stage.querySelectorAll("svg").forEach((s) => s.remove());
@@ -807,8 +807,7 @@
                 render();
             })
             .catch((err) => {
-                statusEl.classList.add("cw-error");
-                statusEl.textContent = "Failed to load cycle data: " + err.message;
+                if (statusEl) { statusEl.classList.add("cw-error"); statusEl.textContent = "Failed to load cycle data: " + err.message; }
             });
     })();
 </script>
