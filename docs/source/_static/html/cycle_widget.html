@@ -336,8 +336,6 @@
         <div class="cw-overlay" id="cwOverlay"></div>
         <div class="cw-tooltip" id="cwTooltip"></div>
     </div>
-
-    <div class="cw-status" id="cwStatus">Loading thermodynamic data&hellip;</div>
 </div>
 
 <script>
@@ -696,9 +694,10 @@
                 const [px, py] = xy(name);
                 if (px < M.left - 2 || px > M.left + PW + 2 || py < M.top - 2 || py > M.top + PH + 2) return;
                 const prime = name.endsWith("s");
-                const fill = prime ? "var(--cw-bg)" : "var(--cw-cycle)";
-                const stroke = name === "3s" ? "var(--cw-liquid)" : (prime ? "var(--cw-vapor)" : "var(--cw-cycle)");
-                const c = el("circle", { cx: px, cy: py, r: 4, fill, stroke, "stroke-width": 1.8, class: "cw-marker" });
+                const fill = prime ? "var(--cw-bg)" : "var(--cw-text)";
+                const stroke = prime ? (name === "3s" ? "var(--cw-liquid)" : "var(--cw-vapor)") : "none";
+                const strokeWidth = prime ? 1.8 : 0;
+                const c = el("circle", { cx: px, cy: py, r: 4, fill, stroke, "stroke-width": strokeWidth, class: "cw-marker" });
                 c.dataset.point = name;
                 c.dataset.idx = POINT_ORDER.indexOf(name);
                 gMarkers.appendChild(c);

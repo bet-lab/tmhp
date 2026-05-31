@@ -55,7 +55,7 @@ UA_COND_WK = [300.0, 600.0, 900.0]
 UA_EVAP_WK = [300.0, 600.0, 900.0]
 
 ETA_CMP_ISEN = 0.70
-SAT_CURVE_POINTS = 1200
+SAT_CURVE_POINTS = 10000
 
 # Ordered axis lists; the per-state key encodes the index into each axis.
 PARAM_AXES = [
