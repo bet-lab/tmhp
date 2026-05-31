@@ -1,153 +1,267 @@
-"""Pre-compute per-refrigerant thermodynamic data for the docs P–h chart.
+"""Pre-compute a multi-dimensional grid of vapour-compression cycle states.
 
-Output (per refrigerant) is written to
-``docs/source/_static/data/refrigerants/<REF>.json`` with three sections:
+This generator sweeps an 8-parameter grid (refrigerant, source/sink
+temperatures, subcool, superheat, condenser load, and the two heat-exchanger
+``UA`` values), runs a damped fixed-point solver to establish the dynamic
+evaporating temperature, and serialises every reachable cycle state to a single
+compact JSON asset consumed by the client-side SVG widget.
 
-* ``saturation_dome``  ~80 points along (T_red → P, h_liq, h_vap)
-* ``isotherms``        a handful of constant-T lines spanning [-30, +75 °C]
-* ``cycle_grid``       a 21×21 grid of (T_evap, T_cond) → COP
+The condensing temperature is fixed directly by the load and condenser ``UA``::
 
-The frontend renders the dome + cycle points by bilinear-interpolating on
-the grid, so we don't need runtime CoolProp. COP is a property of the
-refrigerant cycle alone; Q_cond and ṁ are system-level outputs and live
-in the validation / timeseries payloads instead.
+    T_cond = T_sink + Q_cond / UA_cond
+
+The evaporating temperature is coupled to the cycle through the evaporator duty
+and is solved iteratively::
+
+    Q_evap = m_ref (h1 - h4)          (cycle energy balance)
+    T_evap = T_source - Q_evap / UA_evap
+
+Combinations that are physically unreachable (e.g. ``T_cond`` above the
+refrigerant critical temperature, or a non-converging / inverted cycle) are
+omitted from the output; the widget renders an "unavailable" notice for those.
+
+Output
+------
+``docs/source/_static/widgets/cycle_data.json`` — a single JSON file with:
+
+* ``meta``        — grid metadata, point ordering, units
+* ``params``      — axis values for each parameter
+* ``limits``      — per-refrigerant diagram axis limits (from ``REF_LIMITS``)
+* ``saturation``  — per-refrigerant saturation dome curves
+* ``states``      — dict of ``"i0_i1_..._i7" -> [[h,T,P,s], ...]`` (7 points)
 """
 
 from __future__ import annotations
 
+import json
+import os
+
+import CoolProp.CoolProp as CP
 import numpy as np
-from CoolProp.CoolProp import PropsSI
+from tqdm import tqdm
 
-from scripts.data._common import write_json
+import tmhp.calc_util as cu
+from tmhp.mollier_diagram import REF_LIMITS
+from tmhp.refrigerant import calc_ref_state
 
-REFRIGERANTS: tuple[str, ...] = ("R32", "R290", "R134a", "R1234yf")
+# ── Parameter grid ──────────────────────────────────────────────────────────
+REFRIGERANTS = ["R410A", "R134a", "R32", "R290"]
+T_SOURCES_C = [-15.0, -5.0, 5.0, 15.0]
+T_SINKS_C = [30.0, 45.0, 60.0]
+DT_SUBCOOL_K = [0.0, 3.0, 6.0]
+DT_SUPERHEAT_K = [0.0, 4.0, 8.0]
+Q_COND_W = [4000.0, 8000.0, 12000.0]
+UA_COND_WK = [300.0, 600.0, 900.0]
+UA_EVAP_WK = [300.0, 600.0, 900.0]
 
-T_EVAP_RANGE_C = (-20.0, 20.0)
-T_COND_RANGE_C = (25.0, 65.0)
-GRID_N = 21
+ETA_CMP_ISEN = 0.70
+SAT_CURVE_POINTS = 1200
 
-SUPERHEAT_K = 5.0
-SUBCOOL_K = 3.0
-ETA_ISEN = 0.70
+# Ordered axis lists; the per-state key encodes the index into each axis.
+PARAM_AXES = [
+    ("refrigerant", REFRIGERANTS),
+    ("T_source", T_SOURCES_C),
+    ("T_sink", T_SINKS_C),
+    ("dT_subcool", DT_SUBCOOL_K),
+    ("dT_superheat", DT_SUPERHEAT_K),
+    ("Q_cond", Q_COND_W),
+    ("UA_cond", UA_COND_WK),
+    ("UA_evap", UA_EVAP_WK),
+]
 
-
-def saturation_dome(refrigerant: str, n_points: int = 80) -> list[dict[str, float]]:
-    """Return ~80 dome points sampled in reduced-temperature space."""
-    t_min = PropsSI("T_triple", refrigerant) + 1.0
-    t_crit = PropsSI("T_critical", refrigerant)
-    fractions = np.concatenate([
-        np.linspace(0.05, 0.85, int(n_points * 0.7)),
-        np.linspace(0.85, 0.995, n_points - int(n_points * 0.7)),
-    ])
-    out: list[dict[str, float]] = []
-    for f in fractions:
-        T = t_min + f * (t_crit - t_min)
-        try:
-            P = PropsSI("P", "T", T, "Q", 0, refrigerant)
-            h_liq = PropsSI("H", "T", T, "Q", 0, refrigerant) / 1000.0
-            h_vap = PropsSI("H", "T", T, "Q", 1, refrigerant) / 1000.0
-        except ValueError:
-            continue
-        out.append({
-            "T_c": T - 273.15,
-            "P_kpa": P / 1000.0,
-            "h_liq_kjkg": h_liq,
-            "h_vap_kjkg": h_vap,
-        })
-    out.sort(key=lambda d: d["P_kpa"])
-    return out
-
-
-def isotherm(refrigerant: str, T_c: float, n_points: int = 40) -> list[dict[str, float]]:
-    """Return one isotherm line (P, h) sweeping h across the dome and beyond."""
-    T = T_c + 273.15
-    t_crit = PropsSI("T_critical", refrigerant)
-    if t_crit > T:
-        P_sat = PropsSI("P", "T", T, "Q", 0, refrigerant)
-        P_range = np.geomspace(P_sat * 0.1, P_sat * 5.0, n_points)
-    else:
-        P_range = np.geomspace(1e5, 1e7, n_points)
-    out: list[dict[str, float]] = []
-    for P in P_range:
-        try:
-            h = PropsSI("H", "T", T, "P", P, refrigerant) / 1000.0
-        except ValueError:
-            continue
-        out.append({"P_kpa": P / 1000.0, "h_kjkg": h})
-    return out
+# Display-unit accessors: (h [kJ/kg], T [°C], P [kPa], s [kJ/(kg·K)]).
+_POINT_SPEC = [
+    ("1s", "h_ref_evap_sat [J/kg]", "T_ref_evap_sat [°C]", "P_ref_evap_sat [Pa]", "s_ref_evap_sat [J/(kg·K)]"),
+    ("1", "h_ref_cmp_in [J/kg]", "T_ref_cmp_in [°C]", "P_ref_cmp_in [Pa]", "s_ref_cmp_in [J/(kg·K)]"),
+    ("2", "h_ref_cmp_out [J/kg]", "T_ref_cmp_out [°C]", "P_ref_cmp_out [Pa]", "s_ref_cmp_out [J/(kg·K)]"),
+    ("2s", "h_ref_cond_sat_v [J/kg]", "T_ref_cond_sat_v [°C]", "P_ref_cond_sat_v [Pa]", "s_ref_cond_sat_v [J/(kg·K)]"),
+    ("3s", "h_ref_cond_sat_l [J/kg]", "T_ref_cond_sat_l [°C]", "P_ref_cond_sat_l [Pa]", "s_ref_cond_sat_l [J/(kg·K)]"),
+    ("3", "h_ref_exp_in [J/kg]", "T_ref_exp_in [°C]", "P_ref_exp_in [Pa]", "s_ref_exp_in [J/(kg·K)]"),
+    ("4", "h_ref_exp_out [J/kg]", "T_ref_exp_out [°C]", "P_ref_exp_out [Pa]", "s_ref_exp_out [J/(kg·K)]"),
+]
 
 
-def cycle_at(refrigerant: str, t_evap_c: float, t_cond_c: float) -> dict[str, float]:
-    """Solve a simple isenthalpic-throttle cycle at one (T_evap, T_cond)."""
-    T_evap = t_evap_c + 273.15
-    T_cond = t_cond_c + 273.15
-    T_suction = T_evap + SUPERHEAT_K
-    T_subcooled = T_cond - SUBCOOL_K
+def build_saturation_curves(refrigerant: str) -> dict[str, list[float]]:
+    """Return down-sampled saturation dome curves in display units."""
+    t_min = CP.PropsSI("Tmin", refrigerant)
+    t_crit = CP.PropsSI("Tcrit", refrigerant)
+    temps_k = np.linspace(t_min + 1.0, t_crit - 0.5, SAT_CURVE_POINTS)
 
-    P_evap = PropsSI("P", "T", T_evap, "Q", 1, refrigerant)
-    P_cond = PropsSI("P", "T", T_cond, "Q", 1, refrigerant)
+    temp_c, h_liq, h_vap, p_sat, s_liq, s_vap = [], [], [], [], [], []
+    for t_k in temps_k:
+        temp_c.append(round(cu.K2C(t_k), 1))
+        h_liq.append(round(CP.PropsSI("H", "T", t_k, "Q", 0, refrigerant) * cu.J2kJ, 1))
+        h_vap.append(round(CP.PropsSI("H", "T", t_k, "Q", 1, refrigerant) * cu.J2kJ, 1))
+        p_sat.append(round(CP.PropsSI("P", "T", t_k, "Q", 0, refrigerant) * cu.Pa2kPa, 1))
+        s_liq.append(round(CP.PropsSI("S", "T", t_k, "Q", 0, refrigerant) * cu.J2kJ, 3))
+        s_vap.append(round(CP.PropsSI("S", "T", t_k, "Q", 1, refrigerant) * cu.J2kJ, 3))
 
-    h_1 = PropsSI("H", "T", T_suction, "P", P_evap, refrigerant)
-    s_1 = PropsSI("S", "T", T_suction, "P", P_evap, refrigerant)
-    h_2s = PropsSI("H", "S", s_1, "P", P_cond, refrigerant)
-    h_2 = h_1 + (h_2s - h_1) / ETA_ISEN
-    h_3 = PropsSI("H", "T", T_subcooled, "P", P_cond, refrigerant)
-    h_4 = h_3
-
-    w_comp = h_2 - h_1
-    q_cond = h_2 - h_3
-    cop = q_cond / w_comp if w_comp > 0 else float("nan")
-
-    return {
-        "h_1": h_1 / 1000.0, "h_2": h_2 / 1000.0,
-        "h_3": h_3 / 1000.0, "h_4": h_4 / 1000.0,
-        "P_evap_kpa": P_evap / 1000.0,
-        "P_cond_kpa": P_cond / 1000.0,
-        "cop": cop,
-    }
+    return {"T": temp_c, "h_liq": h_liq, "h_vap": h_vap, "p_sat": p_sat, "s_liq": s_liq, "s_vap": s_vap}
 
 
-def cycle_grid(refrigerant: str) -> dict:
-    t_evap = np.linspace(*T_EVAP_RANGE_C, GRID_N).tolist()
-    t_cond = np.linspace(*T_COND_RANGE_C, GRID_N).tolist()
-    cop: list[list[float | None]] = []
-    skipped = 0
-    for te in t_evap:
-        row_cop: list[float | None] = []
-        for tc in t_cond:
-            try:
-                row_cop.append(cycle_at(refrigerant, te, tc)["cop"])
-            except ValueError:
-                row_cop.append(None)
-                skipped += 1
-        cop.append(row_cop)
-    if skipped:
-        print(f"  [{refrigerant}] cycle_grid: {skipped} cells skipped (CoolProp ValueError — typically near dome edges)")
-    return {
-        "t_evap_c": t_evap,
-        "t_cond_c": t_cond,
-        "cop": cop,
-    }
+def solve_cycle(
+    refrigerant: str,
+    t_source_c: float,
+    t_sink_c: float,
+    dt_subcool: float,
+    dt_superheat: float,
+    q_cond_w: float,
+    ua_cond: float,
+    ua_evap: float,
+    t_crit_k: float,
+    t_min_k: float,
+) -> list[list[float]] | None:
+    """Solve one cycle; return its 7 packed state points or ``None`` if invalid.
 
+    Each point is ``[h (kJ/kg), T (°C), P (kPa), s (kJ/(kg·K))]`` in the order
+    given by :data:`_POINT_SPEC`.
+    """
+    t_cond_c = t_sink_c + q_cond_w / ua_cond
+    t_cond_k = cu.C2K(t_cond_c)
+    # The condenser must operate below the critical point (with a small margin)
+    # for the two-phase saturation states to exist.
+    if t_cond_k > t_crit_k - 1.0:
+        return None
 
-def build_refrigerant_payload(refrigerant: str) -> dict:
-    return {
-        "refrigerant": refrigerant,
-        "superheat_k": SUPERHEAT_K,
-        "subcool_k": SUBCOOL_K,
-        "eta_isen": ETA_ISEN,
-        "saturation_dome": saturation_dome(refrigerant),
-        "isotherms": [
-            {"T_c": T, "points": isotherm(refrigerant, T)}
-            for T in (-20.0, 0.0, 20.0, 40.0, 60.0)
-        ],
-        "cycle_grid": cycle_grid(refrigerant),
-    }
+    # Damped fixed-point iteration on the evaporating temperature.
+    t_evap_c = t_source_c - q_cond_w / ua_evap  # conservative initial guess
+    res = None
+    converged = False
+    for _ in range(60):
+        t_evap_k = cu.C2K(t_evap_c)
+        if t_evap_k <= t_min_k + 1.0 or t_evap_k >= t_cond_k - 0.5:
+            return None
+
+        res = calc_ref_state(
+            T_evap_K=t_evap_k,
+            T_cond_K=t_cond_k,
+            refrigerant=refrigerant,
+            eta_cmp_isen=ETA_CMP_ISEN,
+            mode="heating",
+            dT_superheat=dt_superheat,
+            dT_subcool=dt_subcool,
+            is_active=True,
+        )
+
+        h1 = res["h_ref_cmp_in [J/kg]"]
+        h2 = res["h_ref_cmp_out [J/kg]"]
+        h3 = res["h_ref_exp_in [J/kg]"]
+        h4 = res["h_ref_exp_out [J/kg]"]
+        if any(np.isnan(v) for v in (h1, h2, h3, h4)) or np.isnan(res["T_ref_cmp_out_K"]):
+            return None
+
+        delta_cond = h2 - h3
+        if delta_cond <= 0.0:
+            return None
+
+        m_ref = q_cond_w / delta_cond
+        q_evap = m_ref * (h1 - h4)
+        if q_evap <= 0.0:
+            return None
+
+        t_evap_new_c = t_source_c - q_evap / ua_evap
+        if abs(t_evap_new_c - t_evap_c) < 1e-3:
+            t_evap_c = t_evap_new_c
+            converged = True
+            break
+        t_evap_c = 0.5 * t_evap_c + 0.5 * t_evap_new_c  # under-relaxation
+
+    if not converged or res is None:
+        return None
+
+    # Final recompute at the converged evaporating temperature.
+    t_evap_k = cu.C2K(t_evap_c)
+    if t_evap_k <= t_min_k + 1.0 or t_evap_k >= t_cond_k - 0.5:
+        return None
+    res = calc_ref_state(
+        T_evap_K=t_evap_k,
+        T_cond_K=t_cond_k,
+        refrigerant=refrigerant,
+        eta_cmp_isen=ETA_CMP_ISEN,
+        mode="heating",
+        dT_superheat=dt_superheat,
+        dT_subcool=dt_subcool,
+        is_active=True,
+    )
+
+    pts = []
+    for _name, h_key, t_key, p_key, s_key in _POINT_SPEC:
+        h_val = res[h_key]
+        t_val = res[t_key]
+        p_val = res[p_key]
+        s_val = res[s_key]
+        if any(np.isnan(v) for v in (h_val, t_val, p_val, s_val)):
+            return None
+        pts.append([
+            round(h_val * cu.J2kJ, 1),
+            round(t_val, 1),
+            round(p_val * cu.Pa2kPa, 1),
+            round(s_val * cu.J2kJ, 3),
+        ])
+
+    return pts
 
 
 def main() -> None:
-    for ref in REFRIGERANTS:
-        write_json(f"refrigerants/{ref}.json", build_refrigerant_payload(ref))
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    out_dir = os.path.join(repo_root, "docs", "source", "_static", "widgets")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "cycle_data.json")
+
+    saturation = {ref: build_saturation_curves(ref) for ref in REFRIGERANTS}
+
+    crit = {ref: CP.PropsSI("Tcrit", ref) for ref in REFRIGERANTS}
+    tmin = {ref: CP.PropsSI("Tmin", ref) for ref in REFRIGERANTS}
+
+    states: dict[str, list[list[float]]] = {}
+    total = int(np.prod([len(axis) for _, axis in PARAM_AXES]))
+
+    with tqdm(total=total, desc="Solving cycle grid") as pbar:
+        for i0, ref in enumerate(REFRIGERANTS):
+            for i1, t_source in enumerate(T_SOURCES_C):
+                for i2, t_sink in enumerate(T_SINKS_C):
+                    for i3, dt_sub in enumerate(DT_SUBCOOL_K):
+                        for i4, dt_sup in enumerate(DT_SUPERHEAT_K):
+                            for i5, q_cond in enumerate(Q_COND_W):
+                                for i6, ua_cond in enumerate(UA_COND_WK):
+                                    for i7, ua_evap in enumerate(UA_EVAP_WK):
+                                        packed = solve_cycle(
+                                            ref, t_source, t_sink, dt_sub, dt_sup,
+                                            q_cond, ua_cond, ua_evap,
+                                            crit[ref], tmin[ref],
+                                        )
+                                        if packed is not None:
+                                            key = f"{i0}_{i1}_{i2}_{i3}_{i4}_{i5}_{i6}_{i7}"
+                                            states[key] = packed
+                                        pbar.update(1)
+
+    data = {
+        "meta": {
+            "eta_cmp_isen": ETA_CMP_ISEN,
+            "point_order": [name for name, *_ in _POINT_SPEC],
+            "point_labels": {
+                "1s": "1'", "1": "1", "2": "2", "2s": "2'", "3s": "3'", "3": "3", "4": "4",
+            },
+            "value_order": ["h", "T", "P", "s"],
+            "units": {"h": "kJ/kg", "T": "°C", "P": "kPa", "s": "kJ/(kg·K)"},
+            "state_format": "states[key] is a list of 7 points; each point is [h, T, P, s]",
+            "key_axes": [name for name, _ in PARAM_AXES],
+            "n_valid": len(states),
+            "n_total": total,
+        },
+        "params": {name: axis for name, axis in PARAM_AXES},
+        "limits": REF_LIMITS,
+        "saturation": saturation,
+        "states": states,
+    }
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+
+    size_mb = os.path.getsize(out_path) / (1024 * 1024)
+    print(f"Wrote {out_path}")
+    print(f"Valid states: {len(states)} / {total}  ({100 * len(states) / total:.1f}%)")
+    print(f"File size: {size_mb:.2f} MB")
 
 
 if __name__ == "__main__":
