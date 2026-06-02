@@ -46,13 +46,13 @@ from tmhp.refrigerant import calc_ref_state
 
 # ── Parameter grid ──────────────────────────────────────────────────────────
 REFRIGERANTS = ["R410A", "R134a", "R32", "R290"]
-T_SOURCES_C = [-15.0, -5.0, 5.0, 15.0]
-T_SINKS_C = [30.0, 45.0, 60.0]
-DT_SUBCOOL_K = [0.0, 3.0, 6.0]
-DT_SUPERHEAT_K = [0.0, 4.0, 8.0]
-Q_COND_W = [4000.0, 8000.0, 12000.0]
-UA_COND_WK = [300.0, 600.0, 900.0]
-UA_EVAP_WK = [300.0, 600.0, 900.0]
+T_SOURCES_C = [float(t) for t in range(-10, 31)]
+T_SINKS_C = [float(t) for t in range(40, 66)]
+DT_SUBCOOL_K = [float(t) for t in range(1, 6)]
+DT_SUPERHEAT_K = [float(t) for t in range(1, 6)]
+Q_COND_W = [14000.0]
+UA_COND_WK = [2500.0]
+UA_EVAP_WK = [2000.0]
 
 ETA_CMP_ISEN = 0.70
 SAT_CURVE_POINTS = 10000
@@ -95,6 +95,19 @@ def build_saturation_curves(refrigerant: str) -> dict[str, list[float]]:
         p_sat.append(round(CP.PropsSI("P", "T", t_k, "Q", 0, refrigerant) * cu.Pa2kPa, 1))
         s_liq.append(round(CP.PropsSI("S", "T", t_k, "Q", 0, refrigerant) * cu.J2kJ, 3))
         s_vap.append(round(CP.PropsSI("S", "T", t_k, "Q", 1, refrigerant) * cu.J2kJ, 3))
+
+    try:
+        h_crit = CP.PropsSI("H", "T", t_crit, "Q", 0, refrigerant) * cu.J2kJ
+        p_crit = CP.PropsSI("P", "T", t_crit, "Q", 0, refrigerant) * cu.Pa2kPa
+        s_crit = CP.PropsSI("S", "T", t_crit, "Q", 0, refrigerant) * cu.J2kJ
+        temp_c.append(round(cu.K2C(t_crit), 1))
+        h_liq.append(round(h_crit, 1))
+        h_vap.append(round(h_crit, 1))
+        p_sat.append(round(p_crit, 1))
+        s_liq.append(round(s_crit, 3))
+        s_vap.append(round(s_crit, 3))
+    except Exception:
+        pass
 
     return {"T": temp_c, "h_liq": h_liq, "h_vap": h_vap, "p_sat": p_sat, "s_liq": s_liq, "s_vap": s_vap}
 
@@ -202,6 +215,16 @@ def solve_cycle(
     return pts
 
 
+def worker(task: tuple) -> tuple[str, list[list[float]] | None]:
+    """Worker function for multiprocessing."""
+    ref, t_source, t_sink, dt_sub, dt_sup, q_cond, ua_cond, ua_evap, crit_val, tmin_val, key = task
+    res = solve_cycle(
+        ref, t_source, t_sink, dt_sub, dt_sup,
+        q_cond, ua_cond, ua_evap, crit_val, tmin_val
+    )
+    return key, res
+
+
 def main() -> None:
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     out_dir = os.path.join(repo_root, "docs", "source", "_static", "widgets")
@@ -213,27 +236,35 @@ def main() -> None:
     crit = {ref: CP.PropsSI("Tcrit", ref) for ref in REFRIGERANTS}
     tmin = {ref: CP.PropsSI("Tmin", ref) for ref in REFRIGERANTS}
 
-    states: dict[str, list[list[float]]] = {}
-    total = int(np.prod([len(axis) for _, axis in PARAM_AXES]))
+    tasks = []
+    for i0, ref in enumerate(REFRIGERANTS):
+        for i1, t_source in enumerate(T_SOURCES_C):
+            for i2, t_sink in enumerate(T_SINKS_C):
+                for i3, dt_sub in enumerate(DT_SUBCOOL_K):
+                    for i4, dt_sup in enumerate(DT_SUPERHEAT_K):
+                        for i5, q_cond in enumerate(Q_COND_W):
+                            for i6, ua_cond in enumerate(UA_COND_WK):
+                                for i7, ua_evap in enumerate(UA_EVAP_WK):
+                                    tasks.append((
+                                        ref, t_source, t_sink, dt_sub, dt_sup,
+                                        q_cond, ua_cond, ua_evap,
+                                        crit[ref], tmin[ref],
+                                        f"{i0}_{i1}_{i2}_{i3}_{i4}_{i5}_{i6}_{i7}"
+                                    ))
 
-    with tqdm(total=total, desc="Solving cycle grid") as pbar:
-        for i0, ref in enumerate(REFRIGERANTS):
-            for i1, t_source in enumerate(T_SOURCES_C):
-                for i2, t_sink in enumerate(T_SINKS_C):
-                    for i3, dt_sub in enumerate(DT_SUBCOOL_K):
-                        for i4, dt_sup in enumerate(DT_SUPERHEAT_K):
-                            for i5, q_cond in enumerate(Q_COND_W):
-                                for i6, ua_cond in enumerate(UA_COND_WK):
-                                    for i7, ua_evap in enumerate(UA_EVAP_WK):
-                                        packed = solve_cycle(
-                                            ref, t_source, t_sink, dt_sub, dt_sup,
-                                            q_cond, ua_cond, ua_evap,
-                                            crit[ref], tmin[ref],
-                                        )
-                                        if packed is not None:
-                                            key = f"{i0}_{i1}_{i2}_{i3}_{i4}_{i5}_{i6}_{i7}"
-                                            states[key] = packed
-                                        pbar.update(1)
+    states: dict[str, list[list[float]]] = {}
+    total = len(tasks)
+
+    from concurrent.futures import ProcessPoolExecutor
+    max_workers = min(32, os.cpu_count() or 4)
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        results = executor.map(worker, tasks, chunksize=100)
+        with tqdm(total=total, desc="Solving cycle grid") as pbar:
+            for key, packed in results:
+                if packed is not None:
+                    states[key] = packed
+                pbar.update(1)
 
     data = {
         "meta": {
