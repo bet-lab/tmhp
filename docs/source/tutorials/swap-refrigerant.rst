@@ -85,13 +85,7 @@ of magnitude lower than R32's; R134a lands between the two.
     ``scripts/visualization/refrigerant_compare_ph.py``.
 
 .. raw:: html
-
-   <div id="ph-chart-mount"
-        data-refrigerants="R32,R290,R134a,R1234yf"
-        data-default="R32"></div>
-   <script src="../_static/js/lib/d3.v7.custom.min.js"></script>
-   <script src="../_static/js/plots/_plot-common.js"></script>
-   <script src="../_static/js/plots/ph-chart.js"></script>
+   :file: ../_static/html/cycle_widget.html
 
 Reading the result
 ==================
