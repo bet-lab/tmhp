@@ -54,7 +54,9 @@ Q_COND_W = [14000.0]
 UA_COND_WK = [2500.0]
 UA_EVAP_WK = [2000.0]
 
-ETA_CMP_ISEN = 0.70
+def ETA_CMP_ISEN(r_p: float) -> float:
+    return max(0.2, 0.9 - 0.02 * r_p)
+
 SAT_CURVE_POINTS = 10000
 
 # Ordered axis lists; the per-state key encodes the index into each axis.
@@ -268,7 +270,7 @@ def main() -> None:
 
     data = {
         "meta": {
-            "eta_cmp_isen": ETA_CMP_ISEN,
+            "eta_cmp_isen": "max(0.2, 0.9 - 0.02 * r_p)",
             "point_order": [name for name, *_ in _POINT_SPEC],
             "point_labels": {
                 "1s": "1'", "1": "1", "2": "2", "2s": "2'", "3s": "3'", "3": "3", "4": "4",
