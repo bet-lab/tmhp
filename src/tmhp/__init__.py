@@ -22,6 +22,7 @@ from .dynamic_context import *  # noqa: F401, F403
 from .enex_functions import *  # noqa: F401, F403
 from .ground_source_heat_pump import GroundSourceHeatPump
 from .ground_source_heat_pump_boiler import GroundSourceHeatPumpBoiler
+from .gshp_empirical import GroundSourceHeatPumpEmpirical
 from .gshpb_pv_ess import GSHPB_PV_ESS
 from .gshpb_stc_preheat import GSHPB_STC_preheat
 from .gshpb_stc_tank import GSHPB_STC_tank
@@ -41,6 +42,7 @@ __all__ = [
     "ASHPB_STC_tank",
     "GroundSourceHeatPump",
     "GroundSourceHeatPumpBoiler",
+    "GroundSourceHeatPumpEmpirical",
     "GSHPB_PV_ESS",
     "GSHPB_STC_preheat",
     "GSHPB_STC_tank",
