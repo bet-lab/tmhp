@@ -26,6 +26,7 @@ def calc_ref_state(
     dT_superheat: float = 0.0,  # [K] evaporator outlet superheat (State 1* → 1)
     dT_subcool: float = 0.0,  # [K] condenser outlet subcool (State 3* → 3)
     is_active: bool = True,  # active flag (returns nan-filled dict when False)
+    rps: float | None = None,  # compressor speed [rps]
 ) -> dict[str, Any]:
     """Compute the four thermodynamic state points of the refrigerant cycle.
 
@@ -123,7 +124,15 @@ def calc_ref_state(
     # Step 3: State 2 — high-pressure superheated vapour at the compressor outlet.
     h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_ref_cmp_in, refrigerant)
 
-    val_eta_cmp_isen = eta_cmp_isen(P_cond / P_evap) if callable(eta_cmp_isen) else eta_cmp_isen
+    if callable(eta_cmp_isen):
+        import inspect
+        sig = inspect.signature(eta_cmp_isen)
+        if len(sig.parameters) == 2 and rps is not None:
+            val_eta_cmp_isen = eta_cmp_isen(P_cond / P_evap, rps)
+        else:
+            val_eta_cmp_isen = eta_cmp_isen(P_cond / P_evap)
+    else:
+        val_eta_cmp_isen = eta_cmp_isen
 
     h_ref_cmp_out = h_ref_cmp_in + (h2_isen - h_ref_cmp_in) / val_eta_cmp_isen
     try:

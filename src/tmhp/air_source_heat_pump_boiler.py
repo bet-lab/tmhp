@@ -90,7 +90,7 @@ class AirSourceHeatPumpBoiler:
         V_disp_cmp: float = 0.0002,
         eta_cmp_isen: float | Callable | None = None,
         eta_cmp_vol: float | Callable | None = None,
-        eta_cmp_mech: float | Callable = 0.855,
+        eta_cmp_electro_mech: float | Callable = 0.855,
         dT_superheat: float = 5.0,
         dT_subcool: float = 5.0,
         # 2. Heat exchanger -----------------------------
@@ -159,7 +159,7 @@ class AirSourceHeatPumpBoiler:
         else:
             self.eta_cmp_vol = lambda r: 0.95 - 0.05 * r
 
-        self.eta_cmp_mech: float | Callable = eta_cmp_mech
+        self.eta_cmp_electro_mech: float | Callable = eta_cmp_electro_mech
 
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
@@ -337,7 +337,7 @@ class AirSourceHeatPumpBoiler:
             Q_mix_sup_w_in: float = calc_energy_flow(G=c_w * rho_w * dV_mix_sup_w_in, T=self.T_sup_w_K, T0=T0_K)
             Q_mix_w_out: float = calc_energy_flow(G=c_w * rho_w * dV_mix_w_out_val, T=T_mix_w_out_val_K, T0=T0_K)
 
-            cs: dict = calc_ref_state(
+            cs = calc_ref_state(
                 T_evap_K=T_evap_sat_K,
                 T_cond_K=T_cond_sat_K,
                 refrigerant=self.ref,
@@ -346,6 +346,7 @@ class AirSourceHeatPumpBoiler:
                 dT_superheat=self.dT_superheat,
                 dT_subcool=0.0,
                 is_active=False,
+                rps=0.0,
             )
 
             result: dict = cs.copy()
@@ -416,6 +417,7 @@ class AirSourceHeatPumpBoiler:
             dT_superheat=self.dT_superheat,
             dT_subcool=actual_dT_subcool,
             is_active=True,
+            rps=None,
         )
 
         ratio_P_cmp = cs["P_ref_cmp_out [Pa]"] / cs["P_ref_cmp_in [Pa]"] if cs["P_ref_cmp_in [Pa]"] > 0 else 1.0
@@ -454,7 +456,7 @@ class AirSourceHeatPumpBoiler:
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
         val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
-        val_eta_mech = _eval_eff(self.eta_cmp_mech, ratio_P_cmp, cmp_rps)
+        val_eta_electro_mech = _eval_eff(self.eta_cmp_electro_mech, ratio_P_cmp, cmp_rps)
 
         # Post-evaluate state with final isentropic efficiency
         cs = calc_ref_state(
@@ -466,12 +468,13 @@ class AirSourceHeatPumpBoiler:
             dT_superheat=self.dT_superheat,
             dT_subcool=actual_dT_subcool,
             is_active=True,
+            rps=cmp_rps,
         )
 
         m_dot_ref = self.V_disp_cmp * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * cmp_rps
         Q_ref_cond_calc = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_exp_in [J/kg]"])
         Q_ref_evap = m_dot_ref * (cs["h_ref_cmp_in [J/kg]"] - cs["h_ref_exp_out [J/kg]"])
-        E_cmp = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_cmp_in [J/kg]"]) / val_eta_mech
+        E_cmp = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_cmp_in [J/kg]"]) / val_eta_electro_mech
 
         HX_perf_ou: dict = calc_HX_perf_for_target_heat(
             Q_ref_target=Q_ref_evap,
