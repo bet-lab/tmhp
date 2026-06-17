@@ -131,6 +131,8 @@ class AirSourceHeatPumpBoiler:
         uv=None,
         # ASHRAE 90.1-2022 VSD coefficients
         vsd_coeffs_ou: dict | None = None,
+        # Surrounding temperature parameter
+        T_sur: float = 20.0,
     ):
         if hp_on_schedule is None:
             hp_on_schedule = [(0.0, 24.0)]
@@ -227,6 +229,7 @@ class AirSourceHeatPumpBoiler:
         self.UA_tank: float = calc_simple_tank_UA(
             **self.tank_physical,
         )
+        self.T_sur_K: float = cu.C2K(T_sur)
         self.V_tank_full: float = math.pi * r0**2 * H
         self.C_tank: float = c_w * rho_w * self.V_tank_full
 
@@ -950,7 +953,7 @@ class AirSourceHeatPumpBoiler:
         r.update(
             {
                 "hp_is_on": ctrl.is_on,
-                "Q_tank_loss [W]": (self.UA_tank * (T_solved_K - ctx.T0_K)),
+                "Q_tank_loss [W]": (self.UA_tank * (T_solved_K - self.T_sur_K)),
                 "T_tank_w [°C]": cu.K2C(T_solved_K),
                 "T_mix_w_out [°C]": T_mix_w_out_val,
                 "T_tank_w_in [°C]": cu.K2C(self.T_tank_w_in_K),
@@ -1050,6 +1053,7 @@ class AirSourceHeatPumpBoiler:
                 self.V_tank_full,
                 self._subsystems,
                 sub_states,
+                T_sur_K=self.T_sur_K,
             )[0]
 
         return residual
@@ -1114,6 +1118,7 @@ class AirSourceHeatPumpBoiler:
         T_sup_w_schedule=None,
         tank_level_init: float = 1.0,
         result_save_csv_path: str | None = None,
+        T_sur_schedule=None,
     ) -> pd.DataFrame:
         """Run a time-stepping dynamic simulation.
 
@@ -1185,6 +1190,19 @@ class AirSourceHeatPumpBoiler:
         else:
             T_sup_w_arr = np.full(tN, self.T_sup_w)
 
+        # T_sur schedule: fallback to constructor constant
+        if T_sur_schedule is not None:
+            T_sur_arr: np.ndarray = np.array(
+                T_sur_schedule,
+                dtype=float,
+            )
+            if len(T_sur_arr) != tN:
+                raise ValueError(
+                    f"T_sur_schedule length ({len(T_sur_arr)}) != tN ({tN})",
+                )
+        else:
+            T_sur_arr = np.full(tN, cu.K2C(self.T_sur_K))
+
         self.time: np.ndarray = time
         self.dt: int = dt_s
 
@@ -1222,6 +1240,9 @@ class AirSourceHeatPumpBoiler:
             self.T_sup_w_K = T_sup_w_K_n
             self.T_tank_w_in = T_sup_w_n
             self.T_tank_w_in_K = T_tank_w_in_K_n
+
+            # Per-step surrounding temperature
+            self.T_sur_K = cu.C2K(T_sur_arr[n])
 
             # Subsystem activation schedule — delegated to Hook
             activation_flags: dict[str, bool] = self._get_activation_flags(hour_of_day)
@@ -1315,7 +1336,7 @@ class AirSourceHeatPumpBoiler:
                 )
                 dV_out_curr = alp_curr * ctx.dV_mix_w_out
                 Q_flow_curr = c_w * rho_w * dV_out_curr * (T_sup_w_K_n - ctx.T_tank_w_K)
-                Q_loss_curr = self.UA_tank * (ctx.T_tank_w_K - ctx.T0_K)
+                Q_loss_curr = self.UA_tank * (ctx.T_tank_w_K - self.T_sur_K)
                 Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr  # Assumes sub_total = 0 explicitly for fallback
 
                 T_tank_w_K = ctx.T_tank_w_K + dt_s * Q_tot / self.C_tank

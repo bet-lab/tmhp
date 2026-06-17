@@ -115,6 +115,7 @@ class WaterSourceHeatPumpBoiler:
         # 10. Simulation scope (for precomputing g-functions)
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
+        T_sur: float = 20.0,
         *,
         # Deprecated alias for `ref`; kept for backward compatibility.
         refrigerant: str | None = None,
@@ -140,6 +141,7 @@ class WaterSourceHeatPumpBoiler:
             "h_o": h_o,
         }
         self.UA_tank = calc_simple_tank_UA(**self.tank_physical)
+        self.T_sur_K = cu.C2K(T_sur)
         self.V_tank_full: float = math.pi * r0**2 * H
         self.C_tank = c_w * rho_w * self.V_tank_full
 
@@ -588,6 +590,7 @@ class WaterSourceHeatPumpBoiler:
                 self.V_tank_full,
                 self._subsystems,
                 sub_states,
+                T_sur_K=self.T_sur_K,
             )[0]
 
         return residual
@@ -635,7 +638,7 @@ class WaterSourceHeatPumpBoiler:
         r["T0 [°C]"] = cu.K2C(ctx.T0_K)
         r["hp_is_on"] = ctrl.is_on
 
-        Q_tank_loss = self.UA_tank * (T_solved_K - ctx.T0_K)
+        Q_tank_loss = self.UA_tank * (T_solved_K - self.T_sur_K)
         mix = calc_mixing_valve_temp(T_solved_K, self.T_tank_w_in_K, self.T_mix_w_out_K)
         r["T_mix_w_out [°C]"] = cu.K2C(mix["T_mix_w_out_K"])
 
@@ -672,6 +675,7 @@ class WaterSourceHeatPumpBoiler:
         T_source_w_schedule=None,
         tank_level_init: float = 1.0,
         result_save_csv_path=None,
+        T_sur_schedule=None,
     ) -> pd.DataFrame:
         from scipy.optimize import fsolve
 
@@ -693,6 +697,11 @@ class WaterSourceHeatPumpBoiler:
             T_source_w_arr = np.array(T_source_w_schedule, dtype=float)
         else:
             T_source_w_arr = np.full(tN, self.Ts)
+
+        if T_sur_schedule is not None:
+            T_sur_arr = np.array(T_sur_schedule, dtype=float)
+        else:
+            T_sur_arr = np.full(tN, cu.K2C(self.T_sur_K))
 
         results_data = []
 
@@ -721,6 +730,8 @@ class WaterSourceHeatPumpBoiler:
             t_s = time[n]
             hr = t_s * cu.s2h
             hour_of_day = (t_s % (24 * 3600)) * cu.s2h
+
+            self.T_sur_K = cu.C2K(T_sur_arr[n])
 
             T0_K = cu.C2K(T0_schedule[n])
             T_sup_w_n = T_sup_w_arr[n]
@@ -824,7 +835,7 @@ class WaterSourceHeatPumpBoiler:
                 # explicit Euler fallback
                 Q_hp_val = ctrl.Q_heat_source
                 Q_flow_curr = c_w * rho_w * dV_tank_w_out_prev * (T_sup_w_K_n - ctx.T_tank_w_K)
-                Q_loss_curr = self.UA_tank * (ctx.T_tank_w_K - ctx.T0_K)
+                Q_loss_curr = self.UA_tank * (ctx.T_tank_w_K - self.T_sur_K)
                 Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr
                 T_solved_K = ctx.T_tank_w_K + dt_s * Q_tot / (self.C_tank * tank_level_solve)
 
