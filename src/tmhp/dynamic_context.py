@@ -403,6 +403,7 @@ def tank_mass_energy_residual(
     V_tank_full: float,
     subsystems: dict[str, Subsystem],
     sub_states: dict[str, dict],
+    T_sur_K: float | None = None,
 ) -> list[float]:
     """Energy and mass balance residuals at T^{n+1}.
 
@@ -438,6 +439,8 @@ def tank_mass_energy_residual(
         Registered subsystem instances.
     sub_states : dict[str, dict]
         Per-subsystem state dicts from ``step()``.
+    T_sur_K : float | None
+        Surrounding temperature [K]. If None, defaults to ctx.T0_K.
 
     Returns
     -------
@@ -459,7 +462,8 @@ def tank_mass_energy_residual(
 
     C_curr: float = C_tank * max(0.001, ctx.tank_level)
     C_next: float = C_tank * max(0.001, level_next)
-    Q_loss: float = UA_tank * (T_next - ctx.T0_K)
+    T_sur_K = T_sur_K if T_sur_K is not None else ctx.T0_K
+    Q_loss: float = UA_tank * (T_next - T_sur_K)
 
     # Effective tank inlet temperature
     # (subsystems may override, e.g. mains preheat)
