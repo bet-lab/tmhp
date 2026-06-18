@@ -429,6 +429,7 @@ class AirSourceHeatPumpBoiler:
         # --- Active state calculations ---
         pinch_min: float = 0.5
         actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
+        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - pinch_min))
 
         import inspect
         def _eval_eff(eff, r_p, rps):
@@ -450,7 +451,7 @@ class AirSourceHeatPumpBoiler:
             refrigerant=self.ref,
             eta_cmp_isen=1.0,  # Temporary dummy value to get basic states
             mode="heating",
-            dT_superheat=self.dT_superheat,
+            dT_superheat=actual_dT_superheat,
             dT_subcool=actual_dT_subcool,
             is_active=True,
             rps=None,
@@ -501,7 +502,7 @@ class AirSourceHeatPumpBoiler:
             refrigerant=self.ref,
             eta_cmp_isen=val_eta_isen,
             mode="heating",
-            dT_superheat=self.dT_superheat,
+            dT_superheat=actual_dT_superheat,
             dT_subcool=actual_dT_subcool,
             is_active=True,
             rps=cmp_rps,
