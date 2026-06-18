@@ -39,6 +39,7 @@ configured through constructor parameters.
 """
 
 import contextlib
+import inspect
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -46,12 +47,12 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize_scalar
+from scipy.optimize import brentq, minimize_scalar
 from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import safe_float_attr
-from .constants import c_a, c_w, rho_a, rho_w
+from .constants import PINCH_MIN_K, c_a, c_w, rho_a, rho_w
 from .dynamic_context import (
     ControlState,
     StepContext,
@@ -427,11 +428,9 @@ class AirSourceHeatPumpBoiler:
             return result
 
         # --- Active state calculations ---
-        pinch_min: float = 0.5
-        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
-        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - pinch_min))
+        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - PINCH_MIN_K))
+        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - PINCH_MIN_K))
 
-        import inspect
         def _eval_eff(eff, r_p, rps):
             if eff is None:
                 return 1.0
@@ -481,7 +480,6 @@ class AirSourceHeatPumpBoiler:
             m_dot = self.V_cmp_ref * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * rps
             return (m_dot * dh_cond_local) - Q_ref_cond
 
-        from scipy.optimize import brentq
         try:
             cmp_rps = brentq(_residual_rps, 10.0, 150.0)
             converged_rps = True

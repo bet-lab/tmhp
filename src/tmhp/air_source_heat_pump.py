@@ -17,16 +17,17 @@ heat exchange at the indoor unit.
 """
 
 import contextlib
+import inspect
 from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
+from scipy.optimize import brentq, minimize
 from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import safe_float_attr
-from .constants import c_a, rho_a
+from .constants import PINCH_MIN_K, c_a, rho_a
 from .enex_functions import (
     calc_fan_power_from_dV_fan,
     calc_HX_perf_for_target_heat,
@@ -308,11 +309,9 @@ class AirSourceHeatPump:
         if (T_cond_sat_K - T_evap_sat_K) <= self.min_lift_K:
             return None
 
-        pinch_min: float = 0.5
-        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
-        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - pinch_min))
+        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - PINCH_MIN_K))
+        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - PINCH_MIN_K))
 
-        import inspect
         def _eval_eff(eff, r_p, rps) -> float:
             if eff is None:
                 return 1.0
@@ -367,7 +366,6 @@ class AirSourceHeatPump:
             else:
                 return (m_dot * dh_cond_local) - abs(Q_r_iu)
 
-        from scipy.optimize import brentq
         try:
             cmp_rps = brentq(_residual_rps, 10.0, 150.0)
             converged_rps = True

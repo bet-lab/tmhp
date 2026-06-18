@@ -19,7 +19,7 @@ __all__ = [
     # Water properties
     "c_w", "rho_w", "mu_w", "k_w", "Pr_w", "beta",
     # Physical / thermodynamic
-    "g", "sigma", "T0_K", "P0_PA",
+    "g", "sigma", "T0_K", "P0_PA", "PINCH_MIN_K",
     # Solar entropy coefficients
     "k_D", "k_d",
     # Natural gas
@@ -64,6 +64,11 @@ g = 9.81  # Gravitational acceleration [m/s²]
 sigma = 5.67e-8  # Stefan-Boltzmann constant [W/m²K⁴]
 T0_K = 293.15  # Default dead state temperature [K] (20°C)
 P0_PA = 101325.0  # Default dead state pressure [Pa] (1 atm)
+
+# Minimum heat-exchanger approach temperature difference [K]; caps superheat/
+# subcool so suction/discharge cannot cross the source/sink temperature
+# (2nd-law guard). Shared by ASHP/ASHPB/WSHPB cycle solvers.
+PINCH_MIN_K = 0.5
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

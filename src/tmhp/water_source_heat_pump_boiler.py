@@ -23,7 +23,7 @@ from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import safe_float_attr
-from .constants import c_w, k_w, mu_w, rho_w
+from .constants import PINCH_MIN_K, c_w, k_w, mu_w, rho_w
 from .dynamic_context import (
     ControlState,
     StepContext,
@@ -371,8 +371,7 @@ class WaterSourceHeatPumpBoiler:
         T_ref_evap_sat_K = T_evap_in_K - dT_ref_evap
         T_ref_cond_sat_K = T_tank_w_K + dT_ref_cond
 
-        pinch_min: float = 0.5
-        actual_dT_subcool = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
+        actual_dT_subcool = min(self.dT_subcool, max(0.0, dT_ref_cond - PINCH_MIN_K))
 
         # 2. Refrigerant Cycle Evaluation
         try:
