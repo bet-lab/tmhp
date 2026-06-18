@@ -82,13 +82,13 @@ class GroundSourceHeatPumpBoiler:
         self,
         # 1. Refrigerant / cycle / compressor
         ref: str = "R410A",
-        V_disp_cmp: float = 0.0005,
+        V_cmp_ref: float | None = None,
         eta_cmp_isen: float | Callable | None = None,
         eta_cmp_vol: float | Callable | None = None,
-        eta_cmp_mech: float | Callable = 0.855,
+        eta_cmp: float | Callable | None = None,
         # 2. Heat exchanger UA
-        UA_cond_design: float = 500,
-        UA_evap_design: float = 500,
+        UA_cond: float | None = None,
+        UA_evap: float | None = None,
         # 3. Tank / control / load
         T0: float = 0.0,
         Ts: float = 16.0,
@@ -145,8 +145,12 @@ class GroundSourceHeatPumpBoiler:
         boundary_condition: str = "uniform_temperature",
         T_sur: float = 20.0,
         *,
-        # Deprecated alias for `ref`; kept for backward compatibility.
+        # Deprecated:
         refrigerant: str | None = None,
+        V_disp_cmp: float | None = None,
+        eta_cmp_mech: float | Callable | None = None,
+        UA_cond_design: float | None = None,
+        UA_evap_design: float | None = None,
     ) -> None:
         if refrigerant is not None:
             import warnings
@@ -158,6 +162,16 @@ class GroundSourceHeatPumpBoiler:
                 stacklevel=2,
             )
             ref = refrigerant
+
+        # Resolve deprecated mapping
+        if V_cmp_ref is None:
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0005
+        if eta_cmp is None:
+            eta_cmp = eta_cmp_mech if eta_cmp_mech is not None else 0.855
+        if UA_cond is None:
+            UA_cond = UA_cond_design if UA_cond_design is not None else 500.0
+        if UA_evap is None:
+            UA_evap = UA_evap_design if UA_evap_design is not None else 500.0
 
         self.tank_physical = {
             "r0": r0,
@@ -174,13 +188,13 @@ class GroundSourceHeatPumpBoiler:
         self.C_tank = c_w * rho_w * self.V_tank_full
 
         self.ref = ref
-        self.V_disp_cmp = V_disp_cmp
+        self.V_cmp_ref = V_cmp_ref
         self.eta_cmp_isen = eta_cmp_isen
         self.eta_cmp_vol = eta_cmp_vol
-        self.eta_cmp_mech = eta_cmp_mech
+        self.eta_cmp = eta_cmp
 
-        self.UA_cond = UA_cond_design
-        self.UA_evap = UA_evap_design
+        self.UA_cond = UA_cond
+        self.UA_evap = UA_evap
 
         self.T0_K = cu.C2K(T0)
         self.Ts = Ts
@@ -353,6 +367,7 @@ class GroundSourceHeatPumpBoiler:
                 {
                     "hp_is_on": False,
                     "converged": True,
+                    "converged_rps": True,
                     "_penalty": 0.0,
                     "err_Q_evap [W]": 0.0,
                     # Temperatures [°C]
@@ -430,17 +445,17 @@ class GroundSourceHeatPumpBoiler:
 
         try:
             s_cmp_in = cs["s_ref_cmp_in [J/(kg·K)]"]
-            h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
+            h_ref_cmp_out_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
         except ValueError:
-            h2_isen = h_ref_cmp_in
+            h_ref_cmp_out_isen = h_ref_cmp_in
 
         # 3. Cycle Performance
         def _residual_rps(rps):
             val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
             val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
-            h_cmp_out_local = h_ref_cmp_in + (h2_isen - h_ref_cmp_in) / val_eta_isen
+            h_cmp_out_local = h_ref_cmp_in + (h_ref_cmp_out_isen - h_ref_cmp_in) / val_eta_isen
             dh_cond_local = h_cmp_out_local - h_ref_exp_in
-            m_dot = self.V_disp_cmp * rho_ref_cmp_in * val_eta_vol * rps
+            m_dot = self.V_cmp_ref * rho_ref_cmp_in * val_eta_vol * rps
             return (m_dot * dh_cond_local) - Q_cond_load
 
         from scipy.optimize import brentq
@@ -455,7 +470,7 @@ class GroundSourceHeatPumpBoiler:
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
         val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
-        val_eta_mech = _eval_eff(self.eta_cmp_mech, ratio_P_cmp, cmp_rps)
+        val_eta_electro_mech = _eval_eff(self.eta_cmp, ratio_P_cmp, cmp_rps)
 
         cs = calc_ref_state(
             T_evap_K=T_ref_evap_sat_K,
@@ -469,10 +484,10 @@ class GroundSourceHeatPumpBoiler:
         )
 
         h_ref_cmp_out = cs["h_ref_cmp_out [J/kg]"]
-        m_dot_ref = self.V_disp_cmp * rho_ref_cmp_in * val_eta_vol * cmp_rps
+        m_dot_ref = self.V_cmp_ref * rho_ref_cmp_in * val_eta_vol * cmp_rps
         Q_ref_cond = m_dot_ref * (h_ref_cmp_out - h_ref_exp_in)
         Q_ref_evap = m_dot_ref * (h_ref_cmp_in - h_ref_exp_out)
-        E_cmp = (m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)) / val_eta_mech
+        E_cmp = (m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)) / val_eta_electro_mech
 
         # 4. NTU Evaporator Analysis
         NTU_evap = self.UA_evap / m_dot_cp_b
@@ -501,6 +516,7 @@ class GroundSourceHeatPumpBoiler:
             {
                 "hp_is_on": True,
                 "converged": converged_rps,
+                "converged_rps": converged_rps,
                 "_penalty": penalty,
                 "err_Q_evap [W]": 0.0,
                 "T_ref_evap_sat [°C]": cu.K2C(cs.get("T_ref_evap_sat_K", np.nan)),

@@ -56,11 +56,11 @@ class WaterSourceHeatPumpBoiler:
         self,
         # 1. Refrigerant / cycle / compressor
         ref: str = "R410A",
-        V_disp_cmp: float = 0.0005,
+        V_cmp_ref: float | None = None,
         eta_cmp_isen: float = 0.7,
         # 2. Heat exchanger UA
-        UA_cond_design: float = 500,
-        UA_evap_design: float = 500,
+        UA_cond: float | None = None,
+        UA_evap: float | None = None,
         # 3. Tank / control / load
         T0: float = 0.0,
         Ts: float = 16.0,
@@ -117,8 +117,11 @@ class WaterSourceHeatPumpBoiler:
         dt_s: float = 3600,
         T_sur: float = 20.0,
         *,
-        # Deprecated alias for `ref`; kept for backward compatibility.
+        # Deprecated:
         refrigerant: str | None = None,
+        V_disp_cmp: float | None = None,
+        UA_cond_design: float | None = None,
+        UA_evap_design: float | None = None,
     ) -> None:
         if refrigerant is not None:
             import warnings
@@ -130,6 +133,14 @@ class WaterSourceHeatPumpBoiler:
                 stacklevel=2,
             )
             ref = refrigerant
+
+        # Resolve deprecated mapping
+        if V_cmp_ref is None:
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0005
+        if UA_cond is None:
+            UA_cond = UA_cond_design if UA_cond_design is not None else 500.0
+        if UA_evap is None:
+            UA_evap = UA_evap_design if UA_evap_design is not None else 500.0
 
         self.tank_physical = {
             "r0": r0,
@@ -146,11 +157,11 @@ class WaterSourceHeatPumpBoiler:
         self.C_tank = c_w * rho_w * self.V_tank_full
 
         self.ref = ref
-        self.V_disp_cmp = V_disp_cmp
+        self.V_cmp_ref = V_cmp_ref
         self.eta_cmp_isen = eta_cmp_isen
 
-        self.UA_cond = UA_cond_design
-        self.UA_evap = UA_evap_design
+        self.UA_cond = UA_cond
+        self.UA_evap = UA_evap
 
         self.T0_K = cu.C2K(T0)
         self.Ts = Ts
@@ -282,6 +293,7 @@ class WaterSourceHeatPumpBoiler:
         return {
             "hp_is_on": False,
             "converged": True,
+            "converged_rps": True,
             "T_tank_w [°C]": T_tank_w,
             "T0 [°C]": T0,
             "T_mix_w_out [°C]": cu.K2C(mix["T_mix_w_out_K"]),
@@ -389,7 +401,7 @@ class WaterSourceHeatPumpBoiler:
         Q_ref_cond = Q_cond_load
         Q_ref_evap = m_dot_ref * (h_ref_cmp_in - h_ref_exp_out)
         E_cmp = m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)
-        cmp_rps = m_dot_ref / (self.V_disp_cmp * rho_ref_cmp_in)
+        cmp_rps = m_dot_ref / (self.V_cmp_ref * rho_ref_cmp_in)
 
         # 4. NTU Evaporator Analysis
         NTU_evap = self.UA_evap / m_dot_cp_b
@@ -419,6 +431,7 @@ class WaterSourceHeatPumpBoiler:
             {
                 "hp_is_on": True,
                 "converged": True,
+                "converged_rps": True,
                 "_penalty": penalty,
                 "err_Q_evap [W]": err,
                 "T_ref_evap_sat [°C]": cu.K2C(cycle_states.get("T_ref_evap_sat_K", np.nan)),

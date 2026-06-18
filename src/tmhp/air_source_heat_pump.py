@@ -50,32 +50,67 @@ class AirSourceHeatPump:
         self,
         # 1. Refrigerant / cycle / compressor -----------
         ref: str = "R32",
-        V_disp_cmp: float = 0.0001,
+        V_cmp_ref: float | None = None,
         eta_cmp_isen: float | Callable | None = None,
         eta_cmp_vol: float | Callable | None = None,
-        eta_cmp_mech: float | Callable = 0.855,
+        eta_cmp: float | Callable | None = None,
         dT_superheat: float = 3.0,
         dT_subcool: float = 3.0,
         # 2. Heat exchanger UA ---------------------------
-        UA_cond_design: float | None = None,
-        UA_evap_design: float | None = None,
+        UA_cond_rated: float | None = None,
+        UA_evap_rated: float | None = None,
+        n_evap: float = 0.65,
+        n_cond: float = 0.65,
         # 3. Outdoor unit fan ----------------------------
-        dV_ou_fan_a_design: float | None = None,
-        dP_ou_fan_design: float = 60.0,
+        dV_ou_fan_a_rated: float | None = None,
+        dP_ou_fan_rated: float | None = None,
         A_cross_ou: float | None = None,
-        eta_ou_fan_design: float = 0.6,
+        eta_ou_fan_rated: float | None = None,
         # 4. Indoor unit fan -----------------------
-        dV_iu_fan_a_design: float | None = None,
-        dP_iu_fan_design: float = 60.0,
+        dV_iu_fan_a_rated: float | None = None,
+        dP_iu_fan_rated: float | None = None,
         A_cross_iu: float | None = None,
-        eta_iu_fan_design: float = 0.6,
+        eta_iu_fan_rated: float | None = None,
         # 5. System capacity / room ----------------------
         hp_capacity: float = 4000.0,
         T_a_room: float = 27.0,
         # ASHRAE 90.1-2022 VSD coefficients
         vsd_coeffs_ou: dict | None = None,
         vsd_coeffs_iu: dict | None = None,
+        # Deprecated:
+        V_disp_cmp: float | None = None,
+        eta_cmp_mech: float | Callable | None = None,
+        UA_cond_design: float | None = None,
+        UA_evap_design: float | None = None,
+        dV_ou_fan_a_design: float | None = None,
+        dP_ou_fan_design: float | None = None,
+        eta_ou_fan_design: float | None = None,
+        dV_iu_fan_a_design: float | None = None,
+        dP_iu_fan_design: float | None = None,
+        eta_iu_fan_design: float | None = None,
     ):
+        # Resolve deprecated mapping
+        if V_cmp_ref is None:
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0001
+        if eta_cmp is None:
+            eta_cmp = eta_cmp_mech if eta_cmp_mech is not None else 0.855
+        if UA_cond_rated is None:
+            UA_cond_rated = UA_cond_design
+        if UA_evap_rated is None:
+            UA_evap_rated = UA_evap_design
+        if dV_ou_fan_a_rated is None:
+            dV_ou_fan_a_rated = dV_ou_fan_a_design
+        if dP_ou_fan_rated is None:
+            dP_ou_fan_rated = dP_ou_fan_design if dP_ou_fan_design is not None else 60.0
+        if eta_ou_fan_rated is None:
+            eta_ou_fan_rated = eta_ou_fan_design if eta_ou_fan_design is not None else 0.6
+        if dV_iu_fan_a_rated is None:
+            dV_iu_fan_a_rated = dV_iu_fan_a_design
+        if dP_iu_fan_rated is None:
+            dP_iu_fan_rated = dP_iu_fan_design if dP_iu_fan_design is not None else 60.0
+        if eta_iu_fan_rated is None:
+            eta_iu_fan_rated = eta_iu_fan_design if eta_iu_fan_design is not None else 0.6
+
         if vsd_coeffs_ou is None:
             vsd_coeffs_ou = {
                 "c1": 0.0013,
@@ -95,70 +130,73 @@ class AirSourceHeatPump:
 
         # --- 1. Refrigerant / cycle / compressor ---
         self.ref: str = ref
-        self.V_disp_cmp: float = V_disp_cmp
+        self.V_cmp_ref: float = V_cmp_ref
         self.eta_cmp_isen: float | Callable | None = eta_cmp_isen
         self.eta_cmp_vol: float | Callable | None = eta_cmp_vol
-        self.eta_cmp_mech: float | Callable = eta_cmp_mech
+        self.eta_cmp: float | Callable = eta_cmp
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
         self.min_lift_K: float = 20
         self.hp_capacity: float = hp_capacity
 
         # --- 2. Heat exchanger UA ---
-        if UA_cond_design is None:
-            self.UA_cond_design = hp_capacity / 10.0
+        if UA_cond_rated is None:
+            self.UA_cond_rated = hp_capacity / 10.0
         else:
-            self.UA_cond_design = UA_cond_design
+            self.UA_cond_rated = UA_cond_rated
 
-        if UA_evap_design is None:
-            self.UA_evap_design = self.UA_cond_design * 0.8
+        if UA_evap_rated is None:
+            self.UA_evap_rated = self.UA_cond_rated * 0.8
         else:
-            self.UA_evap_design = UA_evap_design
+            self.UA_evap_rated = UA_evap_rated
+
+        self.n_evap: float = n_evap
+        self.n_cond: float = n_cond
 
         # --- 3. Outdoor unit fan ---
-        if dV_ou_fan_a_design is None:
-            self.dV_ou_fan_a_design = hp_capacity * 0.0002
+        if dV_ou_fan_a_rated is None:
+            self.dV_ou_fan_a_rated = hp_capacity * 0.0002
         else:
-            self.dV_ou_fan_a_design = dV_ou_fan_a_design
+            self.dV_ou_fan_a_rated = dV_ou_fan_a_rated
 
-        self.dP_ou_fan_design: float = dP_ou_fan_design
-        self.eta_ou_fan_design: float = eta_ou_fan_design
+        self.dP_ou_fan_rated: float = dP_ou_fan_rated
+        self.eta_ou_fan_rated: float = eta_ou_fan_rated
 
         if A_cross_ou is None:
-            self.A_cross_ou = self.dV_ou_fan_a_design / 2.0
+            self.A_cross_ou = self.dV_ou_fan_a_rated / 2.0
         else:
             self.A_cross_ou = A_cross_ou
 
-        self.E_ou_fan_design: float = (
-            self.dV_ou_fan_a_design * self.dP_ou_fan_design / self.eta_ou_fan_design
+        self.E_ou_fan_rated: float = (
+            self.dV_ou_fan_a_rated * self.dP_ou_fan_rated / self.eta_ou_fan_rated
         )
         self.vsd_coeffs_ou: dict = vsd_coeffs_ou
         self.fan_params_ou: dict = {
-            "fan_design_flow_rate": self.dV_ou_fan_a_design,
-            "fan_design_power": self.E_ou_fan_design,
+            "fan_rated_flow_rate": self.dV_ou_fan_a_rated,
+            "fan_rated_power": self.E_ou_fan_rated,
         }
 
         # --- 4. Indoor unit fan ---
-        if dV_iu_fan_a_design is None:
-            self.dV_iu_fan_a_design = hp_capacity * 0.0002
+        if dV_iu_fan_a_rated is None:
+            self.dV_iu_fan_a_rated = hp_capacity * 0.0002
         else:
-            self.dV_iu_fan_a_design = dV_iu_fan_a_design
+            self.dV_iu_fan_a_rated = dV_iu_fan_a_rated
 
-        self.dP_iu_fan_design: float = dP_iu_fan_design
-        self.eta_iu_fan_design: float = eta_iu_fan_design
+        self.dP_iu_fan_rated: float = dP_iu_fan_rated
+        self.eta_iu_fan_rated: float = eta_iu_fan_rated
 
         if A_cross_iu is None:
-            self.A_cross_iu = self.dV_iu_fan_a_design / 2.0
+            self.A_cross_iu = self.dV_iu_fan_a_rated / 2.0
         else:
             self.A_cross_iu = A_cross_iu
 
-        self.E_iu_fan_design: float = (
-            self.dV_iu_fan_a_design * self.dP_iu_fan_design / self.eta_iu_fan_design
+        self.E_iu_fan_rated: float = (
+            self.dV_iu_fan_a_rated * self.dP_iu_fan_rated / self.eta_iu_fan_rated
         )
         self.vsd_coeffs_iu: dict = vsd_coeffs_iu
         self.fan_params_iu: dict = {
-            "fan_design_flow_rate": self.dV_iu_fan_a_design,
-            "fan_design_power": self.E_iu_fan_design,
+            "fan_rated_flow_rate": self.dV_iu_fan_a_rated,
+            "fan_rated_power": self.E_iu_fan_rated,
         }
 
         # --- 5. Room temperature ---
@@ -219,6 +257,11 @@ class AirSourceHeatPump:
                 {
                     "hp_is_on": False,
                     "converged": True,
+                    "converged_rps": True,
+                    "ou_fan_flow_min_limit": False,
+                    "ou_fan_flow_max_limit": False,
+                    "iu_fan_flow_min_limit": False,
+                    "iu_fan_flow_max_limit": False,
                     # Temperatures [°C]
                     "T_ou_a_in [°C]": T0,
                     "T_ou_a_mid [°C]": T0,
@@ -302,19 +345,19 @@ class AirSourceHeatPump:
         try:
             import CoolProp.CoolProp as CP
             s_cmp_in = cs["s_ref_cmp_in [J/(kg·K)]"]
-            h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
+            h_ref_cmp_out_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
         except ValueError:
-            h2_isen = h_cmp_in
+            h_ref_cmp_out_isen = h_cmp_in
 
         def _residual_rps(rps):
             val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
             val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
-            h_cmp_out_local = h_cmp_in + (h2_isen - h_cmp_in) / val_eta_isen
+            h_cmp_out_local = h_cmp_in + (h_ref_cmp_out_isen - h_cmp_in) / val_eta_isen
 
             dh_cond_local = h_cmp_out_local - h_exp_in
             dh_evap_local = h_cmp_in - h_exp_out
 
-            m_dot = self.V_disp_cmp * rho_in * val_eta_vol * rps
+            m_dot = self.V_cmp_ref * rho_in * val_eta_vol * rps
             if mode == "cooling":
                 return (m_dot * dh_evap_local) - abs(Q_r_iu)
             else:
@@ -332,7 +375,7 @@ class AirSourceHeatPump:
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
         val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
-        val_eta_mech = _eval_eff(self.eta_cmp_mech, ratio_P_cmp, cmp_rps)
+        val_eta_electro_mech = _eval_eff(self.eta_cmp, ratio_P_cmp, cmp_rps)
 
         cs = calc_ref_state(
             T_evap_K=T_evap_sat_K,
@@ -346,10 +389,10 @@ class AirSourceHeatPump:
         )
 
         h_cmp_out_final = cs["h_ref_cmp_out [J/kg]"]
-        m_dot_ref = self.V_disp_cmp * rho_in * val_eta_vol * cmp_rps
+        m_dot_ref = self.V_cmp_ref * rho_in * val_eta_vol * cmp_rps
         Q_ref_cond = m_dot_ref * (h_cmp_out_final - h_exp_in)
         Q_ref_evap = m_dot_ref * (h_cmp_in - h_exp_out)
-        E_cmp = (m_dot_ref * (h_cmp_out_final - h_cmp_in)) / val_eta_mech
+        E_cmp = (m_dot_ref * (h_cmp_out_final - h_cmp_in)) / val_eta_electro_mech
 
         # Reject negative compressor power (unphysical)
         if E_cmp <= 0:
@@ -363,9 +406,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T0,
                 T_ref_sat_K=T_cond_sat_K,
                 A_cross=self.A_cross_ou,
-                UA_design=self.UA_cond_design,
-                dV_fan_design=self.dV_ou_fan_a_design,
+                UA_design=self.UA_cond_rated,
+                dV_fan_design=self.dV_ou_fan_a_rated,
                 is_active=True,
+                exponent=self.n_cond,
             )
         else:
             # Outdoor = evaporator → ref absorbs heat → air is cooled
@@ -374,9 +418,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T0,
                 T_ref_sat_K=T_evap_sat_K,
                 A_cross=self.A_cross_ou,
-                UA_design=self.UA_evap_design,
-                dV_fan_design=self.dV_ou_fan_a_design,
+                UA_design=self.UA_evap_rated,
+                dV_fan_design=self.dV_ou_fan_a_rated,
                 is_active=True,
+                exponent=self.n_evap,
             )
 
         dV_ou_a: float = ou_hx["dV_fan"]
@@ -401,9 +446,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_evap_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_evap_design,
-                dV_fan_design=self.dV_iu_fan_a_design,
+                UA_design=self.UA_evap_rated,
+                dV_fan_design=self.dV_iu_fan_a_rated,
                 is_active=True,
+                exponent=self.n_evap,
             )
         else:
             # Indoor = condenser → ref rejects heat → air is heated
@@ -412,9 +458,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_cond_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_cond_design,
-                dV_fan_design=self.dV_iu_fan_a_design,
+                UA_design=self.UA_cond_rated,
+                dV_fan_design=self.dV_iu_fan_a_rated,
                 is_active=True,
+                exponent=self.n_cond,
             )
 
         dV_iu_a: float = iu_hx["dV_fan"]
@@ -437,6 +484,11 @@ class AirSourceHeatPump:
                 "converged": False,
                 "_ou_diag": ou_hx,
                 "_iu_diag": iu_hx,
+                "converged_rps": bool(converged_rps),
+                "ou_fan_flow_min_limit": ou_hx.get("min_limit", False),
+                "ou_fan_flow_max_limit": ou_hx.get("max_limit", False),
+                "iu_fan_flow_min_limit": iu_hx.get("min_limit", False),
+                "iu_fan_flow_max_limit": iu_hx.get("max_limit", False),
             }
 
         # Check overall convergence
@@ -451,6 +503,11 @@ class AirSourceHeatPump:
                 "hp_is_on": True,
                 "mode": mode,
                 "converged": bool(is_converged),
+                "converged_rps": bool(converged_rps),
+                "ou_fan_flow_min_limit": ou_hx.get("min_limit", False),
+                "ou_fan_flow_max_limit": ou_hx.get("max_limit", False),
+                "iu_fan_flow_min_limit": iu_hx.get("min_limit", False),
+                "iu_fan_flow_max_limit": iu_hx.get("max_limit", False),
                 # Temperatures [°C]
                 "T_ou_a_in [°C]": T0,
                 "T_ou_a_mid [°C]": T_ou_a_mid,

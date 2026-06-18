@@ -53,18 +53,18 @@ class GroundSourceHeatPump:
         self,
         # 1. Refrigerant / cycle / compressor -----------
         ref: str = "R32",
-        V_disp_cmp: float = 0.0001,
+        V_cmp_ref: float | None = None,
         eta_cmp_isen: float | Callable = 0.80,
         dT_superheat: float = 5.0,
         dT_subcool: float = 5.0,
         # 2. Heat exchanger UA ---------------------------
-        UA_cond_design: float | None = None,
-        UA_evap_design: float | None = None,
+        UA_cond: float | None = None,
+        UA_evap: float | None = None,
         # 3. Indoor unit fan -----------------------------
-        dV_iu_fan_a_design: float | None = None,
-        dP_iu_fan_design: float = 60.0,
+        dV_iu_fan_a_rated: float | None = None,
+        dP_iu_fan_rated: float | None = None,
         A_cross_iu: float | None = None,
-        eta_iu_fan_design: float = 0.6,
+        eta_iu_fan_rated: float | None = None,
         vsd_coeffs_iu: dict | None = None,
         # 4. BHE (Borehole Heat Exchanger) ---------------
         N_1: int = 1,
@@ -86,7 +86,28 @@ class GroundSourceHeatPump:
         # 6. Simulation scope ----------------------------
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
+        # Deprecated:
+        V_disp_cmp: float | None = None,
+        UA_cond_design: float | None = None,
+        UA_evap_design: float | None = None,
+        dV_iu_fan_a_design: float | None = None,
+        dP_iu_fan_design: float | None = None,
+        eta_iu_fan_design: float | None = None,
     ):
+        # Resolve deprecated mapping
+        if V_cmp_ref is None:
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0001
+        if UA_cond is None:
+            UA_cond = UA_cond_design
+        if UA_evap is None:
+            UA_evap = UA_evap_design
+        if dV_iu_fan_a_rated is None:
+            dV_iu_fan_a_rated = dV_iu_fan_a_design
+        if dP_iu_fan_rated is None:
+            dP_iu_fan_rated = dP_iu_fan_design if dP_iu_fan_design is not None else 60.0
+        if eta_iu_fan_rated is None:
+            eta_iu_fan_rated = eta_iu_fan_design if eta_iu_fan_design is not None else 0.6
+
         if vsd_coeffs_iu is None:
             vsd_coeffs_iu = {
                 "c1": 0.0013,
@@ -98,7 +119,7 @@ class GroundSourceHeatPump:
 
         # --- 1. Refrigerant / cycle / compressor ---
         self.ref: str = ref
-        self.V_disp_cmp: float = V_disp_cmp
+        self.V_cmp_ref: float = V_cmp_ref
         self.eta_cmp_isen: float | Callable = eta_cmp_isen
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
@@ -106,37 +127,37 @@ class GroundSourceHeatPump:
         self.hp_capacity: float = hp_capacity
 
         # --- 2. Heat exchanger UA ---
-        if UA_cond_design is None:
-            self.UA_cond_design = hp_capacity / 10.0
+        if UA_cond is None:
+            self.UA_cond = hp_capacity / 10.0
         else:
-            self.UA_cond_design = UA_cond_design
+            self.UA_cond = UA_cond
 
-        if UA_evap_design is None:
-            self.UA_evap_design = self.UA_cond_design * 0.8
+        if UA_evap is None:
+            self.UA_evap = self.UA_cond * 0.8
         else:
-            self.UA_evap_design = UA_evap_design
+            self.UA_evap = UA_evap
 
         # --- 3. Indoor unit fan ---
-        if dV_iu_fan_a_design is None:
-            self.dV_iu_fan_a_design = hp_capacity * 0.0002
+        if dV_iu_fan_a_rated is None:
+            self.dV_iu_fan_a_rated = hp_capacity * 0.0002
         else:
-            self.dV_iu_fan_a_design = dV_iu_fan_a_design
+            self.dV_iu_fan_a_rated = dV_iu_fan_a_rated
 
-        self.dP_iu_fan_design: float = dP_iu_fan_design
-        self.eta_iu_fan_design: float = eta_iu_fan_design
+        self.dP_iu_fan_rated: float = dP_iu_fan_rated
+        self.eta_iu_fan_rated: float = eta_iu_fan_rated
 
         if A_cross_iu is None:
-            self.A_cross_iu = self.dV_iu_fan_a_design / 2.0
+            self.A_cross_iu = self.dV_iu_fan_a_rated / 2.0
         else:
             self.A_cross_iu = A_cross_iu
 
-        self.E_iu_fan_design: float = (
-            self.dV_iu_fan_a_design * self.dP_iu_fan_design / self.eta_iu_fan_design
+        self.E_iu_fan_rated: float = (
+            self.dV_iu_fan_a_rated * self.dP_iu_fan_rated / self.eta_iu_fan_rated
         )
         self.vsd_coeffs_iu: dict = vsd_coeffs_iu
         self.fan_params_iu: dict = {
-            "fan_design_flow_rate": self.dV_iu_fan_a_design,
-            "fan_design_power": self.E_iu_fan_design,
+            "fan_rated_flow_rate": self.dV_iu_fan_a_rated,
+            "fan_rated_power": self.E_iu_fan_rated,
         }
 
         # --- 4. BHE ---
@@ -273,7 +294,7 @@ class GroundSourceHeatPump:
         Q_ref_evap = m_dot_ref * (h_cmp_in - h_exp_out) if is_active else 0.0
         E_cmp = m_dot_ref * (h_cmp_out - h_cmp_in) if is_active else 0.0
         cmp_rps = (
-            m_dot_ref / (self.V_disp_cmp * cycle_states["rho_ref_cmp_in [kg/m3]"])
+            m_dot_ref / (self.V_cmp_ref * cycle_states["rho_ref_cmp_in [kg/m3]"])
             if is_active else 0.0
         )
 
@@ -302,8 +323,8 @@ class GroundSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_evap_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_evap_design,
-                dV_fan_design=self.dV_iu_fan_a_design,
+                UA_design=self.UA_evap,
+                dV_fan_design=self.dV_iu_fan_a_rated,
                 is_active=is_active,
             )
         elif mode == "heating":
@@ -312,13 +333,17 @@ class GroundSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_cond_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_cond_design,
-                dV_fan_design=self.dV_iu_fan_a_design,
+                UA_design=self.UA_cond,
+                dV_fan_design=self.dV_iu_fan_a_rated,
                 is_active=is_active,
             )
         else:
             iu_hx = {
-                "dV_fan": 0.0, "T_a_mid_C": T_a_room, "converged": True,
+                "dV_fan": 0.0,
+                "T_a_mid_C": T_a_room,
+                "converged": True,
+                "min_limit": False,
+                "max_limit": False,
             }
 
         dV_iu_a = iu_hx["dV_fan"]
@@ -335,13 +360,13 @@ class GroundSourceHeatPump:
 
         # BHE NTU check (heating: evaporator constraint)
         if mode == "heating" and is_active:
-            NTU_evap = self.UA_evap_design / m_dot_cp_b
+            NTU_evap = self.UA_evap / m_dot_cp_b
             eps = 1.0 - math.exp(-NTU_evap)
             T_source_K_local = T_bhe_f_out_K + (self.E_pmp / m_dot_cp_b)
             Q_evap_max = eps * m_dot_cp_b * (T_source_K_local - T_evap_sat_K)
             err_Q_evap = Q_ref_evap - Q_evap_max
         elif mode == "cooling" and is_active:
-            NTU_cond = self.UA_cond_design / m_dot_cp_b
+            NTU_cond = self.UA_cond / m_dot_cp_b
             eps = 1.0 - math.exp(-NTU_cond)
             T_source_K_local = T_bhe_f_out_K + (self.E_pmp / m_dot_cp_b)
             Q_cond_max = eps * m_dot_cp_b * (T_cond_sat_K - T_source_K_local)
@@ -357,7 +382,10 @@ class GroundSourceHeatPump:
         result.update({
             "hp_is_on": is_active,
             "mode": mode,
-            "converged": iu_hx.get("converged", True),
+            "converged": bool(iu_hx.get("converged", True)),
+            "converged_rps": True,
+            "iu_fan_flow_min_limit": iu_hx.get("min_limit", False),
+            "iu_fan_flow_max_limit": iu_hx.get("max_limit", False),
             "err_Q_evap [W]": err_Q_evap,
             # Temperatures [°C]
             "T_iu_a_in [°C]": T_a_room,

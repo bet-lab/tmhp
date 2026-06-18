@@ -513,6 +513,8 @@ def calc_HX_perf_for_target_heat(
         dV_sol = sol.root
         converged = sol.converged
     except ValueError:
+        err_min = _error_function(dV_min)
+        err_max = _error_function(dV_max)
         # Optimization loop penalty handling: return failure flag
         return {
             "converged": False,
@@ -521,6 +523,8 @@ def calc_HX_perf_for_target_heat(
             "T_a_mid_C": np.nan,
             "Q_air": np.nan,
             "epsilon": np.nan,
+            "min_limit": bool(err_min > 0),
+            "max_limit": bool(err_max < 0),
             "T_ou_a_mid": np.nan,
             "Q_ou_air": np.nan,
         }
@@ -542,6 +546,8 @@ def calc_HX_perf_for_target_heat(
         "T_a_mid_C": T_a_mid_C,
         "Q_air": Q_air_sol,
         "epsilon": eps_sol,
+        "min_limit": False,
+        "max_limit": False,
         # Legacy keys
         "T_ou_a_mid": T_a_mid_C,
         "Q_ou_air": Q_air_sol,

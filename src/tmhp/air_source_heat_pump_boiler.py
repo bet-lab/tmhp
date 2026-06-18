@@ -87,21 +87,21 @@ class AirSourceHeatPumpBoiler:
         self,
         # 1. Refrigerant / cycle / compressor -----------
         ref: str = "R134a",
-        V_disp_cmp: float = 0.0002,
+        V_cmp_ref: float | None = None,
         eta_cmp_isen: float | Callable | None = None,
         eta_cmp_vol: float | Callable | None = None,
-        eta_cmp_electro_mech: float | Callable = 0.855,
+        eta_cmp: float | Callable | None = None,
         dT_superheat: float = 5.0,
         dT_subcool: float = 5.0,
         # 2. Heat exchanger -----------------------------
-        UA_cond_design: float | None = None,
-        UA_evap_design: float | None = None,
+        UA_cond: float | None = None,
+        UA_evap_rated: float | None = None,
         n_evap: float = 0.65,
         # 3. Outdoor unit fan ---------------------------
-        dV_ou_fan_a_design: float | None = None,
-        dP_ou_fan_design: float = 60.0,
-        A_cross_ou: float | None = None,
-        eta_ou_fan_design: float = 0.6,
+        dV_fan_a_rated: float | None = None,
+        dP_fan_rated: float | None = None,
+        A_cross: float | None = None,
+        eta_fan_rated: float | None = None,
         # 4. Tank / control / load ----------------------
         T_tank_w_upper_bound: float = 65.0,
         T_tank_w_lower_bound: float = 60.0,
@@ -130,14 +130,44 @@ class AirSourceHeatPumpBoiler:
         pv: PhotovoltaicSystem | None = None,
         uv=None,
         # ASHRAE 90.1-2022 VSD coefficients
-        vsd_coeffs_ou: dict | None = None,
+        vsd_coeffs: dict | None = None,
         # Surrounding temperature parameter
         T_sur: float = 20.0,
+        # Deprecated compat arguments:
+        V_disp_cmp: float | None = None,
+        eta_cmp_electro_mech: float | Callable | None = None,
+        UA_cond_design: float | None = None,
+        UA_evap_design: float | None = None,
+        dV_ou_fan_a_design: float | None = None,
+        dP_ou_fan_design: float | None = None,
+        A_cross_ou: float | None = None,
+        eta_ou_fan_design: float | None = None,
+        vsd_coeffs_ou: dict | None = None,
     ):
+        # Resolve deprecated mapping
+        if V_cmp_ref is None:
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0002
+        if eta_cmp is None:
+            eta_cmp = eta_cmp_electro_mech if eta_cmp_electro_mech is not None else 0.855
+        if UA_cond is None:
+            UA_cond = UA_cond_design
+        if UA_evap_rated is None:
+            UA_evap_rated = UA_evap_design
+        if dV_fan_a_rated is None:
+            dV_fan_a_rated = dV_ou_fan_a_design
+        if dP_fan_rated is None:
+            dP_fan_rated = dP_ou_fan_design if dP_ou_fan_design is not None else 60.0
+        if A_cross is None:
+            A_cross = A_cross_ou
+        if eta_fan_rated is None:
+            eta_fan_rated = eta_ou_fan_design if eta_ou_fan_design is not None else 0.6
+        if vsd_coeffs is None:
+            vsd_coeffs = vsd_coeffs_ou
+
         if hp_on_schedule is None:
             hp_on_schedule = [(0.0, 24.0)]
-        if vsd_coeffs_ou is None:
-            vsd_coeffs_ou = {
+        if vsd_coeffs is None:
+            vsd_coeffs = {
                 "c1": 0.0013,
                 "c2": 0.1470,
                 "c3": 0.9506,
@@ -147,7 +177,7 @@ class AirSourceHeatPumpBoiler:
 
         # --- 1. Refrigerant / cycle / compressor ---
         self.ref: str = ref
-        self.V_disp_cmp: float = V_disp_cmp
+        self.V_cmp_ref: float = V_cmp_ref
 
         # Isentropic Efficiency
         if eta_cmp_isen is not None:
@@ -161,7 +191,7 @@ class AirSourceHeatPumpBoiler:
         else:
             self.eta_cmp_vol = lambda r: 0.95 - 0.05 * r
 
-        self.eta_cmp_electro_mech: float | Callable = eta_cmp_electro_mech
+        self.eta_cmp: float | Callable = eta_cmp
 
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
@@ -172,19 +202,19 @@ class AirSourceHeatPumpBoiler:
         # ~10.0 K approach temperature difference, which corresponds to the standard
         # performance specifications for industrial heat pumps.
         # Ref: Application of Industrial Heat Pumps. Annex 35 Final Report (IEA Heat Pump Centre, 2014)
-        if UA_cond_design is None:
-            self.UA_cond_design = hp_capacity / 6.0
+        if UA_cond is None:
+            self.UA_cond = hp_capacity / 6.0
         else:
-            self.UA_cond_design = UA_cond_design
+            self.UA_cond = UA_cond
 
         # The default evaporator UA is determined to ensure an approximate air-side
         # temperature drop of 7.0 K across the outdoor unit, aligning with empirical
         # laboratory observations of standard residential units.
         # Ref: Residential Air Source Heat Pump Water Heater Performance Testing (ORNL, Baxter 2011, DOI: 10.3390/su17052234)
-        if UA_evap_design is None:
-            self.UA_evap_design = self.UA_cond_design * 0.8
+        if UA_evap_rated is None:
+            self.UA_evap_rated = self.UA_cond * 0.8
         else:
-            self.UA_evap_design = UA_evap_design
+            self.UA_evap_rated = UA_evap_rated
 
         self.n_evap: float = n_evap
 
@@ -192,28 +222,28 @@ class AirSourceHeatPumpBoiler:
         # Default fan flow rate is scaled at 0.0002 m^3/s per W (or 720 CMH per kW),
         # representing an optimal ratio of airflow volume to thermal capacity.
         # This provides enough margin so that nominal optimization operates at ~80% fan ratio.
-        if dV_ou_fan_a_design is None:
-            self.dV_ou_fan_a_design = hp_capacity * 0.00015
+        if dV_fan_a_rated is None:
+            self.dV_fan_a_rated = hp_capacity * 0.00015
         else:
-            self.dV_ou_fan_a_design = dV_ou_fan_a_design
+            self.dV_fan_a_rated = dV_fan_a_rated
 
-        self.dP_ou_fan_design: float = dP_ou_fan_design
-        self.eta_ou_fan_design: float = eta_ou_fan_design
+        self.dP_fan_rated: float = dP_fan_rated
+        self.eta_fan_rated: float = eta_fan_rated
 
         # Default coil face area assumes a nominal frontal air velocity of 2.0 m/s.
         # This velocity is selected specifically to maintain pressure drop profiles
         # within optimal ranges for typical plain fin-and-tube configurations.
         # Ref: Heat transfer and friction characteristics of plain fin-and-tube heat exchangers, part II (Wang et al., 2000, DOI: 10.1016/S0017-9310(99)00333-6)
-        if A_cross_ou is None:
-            self.A_cross_ou = self.dV_ou_fan_a_design / 2.0  # Capped at 2.0 m/s face velocity
+        if A_cross is None:
+            self.A_cross = self.dV_fan_a_rated / 2.0  # Capped at 2.0 m/s face velocity
         else:
-            self.A_cross_ou = A_cross_ou
+            self.A_cross = A_cross
 
-        self.E_ou_fan_design: float = self.dV_ou_fan_a_design * self.dP_ou_fan_design / self.eta_ou_fan_design
-        self.vsd_coeffs_ou: dict = vsd_coeffs_ou
-        self.fan_params_ou: dict = {
-            "fan_design_flow_rate": self.dV_ou_fan_a_design,
-            "fan_design_power": self.E_ou_fan_design,
+        self.E_fan_rated: float = self.dV_fan_a_rated * self.dP_fan_rated / self.eta_fan_rated
+        self.vsd_coeffs: dict = vsd_coeffs
+        self.fan_params: dict = {
+            "fan_rated_flow_rate": self.dV_fan_a_rated,
+            "fan_rated_power": self.E_fan_rated,
         }
 
         # --- 4. Tank geometry and thermal props ---
@@ -305,7 +335,7 @@ class AirSourceHeatPumpBoiler:
         dict | None
             Cycle performance dictionary; ``None`` if infeasible.
         """
-        dT_ref_cond: float = Q_ref_cond / self.UA_cond_design if Q_ref_cond > 0 else 0.0
+        dT_ref_cond: float = Q_ref_cond / self.UA_cond if Q_ref_cond > 0 else 0.0
 
         T_tank_w_K: float = cu.C2K(T_tank_w)
         T0_K: float = cu.C2K(T0)
@@ -357,6 +387,9 @@ class AirSourceHeatPumpBoiler:
                 {
                     "hp_is_on": False,
                     "converged": True,
+                    "converged_rps": True,
+                    "fan_flow_min_limit": False,
+                    "fan_flow_max_limit": False,
                     # Temperatures [°C]
                     "T_ou_a_in [°C]": T0,
                     "T_ou_a_mid [°C]": T0,
@@ -433,18 +466,18 @@ class AirSourceHeatPumpBoiler:
         # Compute isentropic enthalpy once before loop
         try:
             import CoolProp.CoolProp as CP
-            h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
+            h_ref_cmp_out_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
         except ValueError:
-            h2_isen = h_cmp_in
+            h_ref_cmp_out_isen = h_cmp_in
 
         def _residual_rps(rps):
             val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
             val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
 
-            h_cmp_out = h_cmp_in + (h2_isen - h_cmp_in) / val_eta_isen
+            h_cmp_out = h_cmp_in + (h_ref_cmp_out_isen - h_cmp_in) / val_eta_isen
             dh_cond_local = h_cmp_out - h_exp_in
 
-            m_dot = self.V_disp_cmp * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * rps
+            m_dot = self.V_cmp_ref * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * rps
             return (m_dot * dh_cond_local) - Q_ref_cond
 
         from scipy.optimize import brentq
@@ -459,7 +492,7 @@ class AirSourceHeatPumpBoiler:
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
         val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
-        val_eta_electro_mech = _eval_eff(self.eta_cmp_electro_mech, ratio_P_cmp, cmp_rps)
+        val_eta_electro_mech = _eval_eff(self.eta_cmp, ratio_P_cmp, cmp_rps)
 
         # Post-evaluate state with final isentropic efficiency
         cs = calc_ref_state(
@@ -474,7 +507,7 @@ class AirSourceHeatPumpBoiler:
             rps=cmp_rps,
         )
 
-        m_dot_ref = self.V_disp_cmp * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * cmp_rps
+        m_dot_ref = self.V_cmp_ref * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * cmp_rps
         Q_ref_cond_calc = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_exp_in [J/kg]"])
         Q_ref_evap = m_dot_ref * (cs["h_ref_cmp_in [J/kg]"] - cs["h_ref_exp_out [J/kg]"])
         E_cmp = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_cmp_in [J/kg]"]) / val_eta_electro_mech
@@ -484,27 +517,31 @@ class AirSourceHeatPumpBoiler:
             T_ou_a_in_C=T0,
             T_ref_evap_sat_K=cs["T_ref_evap_sat_K"],
             T_ref_cond_sat_l_K=cs["T_ref_cond_sat_l_K"],
-            A_cross=self.A_cross_ou,
-            UA_design=self.UA_evap_design,
-            dV_fan_design=self.dV_ou_fan_a_design,
+            A_cross=self.A_cross,
+            UA_design=self.UA_evap_rated,
+            dV_fan_design=self.dV_fan_a_rated,
             is_active=True,
+            exponent=self.n_evap,
         )
 
         if HX_perf_ou.get("converged", True) is False:
             return {
                 "converged": False,
                 "_hx_diag": HX_perf_ou,
+                "converged_rps": bool(converged_rps),
+                "fan_flow_min_limit": HX_perf_ou.get("min_limit", False),
+                "fan_flow_max_limit": HX_perf_ou.get("max_limit", False),
             }
 
         dV_ou_a: float = HX_perf_ou["dV_fan"]
-        v_ou_a: float = dV_ou_a / self.A_cross_ou
+        v_ou_a: float = dV_ou_a / self.A_cross
         T_ou_a_mid: float = HX_perf_ou["T_ou_a_mid"]
         Q_ou_a: float = HX_perf_ou["Q_ou_air"]
 
         E_ou_fan: float = calc_fan_power_from_dV_fan(
             dV_fan=dV_ou_a,
-            fan_params=self.fan_params_ou,
-            vsd_coeffs=self.vsd_coeffs_ou,
+            fan_params=self.fan_params,
+            vsd_coeffs=self.vsd_coeffs,
             is_active=True,
         )
 
@@ -544,6 +581,9 @@ class AirSourceHeatPumpBoiler:
             {
                 "hp_is_on": True,
                 "converged": bool(converged_rps),
+                "converged_rps": bool(converged_rps),
+                "fan_flow_min_limit": HX_perf_ou.get("min_limit", False),
+                "fan_flow_max_limit": HX_perf_ou.get("max_limit", False),
                 # Temperatures [°C]
                 "T_ou_a_in [°C]": T0,
                 "T_ou_a_mid [°C]": T_ou_a_mid,
