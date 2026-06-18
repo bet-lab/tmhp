@@ -806,6 +806,22 @@ class GroundSourceHeatPumpBoiler:
     # Orchestration
     # =============================================================
 
+    def step(self, state, inputs: dict, dt_s: float):
+        """Reject point-state stepping — GSHPB is history-dependent (#165 P0b).
+
+        ``_compute_bhe_superposition`` reads the *entire* past borehole
+        load-pulse history each timestep, so a point-state ``step()`` kernel
+        (as defined for ASHP/ASHPB) would silently corrupt the ground
+        temperature drift. Use ``analyze_dynamic()``, or implement a ``step()``
+        that carries the borehole pulse vector inside its state.
+        """
+        raise NotImplementedError(
+            "GroundSourceHeatPumpBoiler is history-dependent (borehole "
+            "superposition reads the full past load history each step) and "
+            "cannot be driven by a point-state step() kernel; use "
+            "analyze_dynamic(), or carry the borehole pulse vector in state."
+        )
+
     def analyze_dynamic(
         self,
         simulation_period_sec: float,
