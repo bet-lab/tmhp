@@ -133,6 +133,9 @@ class AirSourceHeatPumpBoiler:
         vsd_coeffs: dict | None = None,
         # Surrounding temperature parameter
         T_sur: float = 20.0,
+        # Cycle guard:
+        dT_cycle_min: float | None = None,
+        dT_hx_min: float = 0.5,
         # Deprecated compat arguments:
         V_disp_cmp: float | None = None,
         eta_cmp_electro_mech: float | Callable | None = None,
@@ -195,6 +198,8 @@ class AirSourceHeatPumpBoiler:
 
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
+        self.dT_cycle_min: float | None = dT_cycle_min
+        self.dT_hx_min: float = dT_hx_min
         self.hp_capacity: float = hp_capacity
 
         # --- 2. Heat exchanger UA ---
@@ -427,9 +432,10 @@ class AirSourceHeatPumpBoiler:
             return result
 
         # --- Active state calculations ---
-        pinch_min: float = 0.5
-        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
-        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - pinch_min))
+        if self.dT_cycle_min is not None and (T_cond_sat_K - T_evap_sat_K) <= self.dT_cycle_min:
+            return None
+        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - self.dT_hx_min))
+        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - self.dT_hx_min))
 
         import inspect
         def _eval_eff(eff, r_p, rps):

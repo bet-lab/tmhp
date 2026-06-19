@@ -181,3 +181,71 @@ def test_ashp_oldest_deprecated_design_params_emit_warning():
     assert any("UA_cond_rated" in m or "UA_evap_rated" in m for m in dep_messages), (
         "Expected DeprecationWarning for two-hop UA_cond_design path"
     )
+
+
+# ---------------------------------------------------------------------------
+# dT_cycle_min / dT_hx_min — expose as user-configurable params (#185)
+# ---------------------------------------------------------------------------
+
+
+def test_ashp_custom_min_lift_and_pinch():
+    ashp = AirSourceHeatPump(
+        ref="R32", UA_ou_rated=3000.0, UA_iu_rated=3000.0,
+        dT_cycle_min=15.0, dT_hx_min=1.0,
+    )
+    assert ashp.dT_cycle_min == 15.0
+    assert ashp.dT_hx_min == 1.0
+
+
+def test_ashp_default_min_lift_and_pinch():
+    ashp = AirSourceHeatPump(ref="R32", UA_ou_rated=3000.0, UA_iu_rated=3000.0)
+    assert ashp.dT_cycle_min == 20.0
+    assert ashp.dT_hx_min == 0.5
+
+
+def test_gshp_custom_min_lift_and_pinch():
+    gshp = GroundSourceHeatPump(ref="R32", dT_cycle_min=8.0, dT_hx_min=1.0)
+    assert gshp.dT_cycle_min == 8.0
+    assert gshp.dT_hx_min == 1.0
+
+
+def test_gshp_default_min_lift_fallback_to_dT_subcool():
+    gshp = GroundSourceHeatPump(ref="R32", dT_subcool=4.0)
+    assert gshp.dT_cycle_min == 4.0  # falls back to dT_subcool
+    assert gshp.dT_hx_min == 0.5
+
+
+def test_ashpb_custom_min_lift_and_pinch():
+    ashpb = AirSourceHeatPumpBoiler(ref="R32", dT_cycle_min=12.0, dT_hx_min=0.8)
+    assert ashpb.dT_cycle_min == 12.0
+    assert ashpb.dT_hx_min == 0.8
+
+
+def test_ashpb_default_min_lift_is_none():
+    ashpb = AirSourceHeatPumpBoiler(ref="R32")
+    assert ashpb.dT_cycle_min is None
+    assert ashpb.dT_hx_min == 0.5
+
+
+def test_gshpb_custom_min_lift_and_pinch():
+    gshpb = GroundSourceHeatPumpBoiler(ref="R32", dT_cycle_min=10.0, dT_hx_min=0.7)
+    assert gshpb.dT_cycle_min == 10.0
+    assert gshpb.dT_hx_min == 0.7
+
+
+def test_gshpb_default_min_lift_is_none():
+    gshpb = GroundSourceHeatPumpBoiler(ref="R32")
+    assert gshpb.dT_cycle_min is None
+    assert gshpb.dT_hx_min == 0.5
+
+
+def test_wshpb_custom_min_lift_and_pinch():
+    wshpb = WaterSourceHeatPumpBoiler(ref="R32", dT_cycle_min=10.0, dT_hx_min=0.7)
+    assert wshpb.dT_cycle_min == 10.0
+    assert wshpb.dT_hx_min == 0.7
+
+
+def test_wshpb_default_min_lift_is_none():
+    wshpb = WaterSourceHeatPumpBoiler(ref="R32")
+    assert wshpb.dT_cycle_min is None
+    assert wshpb.dT_hx_min == 0.5

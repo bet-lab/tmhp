@@ -144,6 +144,9 @@ class GroundSourceHeatPumpBoiler:
         dt_s: float = 3600,
         boundary_condition: str = "uniform_temperature",
         T_sur: float = 20.0,
+        # Cycle guard:
+        dT_cycle_min: float | None = None,
+        dT_hx_min: float = 0.5,
         *,
         # Deprecated:
         refrigerant: str | None = None,
@@ -220,6 +223,8 @@ class GroundSourceHeatPumpBoiler:
 
         self.dT_superheat = dT_superheat
         self.dT_subcool = dT_subcool
+        self.dT_cycle_min: float | None = dT_cycle_min
+        self.dT_hx_min: float = dT_hx_min
 
         # BHE properties
         self.N_1 = N_1
@@ -407,6 +412,10 @@ class GroundSourceHeatPumpBoiler:
             )
             return result
 
+        if self.dT_cycle_min is not None and (T_ref_cond_sat_K - T_ref_evap_sat_K) <= self.dT_cycle_min:
+            return None
+        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - self.dT_hx_min))
+
         import inspect
         def _eval_eff(
             eff: float | Callable[..., float] | None, r_p: float, rps: float
@@ -428,7 +437,7 @@ class GroundSourceHeatPumpBoiler:
             eta_cmp_isen=1.0,
             mode="heating",
             dT_superheat=self.dT_superheat,
-            dT_subcool=self.dT_subcool,
+            dT_subcool=actual_dT_subcool,
             is_active=True,
         )
 
@@ -479,7 +488,7 @@ class GroundSourceHeatPumpBoiler:
             eta_cmp_isen=val_eta_isen,
             mode="heating",
             dT_superheat=self.dT_superheat,
-            dT_subcool=self.dT_subcool,
+            dT_subcool=actual_dT_subcool,
             is_active=True,
         )
 

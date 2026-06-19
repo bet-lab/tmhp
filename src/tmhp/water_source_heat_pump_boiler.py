@@ -116,6 +116,9 @@ class WaterSourceHeatPumpBoiler:
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
         T_sur: float = 20.0,
+        # Cycle guard:
+        dT_cycle_min: float | None = None,
+        dT_hx_min: float = 0.5,
         *,
         # Deprecated:
         refrigerant: str | None = None,
@@ -187,6 +190,8 @@ class WaterSourceHeatPumpBoiler:
 
         self.dT_superheat = dT_superheat
         self.dT_subcool = dT_subcool
+        self.dT_cycle_min: float | None = dT_cycle_min
+        self.dT_hx_min: float = dT_hx_min
 
         # BHE properties
         self.N_1 = N_1
@@ -371,8 +376,9 @@ class WaterSourceHeatPumpBoiler:
         T_ref_evap_sat_K = T_evap_in_K - dT_ref_evap
         T_ref_cond_sat_K = T_tank_w_K + dT_ref_cond
 
-        pinch_min: float = 0.5
-        actual_dT_subcool = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
+        if self.dT_cycle_min is not None and (T_ref_cond_sat_K - T_ref_evap_sat_K) <= self.dT_cycle_min:
+            return None
+        actual_dT_subcool = min(self.dT_subcool, max(0.0, dT_ref_cond - self.dT_hx_min))
 
         # 2. Refrigerant Cycle Evaluation
         try:

@@ -83,7 +83,10 @@ class GroundSourceHeatPump:
         # 5. System capacity / room ----------------------
         hp_capacity: float = 4000.0,
         T_a_room: float = 27.0,
-        # 6. Simulation scope ----------------------------
+        # 6. Cycle guard ---------------------------------
+        dT_cycle_min: float | None = None,
+        dT_hx_min: float = 0.5,
+        # 7. Simulation scope ----------------------------
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
         # Deprecated:
@@ -123,7 +126,11 @@ class GroundSourceHeatPump:
         self.eta_cmp_isen: float | Callable = eta_cmp_isen
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
-        self.min_lift_K: float = self.dT_subcool
+        if dT_cycle_min is None:
+            self.dT_cycle_min: float = self.dT_subcool
+        else:
+            self.dT_cycle_min = float(dT_cycle_min)
+        self.dT_hx_min: float = dT_hx_min
         self.hp_capacity: float = hp_capacity
 
         # --- 2. Heat exchanger UA ---
@@ -261,8 +268,11 @@ class GroundSourceHeatPump:
             T_cond_sat_K = self.Ts_K
             Q_ref_iu = 0.0
 
-        if is_active and (T_cond_sat_K - T_evap_sat_K) < self.min_lift_K:
+        if is_active and (T_cond_sat_K - T_evap_sat_K) < self.dT_cycle_min:
             return None
+
+        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - self.dT_hx_min))
+        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - self.dT_hx_min))
 
         # Always mode="heating" for calc_ref_state (avoids key swap)
         cycle_states = calc_ref_state(
@@ -271,8 +281,8 @@ class GroundSourceHeatPump:
             refrigerant=self.ref,
             eta_cmp_isen=self.eta_cmp_isen,
             mode=mode,
-            dT_superheat=self.dT_superheat,
-            dT_subcool=self.dT_subcool,
+            dT_superheat=actual_dT_superheat,
+            dT_subcool=actual_dT_subcool,
             is_active=is_active,
         )
 
