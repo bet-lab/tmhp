@@ -621,9 +621,27 @@ class AirSourceHeatPump:
 
             return E_tot
 
+        # Phase 1: coarse grid pre-scan to find a converging starting point.
+        # A single fixed x0=(15,15) fails silently when the entire search space
+        # is a penalty region — Nelder-Mead cannot escape because all objective
+        # evaluations return the same 1e6 sentinel. Scanning a coarse grid first
+        # finds a valid basin (if one exists) so Phase 2 refines from there.
+        _candidates = [
+            (3.0, 3.0), (5.0, 5.0), (8.0, 8.0), (12.0, 12.0), (15.0, 15.0),
+            (3.0, 8.0), (8.0, 3.0), (5.0, 12.0), (12.0, 5.0), (10.0, 10.0),
+        ]
+        best_x0 = [15.0, 15.0]
+        best_val = 1e6
+        for cand in _candidates:
+            val = _objective(cand)
+            if val < best_val:
+                best_val = val
+                best_x0 = list(cand)
+
+        # Phase 2: Nelder-Mead refinement from the best candidate found above.
         return minimize(
             _objective,
-            x0=[15.0, 15.0],
+            x0=best_x0,
             bounds=[(1.0, 20.0), (1.0, 20.0)],
             method="Nelder-Mead",
             options={"maxiter": 200, "xatol": 1e-3, "fatol": 1e-1},
@@ -711,7 +729,10 @@ class AirSourceHeatPump:
                     T_a_room=T_a_room,
                 )
 
-            opt_success = bool(getattr(opt_result, "success", False))
+            # opt_success=True with opt_fun>=1e6 is a false success: the
+            # optimiser converged but never escaped the penalty region.
+            opt_fun = float(getattr(opt_result, "fun", 1e6))
+            opt_success = bool(getattr(opt_result, "success", False)) and opt_fun < 1e6
             if result is None:
                 failure_reason = "cycle_invalid"
             elif not result.get("converged", False):
