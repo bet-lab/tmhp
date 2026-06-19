@@ -1119,7 +1119,7 @@ class GroundSourceHeatPumpBoiler:
                     f"opt_success={opt_success}, "
                     f"opt_x={safe_float_attr(opt_result, 'x', float('nan')):.2f}, "
                     f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
-                    "Consider increasing UA_design or fan-flow design.",
+                    "Consider increasing UA_rated or fan-flow rated.",
                     RuntimeWarning,
                     stacklevel=2,
                 )

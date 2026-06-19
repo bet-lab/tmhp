@@ -57,10 +57,10 @@ class AirSourceHeatPump:
         dT_superheat: float = 3.0,
         dT_subcool: float = 3.0,
         # 2. Heat exchanger UA ---------------------------
-        UA_cond_rated: float | None = None,
-        UA_evap_rated: float | None = None,
-        n_evap: float = 0.65,
-        n_cond: float = 0.65,
+        UA_ou_rated: float | None = None,
+        UA_iu_rated: float | None = None,
+        n_ou: float = 0.65,
+        n_iu: float = 0.65,
         # 3. Outdoor unit fan ----------------------------
         dV_ou_fan_a_rated: float | None = None,
         dP_ou_fan_rated: float | None = None,
@@ -80,6 +80,10 @@ class AirSourceHeatPump:
         # Deprecated:
         V_disp_cmp: float | None = None,
         eta_cmp_mech: float | Callable | None = None,
+        UA_cond_rated: float | None = None,
+        UA_evap_rated: float | None = None,
+        n_cond: float | None = None,
+        n_evap: float | None = None,
         UA_cond_design: float | None = None,
         UA_evap_design: float | None = None,
         dV_ou_fan_a_design: float | None = None,
@@ -89,15 +93,41 @@ class AirSourceHeatPump:
         dP_iu_fan_design: float | None = None,
         eta_iu_fan_design: float | None = None,
     ):
+        import warnings
+
         # Resolve deprecated mapping
         if V_cmp_ref is None:
             V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0001
         if eta_cmp is None:
             eta_cmp = eta_cmp_mech if eta_cmp_mech is not None else 0.855
+        # UA_cond/evap_design → UA_cond/evap_rated (oldest names, two hops)
         if UA_cond_rated is None:
             UA_cond_rated = UA_cond_design
         if UA_evap_rated is None:
             UA_evap_rated = UA_evap_design
+        # UA_cond/evap_rated → UA_ou/iu_rated (physical-unit rename, issue #183)
+        if UA_cond_rated is not None or UA_evap_rated is not None:
+            warnings.warn(
+                "UA_cond_rated/UA_evap_rated are deprecated and will be removed in a future"
+                " release. Use UA_ou_rated/UA_iu_rated (physical unit identity).",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if UA_ou_rated is None:
+                UA_ou_rated = UA_cond_rated
+            if UA_iu_rated is None:
+                UA_iu_rated = UA_evap_rated
+        if n_cond is not None or n_evap is not None:
+            warnings.warn(
+                "n_cond/n_evap are deprecated and will be removed in a future release."
+                " Use n_ou/n_iu.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            if n_cond is not None:
+                n_ou = n_cond
+            if n_evap is not None:
+                n_iu = n_evap
         if dV_ou_fan_a_rated is None:
             dV_ou_fan_a_rated = dV_ou_fan_a_design
         if dP_ou_fan_rated is None:
@@ -140,18 +170,18 @@ class AirSourceHeatPump:
         self.hp_capacity: float = hp_capacity
 
         # --- 2. Heat exchanger UA ---
-        if UA_cond_rated is None:
-            self.UA_cond_rated = hp_capacity / 10.0
+        if UA_ou_rated is None:
+            self.UA_ou_rated = hp_capacity / 10.0
         else:
-            self.UA_cond_rated = UA_cond_rated
+            self.UA_ou_rated = UA_ou_rated
 
-        if UA_evap_rated is None:
-            self.UA_evap_rated = self.UA_cond_rated * 0.8
+        if UA_iu_rated is None:
+            self.UA_iu_rated = self.UA_ou_rated * 0.8
         else:
-            self.UA_evap_rated = UA_evap_rated
+            self.UA_iu_rated = UA_iu_rated
 
-        self.n_evap: float = n_evap
-        self.n_cond: float = n_cond
+        self.n_ou: float = n_ou
+        self.n_iu: float = n_iu
 
         # --- 3. Outdoor unit fan ---
         if dV_ou_fan_a_rated is None:
@@ -403,6 +433,9 @@ class AirSourceHeatPump:
             return None
 
         # ── Outdoor unit HX ──
+        # The outdoor coil is always parameterised by UA_ou_rated regardless of mode.
+        # In cooling it acts as condenser; in heating as evaporator — but the physical
+        # geometry (and therefore UA) is unchanged.
         if mode == "cooling":
             # Outdoor = condenser → ref rejects heat → air is heated
             ou_hx = calc_HX_perf_for_target_heat(
@@ -410,10 +443,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T0,
                 T_ref_sat_K=T_cond_sat_K,
                 A_cross=self.A_cross_ou,
-                UA_design=self.UA_cond_rated,
-                dV_fan_design=self.dV_ou_fan_a_rated,
+                UA_rated=self.UA_ou_rated,
+                dV_fan_rated=self.dV_ou_fan_a_rated,
                 is_active=True,
-                exponent=self.n_cond,
+                exponent=self.n_ou,
             )
         else:
             # Outdoor = evaporator → ref absorbs heat → air is cooled
@@ -422,10 +455,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T0,
                 T_ref_sat_K=T_evap_sat_K,
                 A_cross=self.A_cross_ou,
-                UA_design=self.UA_evap_rated,
-                dV_fan_design=self.dV_ou_fan_a_rated,
+                UA_rated=self.UA_ou_rated,
+                dV_fan_rated=self.dV_ou_fan_a_rated,
                 is_active=True,
-                exponent=self.n_evap,
+                exponent=self.n_ou,
             )
 
         dV_ou_a: float = ou_hx["dV_fan"]
@@ -443,6 +476,7 @@ class AirSourceHeatPump:
         v_ou_a: float = dV_ou_a / self.A_cross_ou
 
         # ── Indoor unit HX ──
+        # The indoor coil is always parameterised by UA_iu_rated regardless of mode.
         if mode == "cooling":
             # Indoor = evaporator → ref absorbs heat → air is cooled
             iu_hx = calc_HX_perf_for_target_heat(
@@ -450,10 +484,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_evap_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_evap_rated,
-                dV_fan_design=self.dV_iu_fan_a_rated,
+                UA_rated=self.UA_iu_rated,
+                dV_fan_rated=self.dV_iu_fan_a_rated,
                 is_active=True,
-                exponent=self.n_evap,
+                exponent=self.n_iu,
             )
         else:
             # Indoor = condenser → ref rejects heat → air is heated
@@ -462,10 +496,10 @@ class AirSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_cond_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_cond_rated,
-                dV_fan_design=self.dV_iu_fan_a_rated,
+                UA_rated=self.UA_iu_rated,
+                dV_fan_rated=self.dV_iu_fan_a_rated,
                 is_active=True,
-                exponent=self.n_cond,
+                exponent=self.n_iu,
             )
 
         dV_iu_a: float = iu_hx["dV_fan"]
@@ -697,7 +731,7 @@ class AirSourceHeatPump:
                         f"opt_success={opt_success}, "
                         f"opt_x=({opt_result.x[0]:.2f}, {opt_result.x[1]:.2f}), "
                         f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
-                        "Consider increasing UA_design or fan-flow design.",
+                        "Consider increasing UA_ou_rated/UA_iu_rated or fan-flow rated.",
                         RuntimeWarning,
                         stacklevel=2,
                     )

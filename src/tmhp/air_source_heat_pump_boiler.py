@@ -519,8 +519,8 @@ class AirSourceHeatPumpBoiler:
             T_ref_evap_sat_K=cs["T_ref_evap_sat_K"],
             T_ref_cond_sat_l_K=cs["T_ref_cond_sat_l_K"],
             A_cross=self.A_cross,
-            UA_design=self.UA_evap_rated,
-            dV_fan_design=self.dV_fan_a_rated,
+            UA_rated=self.UA_evap_rated,
+            dV_fan_rated=self.dV_fan_a_rated,
             is_active=True,
             exponent=self.n_evap,
         )
@@ -780,7 +780,7 @@ class AirSourceHeatPumpBoiler:
                     f"opt_success={opt_success}, "
                     f"opt_x={safe_float_attr(opt_result, 'x', float('nan')):.2f}, "
                     f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
-                    "Consider increasing UA_design or fan-flow design.",
+                    "Consider increasing UA_rated or fan-flow rated.",
                     RuntimeWarning,
                     stacklevel=2,
                 )

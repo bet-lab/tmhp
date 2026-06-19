@@ -323,8 +323,8 @@ class GroundSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_evap_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_evap,
-                dV_fan_design=self.dV_iu_fan_a_rated,
+                UA_rated=self.UA_evap,
+                dV_fan_rated=self.dV_iu_fan_a_rated,
                 is_active=is_active,
             )
         elif mode == "heating":
@@ -333,8 +333,8 @@ class GroundSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_cond_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_cond,
-                dV_fan_design=self.dV_iu_fan_a_rated,
+                UA_rated=self.UA_cond,
+                dV_fan_rated=self.dV_iu_fan_a_rated,
                 is_active=is_active,
             )
         else:
@@ -576,7 +576,7 @@ class GroundSourceHeatPump:
                     f"opt_success={opt_success}, "
                     f"opt_x=({opt.x[0]:.2f}, {opt.x[1]:.2f}), "
                     f"opt_fun={float(getattr(opt, 'fun', float('nan'))):.3g}). "
-                    "Consider increasing UA_design or fan-flow design.",
+                    "Consider increasing UA_rated or fan-flow rated.",
                     RuntimeWarning,
                     stacklevel=2,
                 )
