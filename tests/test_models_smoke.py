@@ -335,3 +335,44 @@ def test_ashp_pr_ceiling_rejects():
     assert result["converged"] is False
     assert result["failure_reason"] == "pr_above_max"
     assert ashp._last_pr_event[0] == "pr_above_max"
+
+
+# ---------------------------------------------------------------------------
+# Output-label contract: reversible models report heat duties / exergy by
+# physical location (iu/ou/ground), never by refrigerant role (cond/evap) and
+# without echoing the input load (Q_r_iu). Refrigerant-state saturation keys
+# stay cond/evap (refrigerant-intrinsic).
+# ---------------------------------------------------------------------------
+
+
+def test_ashp_output_labels_are_position_based():
+    ashp = AirSourceHeatPump(
+        ref="R410A", hp_capacity=15500.0, UA_ou_rated=2500, UA_iu_rated=2500
+    )
+    for q in (-12000.0, 12000.0):  # heating, cooling
+        r = ashp.analyze_steady(
+            Q_r_iu=q, T0=7.0 if q < 0 else 31.0, T_a_room=20.0 if q < 0 else 26.0,
+            return_dict=True, verbose=False,
+        )
+        # Position-based duties present, exergy by location present.
+        assert "Q_ref_iu [W]" in r and "Q_ref_ou [W]" in r
+        assert "X_ref_iu [W]" in r and "X_ref_ou [W]" in r
+        # Refrigerant-role duty/exergy keys and the input echo are gone.
+        for stale in (
+            "Q_ref_cond [W]", "Q_ref_evap [W]", "Q_r_iu [W]",
+            "X_ref_cond [W]", "X_ref_evap [W]",
+        ):
+            assert stale not in r, f"stale output key {stale}"
+        # Refrigerant-state saturation keys remain cond/evap.
+        assert "T_ref_cond_sat_v [°C]" in r and "T_ref_evap_sat [°C]" in r
+        # Indoor duty equals the imposed load magnitude at convergence.
+        assert abs(float(r["Q_ref_iu [W]"]) - abs(q)) < 1e-6
+
+
+def test_gshp_output_labels_are_position_based():
+    gshp = GroundSourceHeatPump(ref="R32")
+    r = gshp.analyze_steady(Q_r_iu=-3000.0, T0=5.0, T_a_room=20.0, return_dict=True)
+    assert "Q_ref_iu [W]" in r and "Q_ref_ground [W]" in r
+    for stale in ("Q_ref_cond [W]", "Q_ref_evap [W]", "Q_r_iu [W]"):
+        assert stale not in r, f"stale output key {stale}"
+    assert abs(float(r["Q_ref_iu [W]"]) - 3000.0) < 1e-6

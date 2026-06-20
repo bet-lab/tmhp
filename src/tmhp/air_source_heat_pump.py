@@ -331,11 +331,9 @@ class AirSourceHeatPump:
                     # Energy rates [W]
                     "E_iu_fan [W]": 0.0,
                     "E_ou_fan [W]": 0.0,
-                    "Q_ref_evap [W]": 0.0,
-                    "Q_ref_cond [W]": 0.0,
+                    # Heat duties by physical location (mode-independent labels)
                     "Q_ref_iu [W]": 0.0,
                     "Q_ref_ou [W]": 0.0,
-                    "Q_r_iu [W]": 0.0,
                     "E_cmp [W]": 0.0,
                     "E_tot [W]": 0.0,
                     # COP metrics
@@ -485,6 +483,10 @@ class AirSourceHeatPump:
         m_dot_ref = self.V_cmp_ref * rho_in * val_eta_vol * cmp_rps
         Q_ref_cond = m_dot_ref * (h_cmp_out_final - h_exp_in)
         Q_ref_evap = m_dot_ref * (h_cmp_in - h_exp_out)
+        # Map refrigerant-role duties to physical-location duties for output.
+        # Heating: IU = condenser, OU = evaporator; cooling: roles swap.
+        Q_ref_iu = Q_ref_cond if mode == "heating" else Q_ref_evap
+        Q_ref_ou = Q_ref_evap if mode == "heating" else Q_ref_cond
         E_cmp = (m_dot_ref * (h_cmp_out_final - h_cmp_in)) / val_eta_electro_mech
 
         # Reject negative compressor power (unphysical)
@@ -624,23 +626,22 @@ class AirSourceHeatPump:
                 # Energy rates [W]
                 "E_iu_fan [W]": E_iu_fan,
                 "E_ou_fan [W]": E_ou_fan,
-                "Q_ref_evap [W]": Q_ref_evap,
-                "Q_ref_cond [W]": Q_ref_cond,
-                # Physical-location duties (mode-mapped): in heating the indoor
-                # unit is the condenser and the outdoor unit the evaporator; in
-                # cooling the roles swap. Reported by location so the labels are
-                # mode-independent (cf. the refrigerant-perspective cond/evap keys).
-                "Q_ref_iu [W]": Q_ref_cond if mode == "heating" else Q_ref_evap,
-                "Q_ref_ou [W]": Q_ref_evap if mode == "heating" else Q_ref_cond,
-                "Q_r_iu [W]": Q_r_iu,
+                # Heat duties by physical location (mode-mapped): in heating the
+                # indoor unit is the condenser and the outdoor unit the evaporator;
+                # in cooling the roles swap. Reported by location so the labels are
+                # mode-independent and the consumer never sees the cond/evap
+                # bookkeeping (the refrigerant-perspective cond/evap remain only in
+                # the refrigerant-state keys T/P/h/s_ref_*_sat and in refrigerant.py).
+                "Q_ref_iu [W]": Q_ref_iu,
+                "Q_ref_ou [W]": Q_ref_ou,
                 "E_cmp [W]": E_cmp,
                 "E_tot [W]": E_tot,
-                # COP metrics
+                # COP metrics (indoor-unit duty basis; == |Q_r_iu| at convergence)
                 "cop_ref [-]": (
-                    abs(Q_r_iu) / E_cmp if E_cmp > 0 else np.nan
+                    Q_ref_iu / E_cmp if E_cmp > 0 else np.nan
                 ),
                 "cop_sys [-]": (
-                    abs(Q_r_iu) / E_tot if E_tot > 0 else np.nan
+                    Q_ref_iu / E_tot if E_tot > 0 else np.nan
                 ),
             }
         )
@@ -1049,14 +1050,20 @@ class AirSourceHeatPump:
         # Mapping to physical units:
         #   Heating: IU = condenser, OU = evaporator
         #   Cooling: IU = evaporator, OU = condenser
-        if "T_ref_cond_sat_v [°C]" in df.columns:
-            df["X_ref_cond [W]"] = df["Q_ref_cond [W]"] * (
-                1 - T0_K / cu.C2K(df["T_ref_cond_sat_v [°C]"])
+        # The Carnot factor for each location uses the saturation temperature of
+        # the refrigerant role it plays in the current mode. Output exergy is
+        # labelled by location (X_ref_iu/X_ref_ou); the refrigerant-state
+        # saturation keys remain cond/evap (refrigerant-intrinsic).
+        if {"T_ref_cond_sat_v [°C]", "T_ref_evap_sat [°C]", "mode"} <= set(df.columns):
+            is_heating = df["mode"] == "heating"
+            T_iu_sat_K = cu.C2K(
+                df["T_ref_cond_sat_v [°C]"].where(is_heating, df["T_ref_evap_sat [°C]"])
             )
-        if "T_ref_evap_sat [°C]" in df.columns:
-            df["X_ref_evap [W]"] = df["Q_ref_evap [W]"] * (
-                1 - T0_K / cu.C2K(df["T_ref_evap_sat [°C]"])
+            T_ou_sat_K = cu.C2K(
+                df["T_ref_evap_sat [°C]"].where(is_heating, df["T_ref_cond_sat_v [°C]"])
             )
+            df["X_ref_iu [W]"] = df["Q_ref_iu [W]"] * (1 - T0_K / T_iu_sat_K)
+            df["X_ref_ou [W]"] = df["Q_ref_ou [W]"] * (1 - T0_K / T_ou_sat_K)
 
         # ── 5. Total exergy input ───────────────────────
         X_tot = df["E_cmp [W]"] + df["E_ou_fan [W]"].fillna(0) + df["E_iu_fan [W]"].fillna(0)
