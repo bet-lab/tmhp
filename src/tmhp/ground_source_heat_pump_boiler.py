@@ -404,7 +404,7 @@ class GroundSourceHeatPumpBoiler:
                     "T_bhe_f_in [°C]": cu.K2C(getattr(self, "T_bhe_f_in_K", self.Ts_K)),
                     "T_bhe_f_out [°C]": cu.K2C(getattr(self, "T_bhe_f_out_K", self.Ts_K)),
                     "T_cond [°C]": T_tank_w,
-                    
+
                     # Volume flow rates [m3/s]
                     "dV_mix_w_out [m3/s]": (dV_mix_w_out_val if dV_mix_w_out_val > 0 else np.nan),
                     "dV_tank_w_out [m3/s]": (dV_tank_w_out if dV_tank_w_out > 0 else np.nan),
@@ -413,7 +413,7 @@ class GroundSourceHeatPumpBoiler:
                     "dV_bhe_f [m3/s]": self.dV_b_f_m3s,
                     "m_dot_ref [kg/s]": 0.0,
                     "cmp_rpm [rpm]": 0.0,
-                    
+
                     # Energy rates [W]
                     "Q_bhe [W]": 0.0,
                     "Q_ref_tank [W]": 0.0,
@@ -422,7 +422,7 @@ class GroundSourceHeatPumpBoiler:
                     "E_cmp [W]": 0.0,
                     "E_pmp [W]": 0.0,
                     "E_tot [W]": 0.0,
-                    
+
                     # COP metrics
                     "cop_ref [-]": np.nan,
                     "cop_sys [-]": np.nan,
@@ -702,7 +702,7 @@ class GroundSourceHeatPumpBoiler:
             perf = {}
 
         perf["hp_is_on"] = Q_tank_load > self.Q_tank_LOAD_OFF_TOL
-        
+
         # Determine convergence specifically when ON
         if Q_tank_load > self.Q_tank_LOAD_OFF_TOL:
             perf["converged"] = opt_res.success if 'opt_res' in locals() else False

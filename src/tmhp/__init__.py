@@ -36,6 +36,7 @@ from .water_source_heat_pump_boiler import WaterSourceHeatPumpBoiler
 from .weather import *  # noqa: F401, F403
 
 __all__ = [
+    "check_pr_envelope",
     "AirSourceHeatPump",
     "AirSourceHeatPumpBoiler",
     "ASHPB_PV_ESS",
