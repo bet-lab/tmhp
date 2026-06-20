@@ -16,14 +16,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-import numpy as np
-
 from . import calc_util as cu
 from . import g_function as gf
 from .constants import c_a, c_w, k_w, rho_a, rho_w
 from .cop import calc_GSHP_COP
-from .hx_fan import calc_fan_power_from_dV_fan
 from .g_function import precompute_gfunction
+from .hx_fan import calc_fan_power_from_dV_fan
 
 # Aliases to match the borehole-fluid naming convention in the original code
 c_f = c_w
@@ -249,10 +247,11 @@ class GroundSourceHeatPumpEmpirical:
             # -----------------------------------------------------------------
 
             self.T_f = self.T_b + self.q_b * self.R_b
-            if dV_f_m3s_active > 0:
-                delta_T_fluid = self.q_b * self.H_b / (2 * c_f * rho_f * dV_f_m3s_active)
-            else:
-                delta_T_fluid = 0.0
+            delta_T_fluid = (
+                self.q_b * self.H_b / (2 * c_f * rho_f * dV_f_m3s_active)
+                if dV_f_m3s_active > 0
+                else 0.0
+            )
 
             self.T_f_in = self.T_f + delta_T_fluid
             self.T_f_out = self.T_f - delta_T_fluid
