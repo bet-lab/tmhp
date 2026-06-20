@@ -48,6 +48,7 @@ from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import safe_float_attr
+from .compressor_envelope import check_pr_envelope
 from .constants import c_w, k_w, mu_w, rho_w
 from .dynamic_context import (
     ControlState,
@@ -149,6 +150,12 @@ class GroundSourceHeatPumpBoiler:
         # pass None explicitly to disable.
         dT_cycle_min: float | None = 20.0,
         dT_hx_min: float = 0.5,
+        # Compressor pressure-ratio envelope (PR = P_cond / P_evap)
+        PR_cycle_min: float = 1.5,
+        PR_cycle_max: float = 10.0,
+        # Compressor speed search bounds [rev/s]
+        rps_min: float = 10.0,
+        rps_max: float = 150.0,
         *,
         # Deprecated:
         refrigerant: str | None = None,
@@ -227,6 +234,15 @@ class GroundSourceHeatPumpBoiler:
         self.dT_subcool = dT_subcool
         self.dT_cycle_min: float | None = dT_cycle_min
         self.dT_hx_min: float = dT_hx_min
+        # Compressor pressure-ratio envelope (floor -> clamp, ceiling -> reject)
+        self.PR_cycle_min: float = PR_cycle_min
+        self.PR_cycle_max: float = PR_cycle_max
+        # Compressor speed search bounds [rev/s]
+        self.rps_min: float = rps_min
+        self.rps_max: float = rps_max
+        # Records the PR-envelope event of the most recent _calc_state call
+        # (None | ("pr_below_min", pr, bound) | ("pr_above_max", pr, bound)).
+        self._last_pr_event: tuple[str, float, float] | None = None
 
         # BHE properties
         self.N_1 = N_1
@@ -451,6 +467,38 @@ class GroundSourceHeatPumpBoiler:
         P_cond = cs["P_ref_cmp_out [Pa]"]
         ratio_P_cmp = P_cond / P_evap if P_evap > 0 else 1.0
 
+        # Compressor pressure-ratio envelope guard (see compressor_envelope.py).
+        # Ceiling -> reject; floor -> clamp the cycle onto PR_cycle_min by holding
+        # the evaporator (ground) pressure and projecting the condensing
+        # (tank-side) pressure, then refresh the state. Recorded for the
+        # analyze_steady hint; no print here (runs inside the optimiser loop).
+        self._last_pr_event = None
+        pr_event = check_pr_envelope(ratio_P_cmp, self.PR_cycle_min, self.PR_cycle_max)
+        if pr_event == "pr_above_max":
+            self._last_pr_event = ("pr_above_max", ratio_P_cmp, self.PR_cycle_max)
+            return None
+        if pr_event == "pr_below_min":
+            self._last_pr_event = ("pr_below_min", ratio_P_cmp, self.PR_cycle_min)
+            P_cond_clamp = self.PR_cycle_min * P_evap
+            T_tank_sat_K = CP.PropsSI("T", "P", P_cond_clamp, "Q", 0, self.ref)
+            cs = calc_ref_state(
+                T_evap_K=T_ground_sat_K,
+                T_cond_K=T_tank_sat_K,
+                refrigerant=self.ref,
+                eta_cmp_isen=1.0,
+                mode="heating",
+                dT_superheat=self.dT_superheat,
+                dT_subcool=actual_dT_subcool,
+                is_active=True,
+            )
+            h_ref_cmp_in = cs["h_ref_cmp_in [J/kg]"]
+            h_ref_exp_in = cs["h_ref_exp_in [J/kg]"]
+            h_ref_exp_out = cs["h_ref_exp_out [J/kg]"]
+            rho_ref_cmp_in = cs["rho_ref_cmp_in [kg/m3]"]
+            P_evap = cs["P_ref_cmp_in [Pa]"]
+            P_cond = cs["P_ref_cmp_out [Pa]"]
+            ratio_P_cmp = P_cond / P_evap if P_evap > 0 else self.PR_cycle_min
+
         if h_ref_cmp_in - h_ref_exp_in <= 0:
             return None
 
@@ -471,12 +519,12 @@ class GroundSourceHeatPumpBoiler:
 
         from scipy.optimize import brentq
         try:
-            cmp_rps = brentq(_residual_rps, 10.0, 150.0)
+            cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
             converged_rps = True
         except ValueError:
-            res_min = _residual_rps(10.0)
-            res_max = _residual_rps(150.0)
-            cmp_rps = 10.0 if abs(res_min) < abs(res_max) else 150.0
+            res_min = _residual_rps(self.rps_min)
+            res_max = _residual_rps(self.rps_max)
+            cmp_rps = self.rps_min if abs(res_min) < abs(res_max) else self.rps_max
             converged_rps = False
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
@@ -1109,11 +1157,34 @@ class GroundSourceHeatPumpBoiler:
                     flow_state=flow_state,
                 )
 
+            # Pressure-ratio envelope hint for the final operating point
+            # (one message per call; per-probe events are silent). Floor ->
+            # clamp (cycle still solved); ceiling -> reject (HP-off fallback).
+            pr_event = self._last_pr_event
+            if pr_event is not None:
+                kind, pr_val, bound = pr_event
+                if kind == "pr_below_min":
+                    print(
+                        f"[PR guard] clamp 하한(below PR_cycle_min): "
+                        f"PR={pr_val:.3f} -> {bound:.2f} "
+                        f"(T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, Q_ref_tank={Q_ref_tank:.0f}W)"
+                    )
+                else:  # pr_above_max
+                    print(
+                        f"[PR guard] reject 상한(above PR_cycle_max): "
+                        f"PR={pr_val:.3f} > {bound:.2f} "
+                        f"(T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, Q_ref_tank={Q_ref_tank:.0f}W)"
+                    )
+
             # Diagnose; the fallback trigger condition is unchanged from the
             # historical behaviour (`result is None or not isinstance(...)`).
             opt_success = bool(getattr(opt_result, "success", False))
             if result is None or not isinstance(result, dict):
-                failure_reason = "cycle_invalid"
+                failure_reason = (
+                    "pr_above_max"
+                    if pr_event is not None and pr_event[0] == "pr_above_max"
+                    else "cycle_invalid"
+                )
             elif not result.get("converged", False):
                 failure_reason = "hx_not_converged"
             elif not opt_success:

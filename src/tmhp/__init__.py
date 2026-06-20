@@ -16,6 +16,7 @@ from .ashpb_pv_ess import ASHPB_PV_ESS
 from .ashpb_stc_preheat import ASHPB_STC_preheat
 from .ashpb_stc_tank import ASHPB_STC_tank
 from .calc_util import *  # noqa: F401, F403
+from .compressor_envelope import check_pr_envelope
 from .constants import *  # noqa: F401, F403
 from .dhw import *  # noqa: F401, F403
 from .dynamic_context import *  # noqa: F401, F403

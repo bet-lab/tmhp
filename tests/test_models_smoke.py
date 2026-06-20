@@ -14,6 +14,7 @@ from tmhp import (
     GroundSourceHeatPump,
     GroundSourceHeatPumpBoiler,
     WaterSourceHeatPumpBoiler,
+    check_pr_envelope,
 )
 
 
@@ -249,3 +250,88 @@ def test_wshpb_default_min_lift_is_20():
     wshpb = WaterSourceHeatPumpBoiler(ref="R32")
     assert wshpb.dT_cycle_min == 20.0
     assert wshpb.dT_hx_min == 0.5
+
+
+# ---------------------------------------------------------------------------
+# Compressor pressure-ratio envelope + rps search bounds (#166)
+# Applied to the modern-solver models (ASHP / ASHPB / GSHPB). WSHPB and GSHP
+# use the older analytic cycle and are deferred (see bet-lab/tmhp#188).
+# ---------------------------------------------------------------------------
+
+
+def test_check_pr_envelope_boundaries():
+    # Inside the band -> feasible (None).
+    assert check_pr_envelope(3.0, 1.5, 10.0) is None
+    assert check_pr_envelope(1.5, 1.5, 10.0) is None  # inclusive floor
+    assert check_pr_envelope(10.0, 1.5, 10.0) is None  # inclusive ceiling
+    # Below the floor / above the ceiling -> reason codes.
+    assert check_pr_envelope(1.2, 1.5, 10.0) == "pr_below_min"
+    assert check_pr_envelope(11.0, 1.5, 10.0) == "pr_above_max"
+
+
+def test_ashp_custom_pr_and_rps():
+    ashp = AirSourceHeatPump(
+        ref="R32", UA_ou_rated=3000.0, UA_iu_rated=3000.0,
+        PR_cycle_min=1.8, PR_cycle_max=8.0, rps_min=15.0, rps_max=120.0,
+    )
+    assert ashp.PR_cycle_min == 1.8
+    assert ashp.PR_cycle_max == 8.0
+    assert ashp.rps_min == 15.0
+    assert ashp.rps_max == 120.0
+
+
+def test_ashp_default_pr_and_rps():
+    ashp = AirSourceHeatPump(ref="R32", UA_ou_rated=3000.0, UA_iu_rated=3000.0)
+    assert ashp.PR_cycle_min == 1.5
+    assert ashp.PR_cycle_max == 10.0
+    assert ashp.rps_min == 10.0
+    assert ashp.rps_max == 150.0
+
+
+def test_ashpb_custom_pr_and_rps():
+    ashpb = AirSourceHeatPumpBoiler(
+        ref="R32", PR_cycle_min=1.6, PR_cycle_max=9.0, rps_min=12.0, rps_max=130.0,
+    )
+    assert ashpb.PR_cycle_min == 1.6
+    assert ashpb.PR_cycle_max == 9.0
+    assert ashpb.rps_min == 12.0
+    assert ashpb.rps_max == 130.0
+
+
+def test_gshpb_default_pr_and_rps():
+    gshpb = GroundSourceHeatPumpBoiler(ref="R32")
+    assert gshpb.PR_cycle_min == 1.5
+    assert gshpb.PR_cycle_max == 10.0
+    assert gshpb.rps_min == 10.0
+    assert gshpb.rps_max == 150.0
+
+
+def test_ashp_pr_floor_clamp_keeps_cycle():
+    # Low-lift cooling (outdoor cooler than indoor) with the lift guard relaxed
+    # so PR becomes the binding constraint. A raised floor forces the clamp; the
+    # cycle must still converge (continuous low-lift transition, not rejection).
+    ashp = AirSourceHeatPump(
+        ref="R410A", hp_capacity=15500.0, UA_ou_rated=2500, UA_iu_rated=2500,
+        dT_cycle_min=3.0, PR_cycle_min=1.8, PR_cycle_max=10.0,
+    )
+    result = ashp.analyze_steady(
+        Q_r_iu=16500.0, T0=10.0, T_a_room=28.0, return_dict=True, verbose=False
+    )
+    assert result["converged"] is True
+    assert result["failure_reason"] == "none"
+    assert ashp._last_pr_event is not None
+    assert ashp._last_pr_event[0] == "pr_below_min"
+
+
+def test_ashp_pr_ceiling_rejects():
+    # A very low ceiling rejects an otherwise-valid heating point.
+    ashp = AirSourceHeatPump(
+        ref="R410A", hp_capacity=15500.0, UA_ou_rated=2500, UA_iu_rated=2500,
+        PR_cycle_min=1.0, PR_cycle_max=1.6,
+    )
+    result = ashp.analyze_steady(
+        Q_r_iu=-14000.0, T0=-7.0, T_a_room=20.0, return_dict=True, verbose=False
+    )
+    assert result["converged"] is False
+    assert result["failure_reason"] == "pr_above_max"
+    assert ashp._last_pr_event[0] == "pr_above_max"

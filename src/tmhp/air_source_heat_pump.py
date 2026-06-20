@@ -26,6 +26,7 @@ from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import safe_float_attr
+from .compressor_envelope import check_pr_envelope
 from .constants import c_a, rho_a
 from .enex_functions import (
     calc_fan_power_from_dV_fan,
@@ -77,6 +78,12 @@ class AirSourceHeatPump:
         # 6. Cycle guard ---------------------------------
         dT_cycle_min: float = 20.0,
         dT_hx_min: float = 0.5,
+        # Compressor pressure-ratio envelope (PR = P_cond / P_evap)
+        PR_cycle_min: float = 1.5,
+        PR_cycle_max: float = 10.0,
+        # Compressor speed search bounds [rev/s]
+        rps_min: float = 10.0,
+        rps_max: float = 150.0,
         # ASHRAE 90.1-2022 VSD coefficients
         vsd_coeffs_ou: dict | None = None,
         vsd_coeffs_iu: dict | None = None,
@@ -171,6 +178,15 @@ class AirSourceHeatPump:
         self.dT_subcool: float = dT_subcool
         self.dT_cycle_min: float = dT_cycle_min
         self.dT_hx_min: float = dT_hx_min
+        # Compressor pressure-ratio envelope (floor -> clamp, ceiling -> reject)
+        self.PR_cycle_min: float = PR_cycle_min
+        self.PR_cycle_max: float = PR_cycle_max
+        # Compressor speed search bounds [rev/s]
+        self.rps_min: float = rps_min
+        self.rps_max: float = rps_max
+        # Records the PR-envelope event of the most recent _calc_state call
+        # (None | ("pr_below_min", pr, bound) | ("pr_above_max", pr, bound)).
+        self._last_pr_event: tuple[str, float, float] | None = None
         self.hp_capacity: float = hp_capacity
 
         # --- 2. Heat exchanger UA ---
@@ -381,6 +397,44 @@ class AirSourceHeatPump:
 
         ratio_P_cmp = P_cond / P_evap if P_evap > 0 else 1.0
 
+        # Compressor pressure-ratio envelope guard. PR is the physically primary
+        # limit (a fixed temperature lift maps to PR non-linearly per refrigerant
+        # and operating level). Ceiling -> reject (outside single-stage envelope);
+        # floor -> clamp the cycle onto PR_cycle_min (continuous low-lift
+        # transition) by holding P_evap and projecting P_cond. Both events are
+        # recorded on self._last_pr_event for the analyze_steady hint; no print
+        # here (this runs inside the optimiser loop).
+        self._last_pr_event = None
+        pr_event = check_pr_envelope(ratio_P_cmp, self.PR_cycle_min, self.PR_cycle_max)
+        if pr_event == "pr_above_max":
+            self._last_pr_event = ("pr_above_max", ratio_P_cmp, self.PR_cycle_max)
+            return None
+        if pr_event == "pr_below_min":
+            self._last_pr_event = ("pr_below_min", ratio_P_cmp, self.PR_cycle_min)
+            # Clamp: hold P_evap, project P_cond = PR_cycle_min * P_evap, invert
+            # the saturation curve for the constrained condensing temperature,
+            # then refresh the cycle state at the clamped condition.
+            import CoolProp.CoolProp as CP
+            P_cond = self.PR_cycle_min * P_evap
+            T_cond_sat_K = CP.PropsSI("T", "P", P_cond, "Q", 0, self.ref)
+            cs = calc_ref_state(
+                T_evap_K=T_evap_sat_K,
+                T_cond_K=T_cond_sat_K,
+                refrigerant=self.ref,
+                eta_cmp_isen=1.0,  # Temporary
+                mode=mode,
+                dT_superheat=actual_dT_superheat,
+                dT_subcool=actual_dT_subcool,
+                is_active=True,
+            )
+            h_cmp_in = cs["h_ref_cmp_in [J/kg]"]
+            h_exp_in = cs["h_ref_exp_in [J/kg]"]
+            h_exp_out = cs["h_ref_exp_out [J/kg]"]
+            rho_in = cs["rho_ref_cmp_in [kg/m3]"]
+            P_evap = cs["P_ref_cmp_in [Pa]"]
+            P_cond = cs["P_ref_cmp_out [Pa]"]
+            ratio_P_cmp = P_cond / P_evap if P_evap > 0 else self.PR_cycle_min
+
         try:
             import CoolProp.CoolProp as CP
             s_cmp_in = cs["s_ref_cmp_in [J/(kg·K)]"]
@@ -404,12 +458,12 @@ class AirSourceHeatPump:
 
         from scipy.optimize import brentq
         try:
-            cmp_rps = brentq(_residual_rps, 10.0, 150.0)
+            cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
             converged_rps = True
         except ValueError:
-            res_min = _residual_rps(10.0)
-            res_max = _residual_rps(150.0)
-            cmp_rps = 10.0 if abs(res_min) < abs(res_max) else 150.0
+            res_min = _residual_rps(self.rps_min)
+            res_max = _residual_rps(self.rps_max)
+            cmp_rps = self.rps_min if abs(res_min) < abs(res_max) else self.rps_max
             converged_rps = False
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
@@ -740,12 +794,38 @@ class AirSourceHeatPump:
                     T_a_room=T_a_room,
                 )
 
+            # Pressure-ratio envelope hint for the final operating point
+            # (one message per call; the per-probe events inside the optimiser
+            # loop are silent). Floor -> clamp (cycle still solved); ceiling ->
+            # reject (falls back to HP-off below).
+            pr_event = self._last_pr_event
+            if verbose and pr_event is not None:
+                kind, pr_val, bound = pr_event
+                if kind == "pr_below_min":
+                    print(
+                        f"[PR guard] clamp 하한(below PR_cycle_min): "
+                        f"PR={pr_val:.3f} -> {bound:.2f} "
+                        f"(Q_r_iu={Q_r_iu:.0f}W, T0={T0:.1f}°C, T_a_room={T_a_room:.1f}°C)"
+                    )
+                else:  # pr_above_max
+                    print(
+                        f"[PR guard] reject 상한(above PR_cycle_max): "
+                        f"PR={pr_val:.3f} > {bound:.2f} "
+                        f"(Q_r_iu={Q_r_iu:.0f}W, T0={T0:.1f}°C, T_a_room={T_a_room:.1f}°C)"
+                    )
+
             # opt_success=True with opt_fun>=1e6 is a false success: the
             # optimiser converged but never escaped the penalty region.
             opt_fun = float(getattr(opt_result, "fun", 1e6))
             opt_success = bool(getattr(opt_result, "success", False)) and opt_fun < 1e6
             if result is None:
-                failure_reason = "cycle_invalid"
+                # Distinguish a pressure-ratio ceiling rejection from a generic
+                # invalid cycle so downstream consumers see the specific cause.
+                failure_reason = (
+                    "pr_above_max"
+                    if pr_event is not None and pr_event[0] == "pr_above_max"
+                    else "cycle_invalid"
+                )
             elif not result.get("converged", False):
                 failure_reason = "hx_not_converged"
             elif not opt_success:
