@@ -279,7 +279,7 @@ def plot_th_diagram(
             dy = T_cond_bound.get("dy", 2)
             va = T_cond_bound.get("va", "bottom")
             ax.axhline(y=val, color="oc.red5", linestyle=":", linewidth=dm.lw(0))
-            offset = dm.make_offset(4, dy, cast(mfigure.Figure, ax.figure)) if ax.figure else None
+            offset = dm.make_offset(4, float(dy), cast(mfigure.Figure, ax.figure)) if ax.figure else None
             transform = trans + offset if offset else trans
             ax.text(
                 0.0,
@@ -300,7 +300,7 @@ def plot_th_diagram(
             dy = T_evap_bound.get("dy", -2)
             va = T_evap_bound.get("va", "top")
             ax.axhline(y=val, color="oc.orange5", linestyle=":", linewidth=dm.lw(0))
-            offset = dm.make_offset(4, dy, cast(mfigure.Figure, ax.figure)) if ax.figure else None
+            offset = dm.make_offset(4, float(dy), cast(mfigure.Figure, ax.figure)) if ax.figure else None
             transform = trans + offset if offset else trans
             ax.text(
                 0.0,
@@ -489,7 +489,7 @@ def plot_ts_diagram(
             dy = T_cond_bound.get("dy", 2)
             va = T_cond_bound.get("va", "bottom")
             ax.axhline(y=val, color="oc.red5", linestyle=":", linewidth=dm.lw(0))
-            offset = dm.make_offset(4, dy, cast(mfigure.Figure, ax.figure)) if ax.figure else None
+            offset = dm.make_offset(4, float(dy), cast(mfigure.Figure, ax.figure)) if ax.figure else None
             transform = trans + offset if offset else trans
             ax.text(
                 0.0,
@@ -510,7 +510,7 @@ def plot_ts_diagram(
             dy = T_evap_bound.get("dy", -2)
             va = T_evap_bound.get("va", "top")
             ax.axhline(y=val, color="oc.orange5", linestyle=":", linewidth=dm.lw(0))
-            offset = dm.make_offset(4, dy, cast(mfigure.Figure, ax.figure)) if ax.figure else None
+            offset = dm.make_offset(4, float(dy), cast(mfigure.Figure, ax.figure)) if ax.figure else None
             transform = trans + offset if offset else trans
             ax.text(
                 0.0,

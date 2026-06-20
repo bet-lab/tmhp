@@ -658,7 +658,7 @@ def calc_borehole_thermal_resistance(
     # pygfunction public API: internally applies Cimmino/Hellström axial correction
     R_b_eff = pipe.effective_borehole_thermal_resistance(m_flow_borehole, cp_f)
 
-    return R_b_eff
+    return float(R_b_eff)
 
 
 def calc_submerged_coil_thermal_resistance(

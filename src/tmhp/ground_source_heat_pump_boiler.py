@@ -570,7 +570,9 @@ class GroundSourceHeatPumpBoiler:
         T_bhe = T_bhe_f + Q_bhe_unit * self.R_b
 
         # 6. Assemble
-        result: dict = cs.copy()
+        # Plain assignment (no re-annotation) to avoid mypy [no-redef]: `result`
+        # is already annotated in the inactive-state branch above.
+        result = cs.copy()
         result.update(
             {
                 "hp_is_on": True,
