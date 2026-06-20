@@ -19,10 +19,10 @@ from tmhp import (
 
 def test_ashpb_analyze_steady():
     ashpb = AirSourceHeatPumpBoiler(ref="R32")
-    result = ashpb.analyze_steady(T_tank_w=55.0, T0=5.0, Q_ref_cond=8_000.0)
+    result = ashpb.analyze_steady(T_tank_w=55.0, T0=5.0, Q_ref_tank=8_000.0)
     assert isinstance(result, dict)
     assert result["E_cmp [W]"] > 0
-    assert result["Q_ref_cond [W]"] > 0
+    assert result["Q_ref_tank [W]"] > 0
     assert result["cop_sys [-]"] > 1.0
     # failure_reason is a diagnostic, not a pass/fail gate — it may say
     # "hx_not_converged" or "optimizer_failed" even when the returned
@@ -37,7 +37,7 @@ def test_ashpb_analyze_steady():
 def test_gshpb_analyze_steady():
     gshpb = GroundSourceHeatPumpBoiler(ref="R32")
     result = gshpb.analyze_steady(
-        T_tank_w=55.0, T_source=12.0, Q_ref_cond=8_000.0, T0=15.0
+        T_tank_w=55.0, T_source=12.0, Q_ref_tank=8_000.0, T0=15.0
     )
     assert isinstance(result, dict)
     assert result["E_cmp [W]"] > 0
@@ -55,11 +55,11 @@ def test_gshpb_analyze_steady():
 def test_wshpb_analyze_steady():
     wshpb = WaterSourceHeatPumpBoiler(ref="R32")
     result = wshpb.analyze_steady(
-        T_tank_w=55.0, T_source=12.0, Q_ref_cond=8_000.0, T0=15.0
+        T_tank_w=55.0, T_source=12.0, Q_ref_tank=8_000.0, T0=15.0
     )
     assert isinstance(result, dict)
     assert result["E_cmp [W]"] > 0
-    assert result["Q_ref_cond [W]"] > 0
+    assert result["Q_ref_tank [W]"] > 0
     assert result["cop_ref [-]"] > 1.0
     assert result["cop_sys [-]"] > 1.0
     # failure_reason is a diagnostic, not a pass/fail gate — it may say
@@ -221,9 +221,9 @@ def test_ashpb_custom_min_lift_and_pinch():
     assert ashpb.dT_hx_min == 0.8
 
 
-def test_ashpb_default_min_lift_is_none():
+def test_ashpb_default_min_lift_is_20():
     ashpb = AirSourceHeatPumpBoiler(ref="R32")
-    assert ashpb.dT_cycle_min is None
+    assert ashpb.dT_cycle_min == 20.0
     assert ashpb.dT_hx_min == 0.5
 
 
@@ -233,9 +233,9 @@ def test_gshpb_custom_min_lift_and_pinch():
     assert gshpb.dT_hx_min == 0.7
 
 
-def test_gshpb_default_min_lift_is_none():
+def test_gshpb_default_min_lift_is_20():
     gshpb = GroundSourceHeatPumpBoiler(ref="R32")
-    assert gshpb.dT_cycle_min is None
+    assert gshpb.dT_cycle_min == 20.0
     assert gshpb.dT_hx_min == 0.5
 
 
@@ -245,7 +245,7 @@ def test_wshpb_custom_min_lift_and_pinch():
     assert wshpb.dT_hx_min == 0.7
 
 
-def test_wshpb_default_min_lift_is_none():
+def test_wshpb_default_min_lift_is_20():
     wshpb = WaterSourceHeatPumpBoiler(ref="R32")
-    assert wshpb.dT_cycle_min is None
+    assert wshpb.dT_cycle_min == 20.0
     assert wshpb.dT_hx_min == 0.5

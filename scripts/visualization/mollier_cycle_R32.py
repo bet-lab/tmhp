@@ -2,7 +2,7 @@
 
 Panel (a) is the P-h chart; panel (b) is the T-h companion. Both share
 the seven cycle nodes returned by ``analyze_steady`` at a realistic DHW
-operating point (``T_tank_w = 60 °C``, ``T0 = 12 °C``, ``Q_ref_cond =
+operating point (``T_tank_w = 60 °C``, ``T0 = 12 °C``, ``Q_ref_tank =
 8 kW``).
 
 Rendered through the ``scientific`` dartwork-mpl preset for typography
@@ -135,7 +135,7 @@ def main() -> None:
     apply_style("report", hashsalt="tmhp.visualization.mollier-cycle-r32")
 
     ashpb = AirSourceHeatPumpBoiler(ref=REF)
-    result = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=T0, Q_ref_cond=Q_COND)
+    result = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=T0, Q_ref_tank=Q_COND)
     assert isinstance(result, dict)
 
     pts_ph = _cycle_nodes_ph(result)

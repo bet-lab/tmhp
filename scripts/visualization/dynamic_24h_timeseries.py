@@ -65,7 +65,7 @@ def main() -> None:
     )
 
     t_h = np.arange(len(df)) * DT_S / 3600.0
-    q_cond_kw = df["Q_ref_cond [W]"].to_numpy() / 1_000.0
+    q_cond_kw = df["Q_ref_tank [W]"].to_numpy() / 1_000.0
     e_cmp_kw  = df["E_cmp [W]"].to_numpy() / 1_000.0
     t_tank    = df["T_tank_w [°C]"].to_numpy()
 

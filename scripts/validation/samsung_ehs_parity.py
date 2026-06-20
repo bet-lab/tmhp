@@ -98,7 +98,7 @@ def run_validation() -> list[tuple[OperatingPoint, float]]:
         result = model.analyze_steady(
             T_tank_w=op.t_tank_c,
             T0=op.t0_c,
-            Q_ref_cond=op.q_cond_kw * 1000.0,
+            Q_ref_tank=op.q_cond_kw * 1000.0,
             return_dict=True,
         )
         assert isinstance(result, dict)

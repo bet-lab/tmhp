@@ -16,7 +16,7 @@ integrated model, its physical calculations represent the behavior of:
 4. **Heat Exchangers (Condenser & Evaporator):**
 
    - **Condenser:** Placed inside the hot-water tank (hydronic), utilizing a static
-     overall heat transfer coefficient (UA_cond_design).
+     overall heat transfer coefficient (UA_tank).
    - **Evaporator:** Coupled to a borehole heat exchanger (BHE) fluid loop, acting as
      a secondary heat exchanger to absorb heat from the circulating ground fluid.
 5. **Thermal Storage Tank:**
@@ -87,8 +87,8 @@ class GroundSourceHeatPumpBoiler:
         eta_cmp_vol: float | Callable | None = None,
         eta_cmp: float | Callable | None = None,
         # 2. Heat exchanger UA
-        UA_cond: float | None = None,
-        UA_evap: float | None = None,
+        UA_tank: float | None = None,
+        UA_ground: float | None = None,
         # 3. Tank / control / load
         T0: float = 0.0,
         Ts: float = 16.0,
@@ -144,8 +144,10 @@ class GroundSourceHeatPumpBoiler:
         dt_s: float = 3600,
         boundary_condition: str = "uniform_temperature",
         T_sur: float = 20.0,
-        # Cycle guard:
-        dT_cycle_min: float | None = None,
+        # Cycle guard: minimum condenser-to-evaporator saturation lift [K].
+        # Default 20 K guards the boundary-condition reversal (source above sink);
+        # pass None explicitly to disable.
+        dT_cycle_min: float | None = 20.0,
         dT_hx_min: float = 0.5,
         *,
         # Deprecated:
@@ -171,10 +173,10 @@ class GroundSourceHeatPumpBoiler:
             V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0005
         if eta_cmp is None:
             eta_cmp = eta_cmp_mech if eta_cmp_mech is not None else 0.855
-        if UA_cond is None:
-            UA_cond = UA_cond_design if UA_cond_design is not None else 500.0
-        if UA_evap is None:
-            UA_evap = UA_evap_design if UA_evap_design is not None else 500.0
+        if UA_tank is None:
+            UA_tank = UA_cond_design if UA_cond_design is not None else 500.0
+        if UA_ground is None:
+            UA_ground = UA_evap_design if UA_evap_design is not None else 500.0
 
         self.tank_physical = {
             "r0": r0,
@@ -185,7 +187,7 @@ class GroundSourceHeatPumpBoiler:
             "k_ins": k_ins,
             "h_o": h_o,
         }
-        self.UA_tank = calc_simple_tank_UA(**self.tank_physical)
+        self.UA_tank_loss = calc_simple_tank_UA(**self.tank_physical)
         self.T_sur_K = cu.C2K(T_sur)
         self.V_tank_full: float = math.pi * r0**2 * H
         self.C_tank = c_w * rho_w * self.V_tank_full
@@ -196,8 +198,8 @@ class GroundSourceHeatPumpBoiler:
         self.eta_cmp_vol = eta_cmp_vol
         self.eta_cmp = eta_cmp
 
-        self.UA_cond = UA_cond
-        self.UA_evap = UA_evap
+        self.UA_tank = UA_tank
+        self.UA_ground = UA_ground
 
         self.T0_K = cu.C2K(T0)
         self.Ts = Ts
@@ -283,7 +285,7 @@ class GroundSourceHeatPumpBoiler:
         if uv is not None:
             self._subsystems["uv"] = uv
 
-        self.Q_cond_LOAD_OFF_TOL: float = 50.0  # W
+        self.Q_tank_LOAD_OFF_TOL: float = 50.0  # W
 
         # Precompute g-function
         self.dt_s: float = dt_s
@@ -325,19 +327,19 @@ class GroundSourceHeatPumpBoiler:
         }
 
     def _calc_state(
-        self, dT_ref_evap: float, T_tank_w: float, Q_cond_load: float, T0: float, *, flow_state: dict
+        self, dT_ref_ground: float, T_tank_w: float, Q_tank_load: float, T0: float, *, flow_state: dict
     ) -> dict | None:
-        is_active = Q_cond_load > 0
+        is_active = Q_tank_load > 0
 
         # 1. Analytical Condenser Approach Temperature
-        dT_ref_cond = Q_cond_load / self.UA_cond if is_active else 0.0
+        dT_ref_tank = Q_tank_load / self.UA_tank if is_active else 0.0
         T_tank_w_K = cu.C2K(T_tank_w)
         _t_bhe = getattr(self, "T_bhe_f_out_K", None)
         T_b_out_K = float(_t_bhe) if _t_bhe is not None else cu.C2K(15.0)
         m_dot_cp_b = self.dV_b_f_m3s * rho_w * c_w
-        T_evap_in_K = T_b_out_K + (self.E_pmp / m_dot_cp_b)
-        T_ref_evap_sat_K = T_evap_in_K - dT_ref_evap
-        T_ref_cond_sat_K = T_tank_w_K + dT_ref_cond
+        T_ground_in_K = T_b_out_K + (self.E_pmp / m_dot_cp_b)
+        T_ground_sat_K = T_ground_in_K - dT_ref_ground
+        T_tank_sat_K = T_tank_w_K + dT_ref_tank
 
         if not is_active:
             # Flow state (explicit parameter, no side-effect reads)
@@ -357,8 +359,8 @@ class GroundSourceHeatPumpBoiler:
                 T_mix_w_out_val = cu.K2C(mix["T_mix_w_out_K"])
 
             cs = calc_ref_state(
-                T_evap_K=T_ref_evap_sat_K,
-                T_cond_K=T_ref_cond_sat_K,
+                T_evap_K=T_ground_sat_K,
+                T_cond_K=T_tank_sat_K,
                 refrigerant=self.ref,
                 eta_cmp_isen=1.0,
                 mode="heating",
@@ -374,7 +376,7 @@ class GroundSourceHeatPumpBoiler:
                     "converged": True,
                     "converged_rps": True,
                     "_penalty": 0.0,
-                    "err_Q_evap [W]": 0.0,
+                    "err_Q_ground [W]": 0.0,
                     # Temperatures [°C]
                     "T_tank_w [°C]": T_tank_w,
                     "T0 [°C]": T0,
@@ -398,9 +400,9 @@ class GroundSourceHeatPumpBoiler:
                     
                     # Energy rates [W]
                     "Q_bhe [W]": 0.0,
-                    "Q_ref_cond [W]": 0.0,
-                    "Q_ref_evap [W]": 0.0,
-                    "Q_cond_load [W]": 0.0,
+                    "Q_ref_tank [W]": 0.0,
+                    "Q_ref_ground [W]": 0.0,
+                    "Q_tank_load [W]": 0.0,
                     "E_cmp [W]": 0.0,
                     "E_pmp [W]": 0.0,
                     "E_tot [W]": 0.0,
@@ -412,9 +414,9 @@ class GroundSourceHeatPumpBoiler:
             )
             return result
 
-        if self.dT_cycle_min is not None and (T_ref_cond_sat_K - T_ref_evap_sat_K) <= self.dT_cycle_min:
+        if self.dT_cycle_min is not None and (T_tank_sat_K - T_ground_sat_K) <= self.dT_cycle_min:
             return None
-        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - self.dT_hx_min))
+        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_tank - self.dT_hx_min))
 
         import inspect
         def _eval_eff(
@@ -431,8 +433,8 @@ class GroundSourceHeatPumpBoiler:
 
         # 2. Refrigerant Cycle Evaluation
         cs = calc_ref_state(
-            T_evap_K=T_ref_evap_sat_K,
-            T_cond_K=T_ref_cond_sat_K,
+            T_evap_K=T_ground_sat_K,
+            T_cond_K=T_tank_sat_K,
             refrigerant=self.ref,
             eta_cmp_isen=1.0,
             mode="heating",
@@ -465,7 +467,7 @@ class GroundSourceHeatPumpBoiler:
             h_cmp_out_local = h_ref_cmp_in + (h_ref_cmp_out_isen - h_ref_cmp_in) / val_eta_isen
             dh_cond_local = h_cmp_out_local - h_ref_exp_in
             m_dot = self.V_cmp_ref * rho_ref_cmp_in * val_eta_vol * rps
-            return (m_dot * dh_cond_local) - Q_cond_load
+            return (m_dot * dh_cond_local) - Q_tank_load
 
         from scipy.optimize import brentq
         try:
@@ -482,8 +484,8 @@ class GroundSourceHeatPumpBoiler:
         val_eta_electro_mech = _eval_eff(self.eta_cmp, ratio_P_cmp, cmp_rps)
 
         cs = calc_ref_state(
-            T_evap_K=T_ref_evap_sat_K,
-            T_cond_K=T_ref_cond_sat_K,
+            T_evap_K=T_ground_sat_K,
+            T_cond_K=T_tank_sat_K,
             refrigerant=self.ref,
             eta_cmp_isen=val_eta_isen,
             mode="heating",
@@ -494,26 +496,26 @@ class GroundSourceHeatPumpBoiler:
 
         h_ref_cmp_out = cs["h_ref_cmp_out [J/kg]"]
         m_dot_ref = self.V_cmp_ref * rho_ref_cmp_in * val_eta_vol * cmp_rps
-        Q_ref_cond = m_dot_ref * (h_ref_cmp_out - h_ref_exp_in)
-        Q_ref_evap = m_dot_ref * (h_ref_cmp_in - h_ref_exp_out)
+        Q_ref_tank = m_dot_ref * (h_ref_cmp_out - h_ref_exp_in)
+        Q_ref_ground = m_dot_ref * (h_ref_cmp_in - h_ref_exp_out)
         E_cmp = (m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)) / val_eta_electro_mech
 
         # 4. NTU Evaporator Analysis
-        NTU_evap = self.UA_evap / m_dot_cp_b
-        eps = 1.0 - math.exp(-NTU_evap)
-        Q_evap_actual = eps * m_dot_cp_b * (T_evap_in_K - T_ref_evap_sat_K)
+        NTU_ground = self.UA_ground / m_dot_cp_b
+        eps = 1.0 - math.exp(-NTU_ground)
+        Q_ground_actual = eps * m_dot_cp_b * (T_ground_in_K - T_ground_sat_K)
 
         # Penalize if cycle evap load exceeds physics limit
         penalty = 0.0
-        if Q_ref_evap > Q_evap_actual:
-            penalty = 1e4 * (Q_ref_evap - Q_evap_actual) ** 2
+        if Q_ref_ground > Q_ground_actual:
+            penalty = 1e4 * (Q_ref_ground - Q_ground_actual) ** 2
 
         # 5. BHE state
-        Q_bhe = Q_ref_evap - self.E_pmp
+        Q_bhe = Q_ref_ground - self.E_pmp
         Q_bhe_unit = Q_bhe / self.H_b
 
         # Fluid enters BHE at T_bhe_f_in_K
-        T_bhe_f_in_K = T_evap_in_K - Q_ref_evap / m_dot_cp_b
+        T_bhe_f_in_K = T_ground_in_K - Q_ref_ground / m_dot_cp_b
         T_bhe_f_out_K = T_b_out_K
 
         T_bhe_f = (cu.K2C(T_bhe_f_in_K) + cu.K2C(T_bhe_f_out_K)) / 2
@@ -527,7 +529,7 @@ class GroundSourceHeatPumpBoiler:
                 "converged": converged_rps,
                 "converged_rps": converged_rps,
                 "_penalty": penalty,
-                "err_Q_evap [W]": 0.0,
+                "err_Q_ground [W]": 0.0,
                 "T_ref_evap_sat [°C]": cu.K2C(cs.get("T_ref_evap_sat_K", np.nan)),
                 "T_ref_cond_sat_v [°C]": cu.K2C(cs.get("T_ref_cond_sat_l_K", np.nan)),
                 "T_ref_cond_sat_l [°C]": cu.K2C(cs.get("T_ref_cond_sat_l_K", np.nan)),
@@ -561,35 +563,35 @@ class GroundSourceHeatPumpBoiler:
                     "H", "P", cs.get("P_ref_cmp_out [Pa]", 1e6), "Q", 1, self.ref
                 ),
                 "h_ref_cond_sat_l [J/kg]": h_ref_exp_in,
-                "Q_cond_load [W]": Q_cond_load,
-                "Q_ref_cond [W]": Q_ref_cond,
-                "Q_ref_evap [W]": Q_ref_evap,
+                "Q_tank_load [W]": Q_tank_load,
+                "Q_ref_tank [W]": Q_ref_tank,
+                "Q_ref_ground [W]": Q_ref_ground,
                 "Q_bhe [W]": Q_bhe,
                 "E_cmp [W]": E_cmp,
                 "E_pmp [W]": self.E_pmp,
                 "E_tot [W]": E_cmp + self.E_pmp,
-                "cop_ref [-]": (Q_ref_cond / E_cmp) if E_cmp > 0 else np.nan,
-                "cop_sys [-]": (Q_ref_cond / (E_cmp + self.E_pmp)) if (E_cmp + self.E_pmp) > 0 else np.nan,
+                "cop_ref [-]": (Q_ref_tank / E_cmp) if E_cmp > 0 else np.nan,
+                "cop_sys [-]": (Q_ref_tank / (E_cmp + self.E_pmp)) if (E_cmp + self.E_pmp) > 0 else np.nan,
             }
         )
         return result
 
-    def _optimize_operation(self, T_tank_w: float, Q_cond_load: float, T0: float, *, flow_state: dict):
+    def _optimize_operation(self, T_tank_w: float, Q_tank_load: float, T0: float, *, flow_state: dict):
         from scipy.optimize import brentq
 
         self._opt_evals = getattr(self, "_opt_evals", 0)
 
-        def _objective(dT_evap):
+        def _objective(dT_ground):
             self._opt_evals += 1
             perf = self._calc_state(
-                dT_ref_evap=dT_evap, T_tank_w=T_tank_w, Q_cond_load=Q_cond_load, T0=T0, flow_state=flow_state
+                dT_ref_ground=dT_ground, T_tank_w=T_tank_w, Q_tank_load=Q_tank_load, T0=T0, flow_state=flow_state
             )
             if perf is None:
-                raise ValueError(f"Cycle impossible at dT_evap={dT_evap}")
+                raise ValueError(f"Cycle impossible at dT_ground={dT_ground}")
 
-            err = perf.get("err_Q_evap [W]", np.nan)
+            err = perf.get("err_Q_ground [W]", np.nan)
             if np.isnan(err):
-                raise ValueError(f"NaN error at dT_evap={dT_evap}")
+                raise ValueError(f"NaN error at dT_ground={dT_ground}")
 
             return err
 
@@ -622,7 +624,7 @@ class GroundSourceHeatPumpBoiler:
             on_schedule=self.hp_on_schedule,
         )
 
-        Q_cond_load = self.hp_capacity if hp_is_on else 0.0
+        Q_tank_load = self.hp_capacity if hp_is_on else 0.0
 
         flow_state = self._calc_tank_flow_context(
             dV_mix_w_out=ctx.dV_mix_w_out,
@@ -631,15 +633,15 @@ class GroundSourceHeatPumpBoiler:
             T_mix_w_out_K=self.T_mix_w_out_K,
         )
 
-        if Q_cond_load <= self.Q_cond_LOAD_OFF_TOL:
+        if Q_tank_load <= self.Q_tank_LOAD_OFF_TOL:
             # OFF
             perf = self._calc_state(5.0, T_tank_w, 0.0, cu.K2C(ctx.T0_K), flow_state=flow_state)
         else:
             # ON
-            opt_res = self._optimize_operation(T_tank_w, Q_cond_load, cu.K2C(ctx.T0_K), flow_state=flow_state)
+            opt_res = self._optimize_operation(T_tank_w, Q_tank_load, cu.K2C(ctx.T0_K), flow_state=flow_state)
             if opt_res.success:
                 opt_x = float(getattr(opt_res, "x", 0.0))
-                perf_opt = self._calc_state(opt_x, T_tank_w, Q_cond_load, cu.K2C(ctx.T0_K), flow_state=flow_state)
+                perf_opt = self._calc_state(opt_x, T_tank_w, Q_tank_load, cu.K2C(ctx.T0_K), flow_state=flow_state)
                 perf = (
                     perf_opt
                     if perf_opt is not None
@@ -651,14 +653,14 @@ class GroundSourceHeatPumpBoiler:
         if perf is None:
             perf = {}
 
-        perf["hp_is_on"] = Q_cond_load > self.Q_cond_LOAD_OFF_TOL
+        perf["hp_is_on"] = Q_tank_load > self.Q_tank_LOAD_OFF_TOL
         
         # Determine convergence specifically when ON
-        if Q_cond_load > self.Q_cond_LOAD_OFF_TOL:
+        if Q_tank_load > self.Q_tank_LOAD_OFF_TOL:
             perf["converged"] = opt_res.success if 'opt_res' in locals() else False
-            perf["Q_cond_load [W]"] = Q_cond_load
+            perf["Q_tank_load [W]"] = Q_tank_load
 
-        return Q_cond_load > self.Q_cond_LOAD_OFF_TOL, perf, float(perf.get("Q_cond_load [W]", 0.0))
+        return Q_tank_load > self.Q_tank_LOAD_OFF_TOL, perf, float(perf.get("Q_tank_load [W]", 0.0))
 
     # =============================================================
     # Hooks
@@ -693,7 +695,7 @@ class GroundSourceHeatPumpBoiler:
                 T_sup_w_K_n,
                 self.T_mix_w_out_K,
                 self.C_tank,
-                self.UA_tank,
+                self.UA_tank_loss,
                 self.V_tank_full,
                 self._subsystems,
                 sub_states,
@@ -745,7 +747,7 @@ class GroundSourceHeatPumpBoiler:
         r["T0 [°C]"] = cu.K2C(ctx.T0_K)
         r["hp_is_on"] = ctrl.is_on
 
-        Q_tank_loss = self.UA_tank * (T_solved_K - self.T_sur_K)
+        Q_tank_loss = self.UA_tank_loss * (T_solved_K - self.T_sur_K)
         mix = calc_mixing_valve_temp(T_solved_K, self.T_tank_w_in_K, self.T_mix_w_out_K)
         r["T_mix_w_out [°C]"] = cu.K2C(mix["T_mix_w_out_K"])
 
@@ -910,7 +912,7 @@ class GroundSourceHeatPumpBoiler:
             )
 
             # --- Phase A: Control Decisions ---
-            hp_is_on, hp_result, Q_ref_cond = self._determine_hp_state(ctx, is_on_prev)
+            hp_is_on, hp_result, Q_ref_tank = self._determine_hp_state(ctx, is_on_prev)
             is_on_prev = hp_is_on
 
             # Refill logic
@@ -935,7 +937,7 @@ class GroundSourceHeatPumpBoiler:
 
             ctrl = ControlState(
                 is_on=hp_is_on,
-                Q_heat_source=Q_ref_cond,
+                Q_heat_source=Q_ref_tank,
                 dV_tank_w_in_ctrl=dV_tank_w_in_ctrl,
             )
 
@@ -971,7 +973,7 @@ class GroundSourceHeatPumpBoiler:
                 # explicit Euler fallback
                 Q_hp_val = ctrl.Q_heat_source
                 Q_flow_curr = c_w * rho_w * dV_tank_w_out_prev * (T_sup_w_K_n - ctx.T_tank_w_K)
-                Q_loss_curr = self.UA_tank * (ctx.T_tank_w_K - self.T_sur_K)
+                Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
                 Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr
                 T_solved_K = ctx.T_tank_w_K + dt_s * Q_tot / (self.C_tank * tank_level_solve)
 
@@ -1022,7 +1024,7 @@ class GroundSourceHeatPumpBoiler:
         self,
         T_tank_w: float,
         T_source: float,
-        Q_ref_cond: float,
+        Q_ref_tank: float,
         T0: float = 0.0,
         *,
         return_dict: bool = True,
@@ -1030,7 +1032,7 @@ class GroundSourceHeatPumpBoiler:
         """Run a steady-state performance snapshot.
 
         Evaluates the refrigerant cycle at a given operating point
-        (``T_tank_w``, ``T_source``, ``Q_ref_cond``) **without** solving the tank energy
+        (``T_tank_w``, ``T_source``, ``Q_ref_tank``) **without** solving the tank energy
         balance or tracking dynamic flows.
 
         Parameters
@@ -1039,7 +1041,7 @@ class GroundSourceHeatPumpBoiler:
             Tank water temperature [°C] — treated as a given input.
         T_source : float
             Source fluid temperature entering the heat pump [°C].
-        Q_ref_cond : float
+        Q_ref_tank : float
             Target condenser heat rate [W].
         T0 : float
             Dead-state / outdoor-air temperature [°C] (for exergy calculations).
@@ -1060,7 +1062,7 @@ class GroundSourceHeatPumpBoiler:
             Important: GSHPB frequently reports
             ``failure_reason="hx_not_converged"`` on realistic operating
             points because its inner NTU/HX residual tolerance is strict.
-            The returned ``E_cmp [W]`` / ``Q_ref_cond [W]`` / ``cop_sys [-]``
+            The returned ``E_cmp [W]`` / ``Q_ref_tank [W]`` / ``cop_sys [-]``
             **are still usable** in that case — only ``"cycle_invalid"``
             forces an off-mode fallback (E_cmp=0, COP=NaN). Branch on
             ``E_cmp [W] > 0`` rather than ``failure_reason == "none"`` if
@@ -1081,18 +1083,18 @@ class GroundSourceHeatPumpBoiler:
         # Override T_bhe_f_out_K so that _calc_state uses T_source correctly
         self.T_bhe_f_out_K = cu.C2K(T_source)
 
-        if Q_ref_cond <= 0:
+        if Q_ref_tank <= 0:
             result = self._calc_state(
-                dT_ref_evap=5.0,
+                dT_ref_ground=5.0,
                 T_tank_w=T_tank_w,
-                Q_cond_load=0.0,
+                Q_tank_load=0.0,
                 T0=T0,
                 flow_state=flow_state,
             )
         else:
             opt_result = self._optimize_operation(
                 T_tank_w=T_tank_w,
-                Q_cond_load=Q_ref_cond,
+                Q_tank_load=Q_ref_tank,
                 T0=T0,
                 flow_state=flow_state,
             )
@@ -1100,9 +1102,9 @@ class GroundSourceHeatPumpBoiler:
             with contextlib.suppress(Exception):
                 opt_x = safe_float_attr(opt_result, "x", 5.0)
                 result = self._calc_state(
-                    dT_ref_evap=opt_x,
+                    dT_ref_ground=opt_x,
                     T_tank_w=T_tank_w,
-                    Q_cond_load=Q_ref_cond,
+                    Q_tank_load=Q_ref_tank,
                     T0=T0,
                     flow_state=flow_state,
                 )
@@ -1124,7 +1126,7 @@ class GroundSourceHeatPumpBoiler:
                     f"analyze_steady: fell back to HP-off state "
                     f"(reason={failure_reason!r}, "
                     f"T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, "
-                    f"Q_ref_cond={Q_ref_cond:.0f}W, "
+                    f"Q_ref_tank={Q_ref_tank:.0f}W, "
                     f"opt_success={opt_success}, "
                     f"opt_x={safe_float_attr(opt_result, 'x', float('nan')):.2f}, "
                     f"opt_fun={safe_float_attr(opt_result, 'fun', float('nan')):.3g}). "
@@ -1134,9 +1136,9 @@ class GroundSourceHeatPumpBoiler:
                 )
                 try:
                     result = self._calc_state(
-                        dT_ref_evap=5.0,
+                        dT_ref_ground=5.0,
                         T_tank_w=T_tank_w,
-                        Q_cond_load=0.0,
+                        Q_tank_load=0.0,
                         T0=T0,
                         flow_state=flow_state,
                     )
@@ -1145,8 +1147,8 @@ class GroundSourceHeatPumpBoiler:
                         "hp_is_on": False,
                         "converged": False,
                         "failure_reason": failure_reason,
-                        "Q_ref_cond [W]": 0.0,
-                        "Q_ref_evap [W]": 0.0,
+                        "Q_ref_tank [W]": 0.0,
+                        "Q_ref_ground [W]": 0.0,
                         "Q_bhe [W]": 0.0,
                         "E_cmp [W]": 0.0,
                         "E_pmp [W]": 0.0,
@@ -1205,14 +1207,14 @@ class GroundSourceHeatPumpBoiler:
         X_bhe_out = calc_exergy_flow(G_b, T_bhe_f_out_K, T0_K)
 
         # Fluid enters evaporator after being heated by the pump
-        T_evap_in_K = T_bhe_f_out_K + df["E_pmp [W]"] / G_b.replace(0, np.nan)
-        X_evap_in = calc_exergy_flow(G_b, T_evap_in_K, T0_K)
+        T_ground_in_K = T_bhe_f_out_K + df["E_pmp [W]"] / G_b.replace(0, np.nan)
+        X_ground_in = calc_exergy_flow(G_b, T_ground_in_K, T0_K)
 
         # Fluid leaves evaporator and enters BHE
-        X_evap_out = X_bhe_in
+        X_ground_out = X_bhe_in
 
-        df["X_ref_cond [W]"] = df["Q_ref_cond [W]"] * (1 - T0_K / cu.C2K(df["T_ref_cond_sat_v [°C]"]))
-        df["X_ref_evap [W]"] = df["Q_ref_evap [W]"] * (1 - T0_K / cu.C2K(df["T_ref_evap_sat [°C]"]))
+        df["X_ref_tank [W]"] = df["Q_ref_tank [W]"] * (1 - T0_K / cu.C2K(df["T_ref_cond_sat_v [°C]"]))
+        df["X_ref_ground [W]"] = df["Q_ref_ground [W]"] * (1 - T0_K / cu.C2K(df["T_ref_evap_sat [°C]"]))
 
         df["X_tank_w_in [W]"] = calc_exergy_flow(
             c_w * rho_w * df["dV_tank_w_in [m3/s]"].fillna(0), cu.C2K(df["T_tank_w_in [°C]"]), T0_K
@@ -1255,12 +1257,12 @@ class GroundSourceHeatPumpBoiler:
         df["X_tot [W]"] = df["E_cmp [W]"] + df["E_pmp [W]"] + df.get("X_uv [W]", 0.0) + X_sub_tot_add
 
         df["Xc_cmp [W]"] = df["X_cmp [W]"] + df["X_ref_cmp_in [W]"] - df["X_ref_cmp_out [W]"]
-        df["Xc_cond [W]"] = (df["X_ref_cmp_out [W]"] - df["X_ref_exp_in [W]"]) - df["X_ref_cond [W]"]
+        df["Xc_tank [W]"] = (df["X_ref_cmp_out [W]"] - df["X_ref_exp_in [W]"]) - df["X_ref_tank [W]"]
         df["Xc_exp [W]"] = df["X_ref_exp_in [W]"] - df["X_ref_exp_out [W]"]
-        df["Xc_evap [W]"] = (X_evap_in - X_evap_out) - df["X_ref_evap [W]"]
-        df["Xc_pmp [W]"] = df["E_pmp [W]"] - (X_evap_in - X_bhe_out)
+        df["Xc_ground [W]"] = (X_ground_in - X_ground_out) - df["X_ref_ground [W]"]
+        df["Xc_pmp [W]"] = df["E_pmp [W]"] - (X_ground_in - X_bhe_out)
 
-        X_in_tank = df["X_ref_cond [W]"] + df["X_tank_w_in [W]"].fillna(0) + df.get("X_uv [W]", 0.0) + X_sub_in_tank_add
+        X_in_tank = df["X_ref_tank [W]"] + df["X_tank_w_in [W]"].fillna(0) + df.get("X_uv [W]", 0.0) + X_sub_in_tank_add
         X_out_tank = df["Xst_tank [W]"] + df["X_tank_w_out [W]"].fillna(0) + X_sub_out_tank_add
         df["Xc_tank [W]"] = X_in_tank - X_out_tank
 
@@ -1269,7 +1271,7 @@ class GroundSourceHeatPumpBoiler:
         )
 
         # Efficiency
-        df["X_eff_ref [-]"] = df["X_ref_cond [W]"] / df["X_cmp [W]"].replace(0, np.nan)
-        df["X_eff_sys [-]"] = df["X_ref_cond [W]"] / df["X_tot [W]"].replace(0, np.nan)
+        df["X_eff_ref [-]"] = df["X_ref_tank [W]"] / df["X_cmp [W]"].replace(0, np.nan)
+        df["X_eff_sys [-]"] = df["X_ref_tank [W]"] / df["X_tot [W]"].replace(0, np.nan)
 
         return df

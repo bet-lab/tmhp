@@ -87,7 +87,7 @@ crossed into two-phase by accident. These show up inside
   property lookup was unstable near a phase boundary.
 
 In both cases the relevant lever is the *operating point*:
-either move ``T_tank_w`` / ``T0`` / ``Q_ref_cond`` away from
+either move ``T_tank_w`` / ``T0`` / ``Q_ref_tank`` away from
 the EOS edge, or oversize the heat exchanger so the iteration
 doesn't push so hard. See :doc:`failure-reason-semantics` for
 the branching pattern.

@@ -35,7 +35,7 @@ The four values
     * - ``cycle_invalid``
       - The cycle itself was infeasible at the requested
         operating point. The model falls back to off-mode
-        (``E_cmp = 0``, ``Q_ref_cond = 0``).
+        (``E_cmp = 0``, ``Q_ref_tank = 0``).
       - No — only off-mode placeholders.
 
 How to branch on it
@@ -123,9 +123,9 @@ the recommended lever to pull when you hit each one.
     :color: danger
 
     ``_calc_state`` raised, or returned a non-dict, at the
-    requested ``T_tank_w`` / ``T0`` / ``Q_ref_cond``. The model
+    requested ``T_tank_w`` / ``T0`` / ``Q_ref_tank``. The model
     falls back to off-mode placeholders (``E_cmp = 0``,
-    ``Q_ref_cond = 0``).
+    ``Q_ref_tank = 0``).
 
     **What to do.** Usually the requested duty is unreachable
     for the given geometry. Consider increasing the design

@@ -38,7 +38,7 @@ Base usage
    result = gshpb.analyze_steady(
        T_tank_w=55.0,
        T_source=10.0,     # ground-loop fluid inlet [°C]
-       Q_ref_cond=8_000,
+       Q_ref_tank=8_000,
    )
 
 Source-side mechanics
@@ -96,7 +96,7 @@ the base class swaps; the schedules and routing are unchanged.
          result = gshpb.analyze_steady(
              T_tank_w=55.0,
              T_source=10.0,
-             Q_ref_cond=8_000,
+             Q_ref_tank=8_000,
          )
 
    .. tab-item:: + STC preheat

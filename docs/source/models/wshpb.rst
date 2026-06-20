@@ -29,7 +29,7 @@ Base usage
    result = wshpb.analyze_steady(
        T_tank_w=55.0,
        T_source=15.0,     # water-loop inlet [°C]
-       Q_ref_cond=8_000,
+       Q_ref_tank=8_000,
    )
 
 Source-side mechanics

@@ -317,6 +317,8 @@ class AirSourceHeatPump:
                     "E_ou_fan [W]": 0.0,
                     "Q_ref_evap [W]": 0.0,
                     "Q_ref_cond [W]": 0.0,
+                    "Q_ref_iu [W]": 0.0,
+                    "Q_ref_ou [W]": 0.0,
                     "Q_r_iu [W]": 0.0,
                     "E_cmp [W]": 0.0,
                     "E_tot [W]": 0.0,
@@ -570,6 +572,12 @@ class AirSourceHeatPump:
                 "E_ou_fan [W]": E_ou_fan,
                 "Q_ref_evap [W]": Q_ref_evap,
                 "Q_ref_cond [W]": Q_ref_cond,
+                # Physical-location duties (mode-mapped): in heating the indoor
+                # unit is the condenser and the outdoor unit the evaporator; in
+                # cooling the roles swap. Reported by location so the labels are
+                # mode-independent (cf. the refrigerant-perspective cond/evap keys).
+                "Q_ref_iu [W]": Q_ref_cond if mode == "heating" else Q_ref_evap,
+                "Q_ref_ou [W]": Q_ref_evap if mode == "heating" else Q_ref_cond,
                 "Q_r_iu [W]": Q_r_iu,
                 "E_cmp [W]": E_cmp,
                 "E_tot [W]": E_tot,

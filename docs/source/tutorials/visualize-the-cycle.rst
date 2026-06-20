@@ -94,7 +94,7 @@ plus a dashed connector through the seven cycle points returned by
 
    REF = "R32"
    ashpb = AirSourceHeatPumpBoiler(ref=REF)
-   r = ashpb.analyze_steady(T_tank_w=60.0, T0=12.0, Q_ref_cond=8_000.0)
+   r = ashpb.analyze_steady(T_tank_w=60.0, T0=12.0, Q_ref_tank=8_000.0)
 
    # Saturation envelope for the P-h panel (kJ/kg, kPa).
    T_crit = CP.PropsSI("Tcrit", REF)
