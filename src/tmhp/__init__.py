@@ -18,7 +18,6 @@ from .ashpb_stc_tank import ASHPB_STC_tank
 from .calc_util import *  # noqa: F401, F403
 from .compressor_envelope import check_pr_envelope
 from .constants import *  # noqa: F401, F403
-from .cop_map import AffineCOPMap, OnlineCOPMap
 from .dhw import *  # noqa: F401, F403
 from .dynamic_context import *  # noqa: F401, F403
 from .enex_functions import *  # noqa: F401, F403
@@ -32,13 +31,7 @@ from .gshpb_stc_routed import GSHPB_STC_routed, default_solar_router
 from .gshpb_stc_tank import GSHPB_STC_tank
 from .heat_transfer import *  # noqa: F401, F403
 from .refrigerant import *  # noqa: F401, F403
-from .solar_routing_mpc import SolarRoutingMPC
 from .subsystems import *  # noqa: F401, F403
-from .surrogate_eval import (
-    disagreement_gaps,
-    pairwise_ordering_agreement,
-    selection_regret,
-)
 from .thermodynamics import *  # noqa: F401, F403
 from .visualization import *  # noqa: F401, F403
 from .water_source_heat_pump_boiler import WaterSourceHeatPumpBoiler
@@ -46,7 +39,6 @@ from .weather import *  # noqa: F401, F403
 
 __all__ = [
     "check_pr_envelope",
-    "AffineCOPMap",
     "AirSourceHeatPump",
     "AirSourceHeatPumpBoiler",
     "ASHPB_PV_ESS",
@@ -60,11 +52,6 @@ __all__ = [
     "GSHPB_STC_preheat",
     "GSHPB_STC_routed",
     "GSHPB_STC_tank",
-    "OnlineCOPMap",
-    "SolarRoutingMPC",
     "WaterSourceHeatPumpBoiler",
     "default_solar_router",
-    "disagreement_gaps",
-    "pairwise_ordering_agreement",
-    "selection_regret",
 ]
