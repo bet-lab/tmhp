@@ -18,7 +18,7 @@ from .ashpb_stc_tank import ASHPB_STC_tank
 from .calc_util import *  # noqa: F401, F403
 from .compressor_envelope import check_pr_envelope
 from .constants import *  # noqa: F401, F403
-from .cop_map import AffineCOPMap
+from .cop_map import AffineCOPMap, OnlineCOPMap
 from .dhw import *  # noqa: F401, F403
 from .dynamic_context import *  # noqa: F401, F403
 from .enex_functions import *  # noqa: F401, F403
@@ -54,6 +54,7 @@ __all__ = [
     "GSHPB_STC_preheat",
     "GSHPB_STC_routed",
     "GSHPB_STC_tank",
+    "OnlineCOPMap",
     "WaterSourceHeatPumpBoiler",
     "default_solar_router",
 ]

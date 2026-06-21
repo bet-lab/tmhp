@@ -12,9 +12,10 @@ of Process Control 2021, 99:69-78). Two affine forms are supported:
 where ``T_source`` is the evaporator-side temperature and ``T_sink`` the
 condenser-side temperature [°C]. The coefficients are fit by least squares to a
 ground-truth COP grid; the map is C-infinity smooth and O(1) to evaluate, so it
-is suited to a receding-horizon QP/LTV-MPC. An optional first-order lag and an
-online (recursive least squares / Kalman) update are left to the controller
-layer; this module provides the static fit + evaluation.
+is suited to a receding-horizon QP/LTV-MPC. :class:`AffineCOPMap` is the static
+offline fit; :class:`OnlineCOPMap` adds the controller-layer pieces from the same
+paper — a recursive-least-squares (forgetting-factor) update that adapts the
+coefficients to live measurements, and a first-order lag on the predicted COP.
 
 Heat source / heat sink are not fixed
 -------------------------------------
@@ -178,3 +179,115 @@ class AffineCOPMap:
         """Root-mean-square COP error against ground-truth samples."""
         pred = self.cop(T_source, T_sink if self.form == "source_sink" else None)
         return float(np.sqrt(np.mean((np.asarray(cop_true, float) - pred) ** 2)))
+
+
+class OnlineCOPMap:
+    """Adaptive affine COP predictor — RLS coefficient update + first-order lag.
+
+    The controller-layer counterpart to :class:`AffineCOPMap` (Rastegarpour et al.
+    2021). It keeps the same affine form but adapts the coefficients online by
+    recursive least squares with a forgetting factor ``lam``, so the predictor
+    tracks slow drift (compressor fouling, refrigerant charge change, ageing)
+    that a one-shot offline fit cannot. An optional first-order lag (time constant
+    ``tau_s``) smooths the predicted COP, mirroring the thermal inertia of the
+    physical cycle.
+
+    Typical use inside an MPC loop, per step:
+
+    >>> m = OnlineCOPMap.from_affine(static_map, lam=0.99, tau_s=60.0)
+    >>> cop_hat = m.predict(T_source, T_sink)          # use in the optimiser
+    >>> m.update(T_source, T_sink, cop_measured)        # adapt to the plant
+    >>> cop_smooth = m.filtered_predict(T_source, T_sink, dt_s)  # lagged signal
+
+    Parameters
+    ----------
+    coeffs : array
+        Initial affine coefficients (warm start). Shape ``(2,)`` for ``"source"``
+        or ``(3,)`` for ``"source_sink"``.
+    form : str
+        ``"source_sink"`` or ``"source"`` — must match ``coeffs``.
+    lam : float
+        RLS forgetting factor in ``(0, 1]``. ``1.0`` = ordinary growing-window
+        least squares (no forgetting); ``< 1`` weights recent data more, tracking
+        drift at the cost of noise sensitivity. Typical 0.97--0.999.
+    tau_s : float
+        First-order lag time constant [s] for :meth:`filtered_predict`.
+    p0 : float
+        Initial RLS covariance scale (``P = p0·I``); larger = faster initial
+        adaptation away from the warm start.
+    """
+
+    def __init__(
+        self,
+        coeffs: np.ndarray,
+        form: str = "source_sink",
+        *,
+        lam: float = 0.99,
+        tau_s: float = 60.0,
+        p0: float = 1.0e3,
+    ) -> None:
+        if form not in _FORMS:
+            raise ValueError(f"form must be one of {_FORMS} — got {form!r}")
+        if not 0.0 < lam <= 1.0:
+            raise ValueError(f"lam (forgetting factor) must be in (0, 1] — got {lam}")
+        n = 2 if form == "source" else 3
+        self.coeffs = np.asarray(coeffs, dtype=float).copy()
+        if self.coeffs.shape != (n,):
+            raise ValueError(f"coeffs for form {form!r} must have shape ({n},) — got {self.coeffs.shape}")
+        self.form = form
+        self.lam = float(lam)
+        self.tau_s = float(tau_s)
+        self._P = np.eye(n) * float(p0)
+        self._cop_lag: float | None = None  # lazy: seeded on first filtered_predict
+
+    @classmethod
+    def from_affine(cls, affine: AffineCOPMap, **kwargs) -> OnlineCOPMap:
+        """Warm-start an online predictor from a static :class:`AffineCOPMap`."""
+        return cls(affine.coeffs, form=affine.form, **kwargs)
+
+    # ------------------------------------------------------------------
+    def _row(self, T_source: float, T_sink) -> np.ndarray:
+        design = _design(np.atleast_1d(float(T_source)),
+                         None if self.form == "source" else np.atleast_1d(float(T_sink)),
+                         self.form)
+        return np.asarray(design[0], dtype=float)
+
+    def predict(self, T_source, T_sink=None):
+        """Raw affine COP from the current (adapted) coefficients."""
+        scalar = np.isscalar(T_source)
+        Ts = np.atleast_1d(np.asarray(T_source, dtype=float))
+        Tk = None if self.form == "source" else np.atleast_1d(np.asarray(T_sink, dtype=float))
+        out = _design(Ts, Tk, self.form) @ self.coeffs
+        return float(out[0]) if scalar else out
+
+    def update(self, T_source: float, T_sink, cop_measured: float) -> float:
+        """RLS coefficient update from one measured COP; return the new prediction.
+
+        Standard recursive least squares with forgetting factor ``lam``::
+
+            K = P x / (lam + xᵀ P x)
+            θ ← θ + K (y − xᵀ θ)
+            P ← (P − K xᵀ P) / lam
+        """
+        x = self._row(T_source, T_sink)
+        Px = self._P @ x
+        denom = self.lam + float(x @ Px)
+        K = Px / denom
+        err = float(cop_measured) - float(x @ self.coeffs)
+        self.coeffs = self.coeffs + K * err
+        self._P = (self._P - np.outer(K, Px)) / self.lam
+        return float(x @ self.coeffs)
+
+    def filtered_predict(self, T_source, T_sink, dt_s: float):
+        """First-order-lag-smoothed prediction (stateful; seeded on first call)."""
+        raw = self.predict(T_source, T_sink)
+        if self._cop_lag is None:
+            self._cop_lag = float(raw)
+        else:
+            alpha = 1.0 - np.exp(-float(dt_s) / self.tau_s)
+            self._cop_lag += alpha * (float(raw) - self._cop_lag)
+        return self._cop_lag
+
+    def as_affine(self) -> AffineCOPMap:
+        """Snapshot the current coefficients as a static :class:`AffineCOPMap`."""
+        return AffineCOPMap(self.coeffs.copy(), form=self.form)
