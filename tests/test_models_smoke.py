@@ -253,9 +253,9 @@ def test_wshpb_default_min_lift_is_20():
 
 
 # ---------------------------------------------------------------------------
-# Compressor pressure-ratio envelope + rps search bounds (#166)
-# Applied to the modern-solver models (ASHP / ASHPB / GSHPB). WSHPB and GSHP
-# use the older analytic cycle and are deferred (see bet-lab/tmhp#188).
+# Compressor pressure-ratio envelope + rps search bounds (#166, #188)
+# Applied to the modern-solver models (ASHP / ASHPB / GSHPB / WSHPB). GSHP
+# still uses the older analytic cycle and is deferred (see bet-lab/tmhp#188).
 # ---------------------------------------------------------------------------
 
 
@@ -304,6 +304,71 @@ def test_gshpb_default_pr_and_rps():
     assert gshpb.PR_cycle_max == 10.0
     assert gshpb.rps_min == 10.0
     assert gshpb.rps_max == 150.0
+
+
+def test_wshpb_custom_pr_and_rps():
+    wshpb = WaterSourceHeatPumpBoiler(
+        ref="R32", PR_cycle_min=1.6, PR_cycle_max=9.0, rps_min=12.0, rps_max=130.0,
+    )
+    assert wshpb.PR_cycle_min == 1.6
+    assert wshpb.PR_cycle_max == 9.0
+    assert wshpb.rps_min == 12.0
+    assert wshpb.rps_max == 130.0
+
+
+def test_wshpb_default_pr_and_rps():
+    wshpb = WaterSourceHeatPumpBoiler(ref="R32")
+    assert wshpb.PR_cycle_min == 1.5
+    assert wshpb.PR_cycle_max == 10.0
+    assert wshpb.rps_min == 10.0
+    assert wshpb.rps_max == 150.0
+
+
+def test_wshpb_pr_floor_clamp_keeps_cycle():
+    # Low-lift heating (source close to tank) with the lift guard relaxed so PR
+    # becomes the binding constraint. A raised floor forces the clamp; the cycle
+    # must still converge (continuous low-lift transition, not rejection). A
+    # small compressor keeps the speed search inside [rps_min, rps_max].
+    wshpb = WaterSourceHeatPumpBoiler(
+        ref="R410A", V_cmp_ref=5e-5, UA_tank=4000.0, UA_water=4000.0,
+        dT_cycle_min=2.0, PR_cycle_min=2.2, PR_cycle_max=10.0,
+    )
+    result = wshpb.analyze_steady(
+        T_tank_w=28.0, T_source=22.0, Q_ref_tank=6000.0, T0=15.0
+    )
+    assert result["converged"] is True
+    assert result["failure_reason"] == "none"
+    assert wshpb._last_pr_event is not None
+    assert wshpb._last_pr_event[0] == "pr_below_min"
+
+
+def test_wshpb_pr_ceiling_rejects():
+    # A very low ceiling rejects an otherwise-valid high-lift heating point.
+    # UA_tank kept high so the condensing temperature stays sub-critical.
+    wshpb = WaterSourceHeatPumpBoiler(
+        ref="R410A", UA_tank=2000.0, UA_water=2000.0,
+        PR_cycle_min=1.0, PR_cycle_max=2.0,
+    )
+    result = wshpb.analyze_steady(
+        T_tank_w=50.0, T_source=12.0, Q_ref_tank=8000.0, T0=15.0
+    )
+    assert result["converged"] is False
+    assert result["failure_reason"] == "pr_above_max"
+    assert wshpb._last_pr_event[0] == "pr_above_max"
+
+
+def test_boiler_common_eta_defaults():
+    # All heat-pump boilers resolve an unspecified isentropic efficiency to the
+    # shared default 0.80 (volumetric to a PR-dependent callable), so a bare
+    # model is never ideal-isentropic.
+    for cls in (
+        AirSourceHeatPumpBoiler,
+        GroundSourceHeatPumpBoiler,
+        WaterSourceHeatPumpBoiler,
+    ):
+        m = cls(ref="R32")
+        assert m.eta_cmp_isen == 0.80
+        assert callable(m.eta_cmp_vol)
 
 
 def test_ashp_pr_floor_clamp_keeps_cycle():
