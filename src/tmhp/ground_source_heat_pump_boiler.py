@@ -62,6 +62,7 @@ from .enex_functions import (
     calc_mixing_valve_temp,
 )
 from .g_function import precompute_gfunction
+from .ground_coupling import AggregateGFunctionCoupler, GroundCoupler
 from .heat_transfer import calc_simple_tank_UA
 from .refrigerant import calc_ref_state
 from .thermodynamics import calc_exergy_flow
@@ -144,6 +145,11 @@ class GroundSourceHeatPumpBoiler:
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
         boundary_condition: str = "uniform_temperature",
+        # Ground response backend (dependency inversion). Default = single
+        # field-average g-function (legacy behaviour). Inject a richer coupler
+        # (e.g. geolink's resolved multi-borehole network) to replace the lumped
+        # g-function with full borehole-to-borehole superposition.
+        ground_coupler: GroundCoupler | None = None,
         T_sur: float = 20.0,
         # Cycle guard: minimum condenser-to-evaporator saturation lift [K].
         # Default 20 K guards the boundary-condition reversal (source above sink);
@@ -307,6 +313,13 @@ class GroundSourceHeatPumpBoiler:
         self.dt_s: float = dt_s
         self._gfunc_interp = precompute_gfunction(
             N_1=N_1, N_2=N_2, B=B, H_b=H_b, D_b=D_b, r_b=r_b, alpha_s=self.alp_s, k_s=k_s, t_max_s=t_max_s, dt_s=dt_s
+        )
+
+        # Ground-response backend: default wraps the single field-average
+        # g-function above (byte-identical to the legacy inline superposition);
+        # an injected coupler takes over the borehole-wall temperature response.
+        self._ground_coupler: GroundCoupler = (
+            ground_coupler if ground_coupler is not None else AggregateGFunctionCoupler(self._gfunc_interp)
         )
 
         # Simulation state tracking (dynamically updated in analyze_dynamic)
@@ -819,27 +832,17 @@ class GroundSourceHeatPumpBoiler:
         self,
         n: int,
         time_arr: np.ndarray,
-        Q_bhe_unit_pulse: np.ndarray,
-        Q_bhe_unit_old: float,
         hp_result: dict,
         hp_is_on: bool,
-    ) -> float:
+    ) -> None:
         Q_bhe_unit = hp_result.get("Q_bhe [W]", 0.0) / self.H_b if hp_is_on else 0.0
 
-        if abs(Q_bhe_unit - Q_bhe_unit_old) > 1e-6:
-            Q_bhe_unit_pulse[n] = Q_bhe_unit - Q_bhe_unit_old
-            Q_bhe_unit_old = Q_bhe_unit
-
-        pulses_idx = np.flatnonzero(Q_bhe_unit_pulse[: n + 1])
-        if len(pulses_idx) > 0:
-            dQ = Q_bhe_unit_pulse[pulses_idx]
-            tau = time_arr[n] - time_arr[pulses_idx]
-            tau = np.maximum(tau, 1e-6)
-
-            g_n_array = self._gfunc_interp(tau)
-            dT_bhe = float(np.dot(dQ, g_n_array))
-        else:
-            dT_bhe = 0.0
+        # Ground thermal response (pulse-history temporal superposition) is
+        # delegated to the swappable ground coupler; the default reproduces the
+        # legacy single-g-function superposition byte-for-byte, while an injected
+        # backend (e.g. geolink's network) replaces it with resolved
+        # borehole-to-borehole superposition. See ground_coupling.py.
+        dT_bhe = self._ground_coupler.wall_temperature_rise(n, time_arr, Q_bhe_unit)
 
         self.T_bhe = self.Ts - dT_bhe
         T_bhe_K = cu.C2K(self.T_bhe)
@@ -860,8 +863,6 @@ class GroundSourceHeatPumpBoiler:
         hp_result["T_bhe_f [°C]"] = self.T_bhe_f
         hp_result["T_bhe_f_in [°C]"] = self.T_bhe_f_in
         hp_result["T_bhe_f_out [°C]"] = self.T_bhe_f_out
-
-        return Q_bhe_unit_old
 
     # =============================================================
     # Orchestration
@@ -919,8 +920,8 @@ class GroundSourceHeatPumpBoiler:
         self.T_bhe_f_out = self.Ts
         self.Q_bhe = 0.0
 
-        Q_bhe_unit_pulse = np.zeros(tN)
-        Q_bhe_unit_old = 0.0
+        # Initialise the ground coupler's pulse-history state for this run.
+        self._ground_coupler.reset(tN, time)
 
         # DHW schedule handling: direct m³/s flow array
         dhw_flow_m3s = np.asarray(dhw_usage_schedule, dtype=float)
@@ -1043,11 +1044,9 @@ class GroundSourceHeatPumpBoiler:
             level_next = min(1.0, max(0.0, ctx.tank_level + tank_vol_change_final / self.V_tank_full))
 
             # --- Phase C: BHE Temporal Superposition ---
-            Q_bhe_unit_old = self._compute_bhe_superposition(
+            self._compute_bhe_superposition(
                 n=n,
                 time_arr=time,
-                Q_bhe_unit_pulse=Q_bhe_unit_pulse,
-                Q_bhe_unit_old=Q_bhe_unit_old,
                 hp_result=hp_result,
                 hp_is_on=hp_is_on,
             )
