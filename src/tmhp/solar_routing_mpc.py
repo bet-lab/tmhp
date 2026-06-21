@@ -138,6 +138,17 @@ class SolarRoutingMPC:
             traj.append(t)
         return routes, cost, np.array(traj)
 
+    def step(self, t_bhe_now: float, duty, e_sol, price=None) -> str:
+        """Receding-horizon control move: the optimal *first* route from now.
+
+        Call once per control step with the *current* measured ground temperature
+        and the forecast for the remaining horizon. Re-planning each step lets the
+        controller correct for forecast error and plant-model mismatch — the value
+        of receding-horizon over committing to a single open-loop plan.
+        """
+        routes, _, _ = self.plan(t_bhe_now, duty, e_sol, price)
+        return str(routes[0])
+
     def greedy(self, t_bhe0: float, duty, e_sol, price=None):
         """Myopic horizon-1 baseline (route minimising the immediate stage cost).
 

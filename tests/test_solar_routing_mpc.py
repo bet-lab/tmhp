@@ -58,6 +58,66 @@ def test_no_solar_makes_routing_irrelevant():
     assert c_dp == pytest.approx(c_gr)  # nothing to route -> identical cost
 
 
+def _plant_stage(m, t, duty, e_sol, route, plant_c_g):
+    """One plant step with a ground capacitance that may differ from the model's."""
+    sol_tank = e_sol if route == "tank" else 0.0
+    sol_grnd = e_sol if route == "ground" else 0.0
+    h_tank = max(0.0, duty - sol_tank)
+    cop = max(m.cop_floor, float(m.cop.cop(t, m.t_tank_set)))
+    e_hp = h_tank / cop
+    q_net = sol_grnd - (h_tank - e_hp)
+    return e_hp, t + m.dt * q_net / plant_c_g
+
+
+def _closed_loop(m, t0, duty, e_sol, price, mode, plant_c_g):
+    """Control the plant (capacitance plant_c_g) open-loop or receding-horizon."""
+    t = t0
+    cost = 0.0
+    n = duty.size
+    routes_open = None if mode == "receding" else m.plan(t0, duty, e_sol, price)[0]
+    for k in range(n):
+        route = m.step(t, duty[k:], e_sol[k:], price[k:]) if mode == "receding" else routes_open[k]
+        e_hp, t = _plant_stage(m, t, float(duty[k]), float(e_sol[k]), route, plant_c_g)
+        cost += float(price[k]) * e_hp
+    return cost
+
+
+def test_step_returns_first_plan_route():
+    m = _mpc()
+    duty = np.full(8, 3000.0)
+    e_sol = np.where(np.arange(8) % 2 == 0, 2000.0, 0.0)
+    routes, _, _ = m.plan(5.0, duty, e_sol)
+    assert m.step(5.0, duty, e_sol) == routes[0]
+
+
+def test_receding_equals_open_loop_without_mismatch():
+    """With a perfect model (plant capacitance == model), state feedback adds
+    nothing: re-planning reproduces the committed open-loop plan exactly."""
+    m = _mpc()
+    rng = np.random.default_rng(3)
+    duty = rng.uniform(500.0, 4000.0, 16)
+    e_sol = rng.uniform(0.0, 2500.0, 16) * (rng.random(16) > 0.4)
+    price = np.where(np.arange(16) % 6 >= 4, 3.0, 1.0)
+    c_rec = _closed_loop(m, 3.0, duty, e_sol, price, "receding", plant_c_g=m.c_g)
+    c_open = _closed_loop(m, 3.0, duty, e_sol, price, "open-loop", plant_c_g=m.c_g)
+    assert c_rec == pytest.approx(c_open)
+
+
+def test_receding_corrects_model_plant_mismatch():
+    """When the real ground depletes faster than the controller's model assumes,
+    state feedback (receding-horizon) never costs more than the committed plan."""
+    m = _mpc(c_ground_j_per_k=4.0e7)  # controller believes a large (slow) capacitance
+    rng = np.random.default_rng(5)
+    for _ in range(6):
+        duty = rng.uniform(800.0, 4500.0, 20)
+        e_sol = rng.uniform(0.0, 2600.0, 20) * (rng.random(20) > 0.4)
+        price = np.where(np.arange(20) % 6 >= 4, 3.0, 1.0)
+        plant_c_g = 1.5e7  # the real ground is smaller -> depletes faster than modelled
+        c_rec = _closed_loop(m, 3.0, duty, e_sol, price, "receding", plant_c_g)
+        c_open = _closed_loop(m, 3.0, duty, e_sol, price, "open-loop", plant_c_g)
+        assert c_rec <= c_open + 1e-6
+
+
 def test_lookahead_banks_solar_into_the_ground():
     """When early solar coincides with no tank demand, look-ahead charges the ground.
 

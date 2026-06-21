@@ -72,3 +72,43 @@ problem. `OnlineCOPMap` (drift adaptation) and the geolink network ground coupli
 Run::
 
     .venv/bin/python docs/g3_routing_mpc/routing_mpc.py
+
+## Closed loop — receding-horizon under model-plant mismatch
+
+The plan above is open-loop: computed once and committed. `SolarRoutingMPC.step()`
+turns it into a feedback controller — called each step with the *current measured*
+ground temperature and the forecast for the remaining horizon, it re-plans and
+applies the first move. This matters because of G3's own finding: the controller's
+linear lumped-ground model **under-estimates the depletion**, so the real ground
+gets cold faster than the model predicts. Open-loop cannot see that; receding-
+horizon measures it and corrects.
+
+`receding_horizon.py` runs a plant whose ground capacitance is smaller (depletes
+faster, `C_plant = 1.5e7` vs the controller's `C_model = 4.0e7`) with a perfect
+input forecast — so the *only* error is the dynamics model.
+
+![closed-loop ground state and cost under model-plant mismatch](fig2_receding_horizon.png)
+
+| controller    | closed-loop cost | vs greedy | T_bhe end [°C] |
+| ------------- | ---------------- | --------- | -------------- |
+| greedy        | 299.0k           |   —       | −11.8          |
+| open-loop MPC | 257.6k           | −13.9 %   | −10.4          |
+| receding MPC  | 255.8k           | −14.5 %   | −10.3          |
+
+- **Both MPC forms beat myopic greedy by ~14 %** — the look-ahead value of banking
+  solar into the ground survives the model error.
+- **Receding-horizon recovers a further 0.7 % over open-loop** by correcting the
+  depletion the model under-predicted (feedback on the true state). The increment
+  is modest here because the affine COP is gentle; it grows with stronger
+  nonlinearity or larger model error.
+- Sanity (test): with a *perfect* model (`C_plant = C_model`) receding reproduces
+  the open-loop plan exactly — state feedback only adds value under mismatch.
+
+This is a controllable, self-consistent closed-loop test (the plant is the reduced
+model with a mismatched parameter), which sidesteps the CoolProp plant's envelope
+breakdown documented above. A receding-horizon loop against a properly-guarded full
+plant remains the eventual goal.
+
+Run::
+
+    .venv/bin/python docs/g3_routing_mpc/receding_horizon.py
