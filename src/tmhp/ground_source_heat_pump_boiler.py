@@ -65,6 +65,7 @@ from .g_function import precompute_gfunction
 from .ground_coupling import AggregateGFunctionCoupler, GroundCoupler
 from .heat_transfer import calc_simple_tank_UA
 from .refrigerant import calc_ref_state
+from .stratified_tank import StratifiedTank
 from .thermodynamics import calc_exergy_flow
 
 if TYPE_CHECKING:
@@ -108,6 +109,11 @@ class GroundSourceHeatPumpBoiler:
         k_shell: float = 25,
         k_ins: float = 0.03,
         h_o: float = 15,
+        # Tank model: "lumped" (single-node, default — unchanged legacy
+        # behaviour) or "stratified" (multi-node, geolink×tmhp G2 tank backend).
+        tank_model: str = "lumped",
+        n_tank_nodes: int = 10,
+        condenser_node: int | None = None,
         # 4. Borehole heat exchanger (Field + Params)
         N_1: int = 1,
         N_2: int = 1,
@@ -308,6 +314,35 @@ class GroundSourceHeatPumpBoiler:
             self._subsystems["uv"] = uv
 
         self.Q_tank_LOAD_OFF_TOL: float = 50.0  # W
+
+        # Tank backend selection (swappable). Default "lumped" keeps the legacy
+        # single-node path entirely unchanged (self._tank stays None). The
+        # "stratified" backend builds a multi-node tank from the same geometry;
+        # it targets the always-full buffer-tank case (cycle sink/control use the
+        # volume-average node temperature, the hot draw uses the top node, and
+        # the HP condenser heat is spread uniformly over the nodes by default —
+        # condenser_node=None — or concentrated at a single node if given).
+        # Subsystems and partial-fill/refill are not yet supported in stratified mode.
+        self.tank_model = tank_model
+        self.condenser_node = condenser_node
+        self._tank: StratifiedTank | None = None
+        if tank_model == "stratified":
+            if self._subsystems:
+                raise NotImplementedError(
+                    "stratified tank_model does not yet support subsystems (stc/pv/uv)"
+                )
+            if not tank_always_full:
+                raise NotImplementedError(
+                    "stratified tank_model assumes an always-full tank (tank_always_full=True)"
+                )
+            self._tank = StratifiedTank(
+                n_nodes=n_tank_nodes,
+                volume=self.V_tank_full,
+                height=self.tank_physical["H"],
+                ua=self.UA_tank_loss,
+            )
+        elif tank_model != "lumped":
+            raise ValueError(f"tank_model must be 'lumped' or 'stratified' — got {tank_model!r}")
 
         # Precompute g-function
         self.dt_s: float = dt_s
@@ -865,6 +900,97 @@ class GroundSourceHeatPumpBoiler:
         hp_result["T_bhe_f_out [°C]"] = self.T_bhe_f_out
 
     # =============================================================
+    # Tank backends (swappable)
+    # =============================================================
+
+    def _solve_lumped_tank(
+        self, ctx, ctrl, dt_s, T_sup_w_K_n, tank_level_solve, sub_states, dV_tank_w_out_prev
+    ):
+        """Legacy single-node tank: implicit fsolve over (T_tank, level)."""
+        from typing import cast
+
+        from scipy.optimize import fsolve
+
+        res_fn = self._build_residual_fn(
+            ctx=ctx,
+            ctrl=ctrl,
+            dt_s=dt_s,
+            T_tank_w_in_K_n=T_sup_w_K_n,
+            T_sup_w_K_n=T_sup_w_K_n,
+            tank_level=tank_level_solve,
+            sub_states=sub_states,
+        )
+
+        T_guess_K = ctx.T_tank_w_K
+        try:
+            T_solved_K_arr = cast(np.ndarray, fsolve(res_fn, x0=[T_guess_K]))
+            T_solved_K = float(T_solved_K_arr[0])
+        except Exception:
+            # explicit Euler fallback
+            Q_hp_val = ctrl.Q_heat_source
+            Q_flow_curr = c_w * rho_w * dV_tank_w_out_prev * (T_sup_w_K_n - ctx.T_tank_w_K)
+            Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
+            Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr
+            T_solved_K = ctx.T_tank_w_K + dt_s * Q_tot / (self.C_tank * tank_level_solve)
+
+        if T_solved_K <= T_sup_w_K_n:
+            T_solved_K = T_sup_w_K_n
+
+        # Flow state evaluated at solved temperature
+        flow_state_final = self._calc_tank_flow_context(
+            dV_mix_w_out=ctx.dV_mix_w_out,
+            T_tank_w_K=T_solved_K,
+            T_tank_w_in_K=T_sup_w_K_n,
+            T_mix_w_out_K=self.T_mix_w_out_K,
+            dV_tank_w_in_override=ctrl.dV_tank_w_in_ctrl,
+        )
+
+        tank_vol_change_final = (flow_state_final["dV_tank_w_in"] - flow_state_final["dV_tank_w_out"]) * dt_s
+        level_next = min(1.0, max(0.0, ctx.tank_level + tank_vol_change_final / self.V_tank_full))
+        return T_solved_K, flow_state_final, level_next
+
+    def _solve_stratified_tank(self, ctx, ctrl, dt_s, T_sup_w_K_n):
+        """Multi-node stratified tank advance (G2 backend).
+
+        The hot draw to the load uses the top node; the HP condenser heat is
+        spread uniformly over the nodes (immersed condenser spanning the tank) or
+        concentrated at ``condenser_node`` if set; the cycle/control
+        representative temperature is the volume-average. The tank is always full
+        (level = 1).
+        """
+        assert self._tank is not None
+        n = self._tank.n
+        # Hot supply to the mixing valve is the top node.
+        T_top_K = cu.C2K(float(self._tank.T[0]))
+        flow_state_final = self._calc_tank_flow_context(
+            dV_mix_w_out=ctx.dV_mix_w_out,
+            T_tank_w_K=T_top_K,
+            T_tank_w_in_K=T_sup_w_K_n,
+            T_mix_w_out_K=self.T_mix_w_out_K,
+            dV_tank_w_in_override=ctrl.dV_tank_w_in_ctrl,
+        )
+
+        # HP condenser heat: uniform over all nodes (default) or one node.
+        if self.condenser_node is None:
+            q_node = np.full(n, ctrl.Q_heat_source / n)
+        else:
+            q_node = np.zeros(n)
+            q_node[self.condenser_node] = ctrl.Q_heat_source
+        self._tank.step(
+            dt_s,
+            draw_flow=flow_state_final["dV_tank_w_out"],
+            T_makeup=cu.K2C(T_sup_w_K_n),
+            q_source=q_node,
+            T_amb=cu.K2C(self.T_sur_K),
+        )
+
+        T_solved_K = cu.C2K(float(self._tank.T.mean()))
+        if T_solved_K <= T_sup_w_K_n:
+            T_solved_K = T_sup_w_K_n
+        level_next = 1.0
+        return T_solved_K, flow_state_final, level_next
+
+    # =============================================================
     # Orchestration
     # =============================================================
 
@@ -882,7 +1008,6 @@ class GroundSourceHeatPumpBoiler:
         result_save_csv_path=None,
         T_sur_schedule=None,
     ) -> pd.DataFrame:
-        from scipy.optimize import fsolve
 
         time = np.arange(0, simulation_period_sec, dt_s)
         tN = len(time)
@@ -922,6 +1047,10 @@ class GroundSourceHeatPumpBoiler:
 
         # Initialise the ground coupler's pulse-history state for this run.
         self._ground_coupler.reset(tN, time)
+
+        # Initialise the stratified tank profile (uniform at the init temp).
+        if self._tank is not None:
+            self._tank.reset(T_tank_w_init_C)
 
         # DHW schedule handling: direct m³/s flow array
         dhw_flow_m3s = np.asarray(dhw_usage_schedule, dtype=float)
@@ -1004,44 +1133,16 @@ class GroundSourceHeatPumpBoiler:
             level_next_approx = min(1.0, max(0.0, ctx.tank_level + tank_vol_change_prev / self.V_tank_full))
             tank_level_solve = max(0.001, level_next_approx)
 
-            res_fn = self._build_residual_fn(
-                ctx=ctx,
-                ctrl=ctrl,
-                dt_s=dt_s,
-                T_tank_w_in_K_n=T_sup_w_K_n,
-                T_sup_w_K_n=T_sup_w_K_n,
-                tank_level=tank_level_solve,
-                sub_states=sub_states,
-            )
-
-            from typing import cast
-
-            T_guess_K = ctx.T_tank_w_K
-            try:
-                T_solved_K_arr = cast(np.ndarray, fsolve(res_fn, x0=[T_guess_K]))
-                T_solved_K = float(T_solved_K_arr[0])
-            except Exception:
-                # explicit Euler fallback
-                Q_hp_val = ctrl.Q_heat_source
-                Q_flow_curr = c_w * rho_w * dV_tank_w_out_prev * (T_sup_w_K_n - ctx.T_tank_w_K)
-                Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
-                Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr
-                T_solved_K = ctx.T_tank_w_K + dt_s * Q_tot / (self.C_tank * tank_level_solve)
-
-            if T_solved_K <= T_sup_w_K_n:
-                T_solved_K = T_sup_w_K_n
-
-            # Flow state evaluated at solved temperature
-            flow_state_final = self._calc_tank_flow_context(
-                dV_mix_w_out=ctx.dV_mix_w_out,
-                T_tank_w_K=T_solved_K,
-                T_tank_w_in_K=T_sup_w_K_n,
-                T_mix_w_out_K=self.T_mix_w_out_K,
-                dV_tank_w_in_override=ctrl.dV_tank_w_in_ctrl,
-            )
-
-            tank_vol_change_final = (flow_state_final["dV_tank_w_in"] - flow_state_final["dV_tank_w_out"]) * dt_s
-            level_next = min(1.0, max(0.0, ctx.tank_level + tank_vol_change_final / self.V_tank_full))
+            # Tank update — swappable backend. Lumped keeps the legacy implicit
+            # fsolve path (byte-identical); stratified advances the multi-node tank.
+            if self._tank is None:
+                T_solved_K, flow_state_final, level_next = self._solve_lumped_tank(
+                    ctx, ctrl, dt_s, T_sup_w_K_n, tank_level_solve, sub_states, dV_tank_w_out_prev
+                )
+            else:
+                T_solved_K, flow_state_final, level_next = self._solve_stratified_tank(
+                    ctx, ctrl, dt_s, T_sup_w_K_n
+                )
 
             # --- Phase C: BHE Temporal Superposition ---
             self._compute_bhe_superposition(
