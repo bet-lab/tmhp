@@ -120,8 +120,8 @@ class StratifiedTank:
     # ------------------------------------------------------------------
     def step(self, dt: float, *, charge_flow: float = 0.0, T_charge: float = 0.0,
              draw_flow: float = 0.0, T_makeup: float = 10.0,
-             T_amb: float = 20.0) -> dict:
-        """Advance one timestep (backward Euler, charge + draw).
+             q_source=None, T_amb: float = 20.0) -> dict:
+        """Advance one timestep (backward Euler, charge + draw + heat source).
 
         Parameters
         ----------
@@ -135,6 +135,9 @@ class StratifiedTank:
             Load draw flow [m³/s] (hot from top, cold ``T_makeup`` into bottom).
         T_makeup : float, optional
             Cold makeup temperature [°C] (used when ``draw_flow > 0``).
+        q_source : float or array-like, optional
+            Internal heat input [W] from an immersed heater/condenser. A scalar
+            is applied to the top node; a length-``N`` array is applied per node.
         T_amb : float, optional
             Ambient temperature [°C] for the side-wall loss.
 
@@ -155,6 +158,17 @@ class StratifiedTank:
         mc_int = rc * abs(v_net)                     # internal advective conductance [W/K]
         down = v_net >= 0.0
 
+        # Heat source [W per node]: scalar -> top node; array -> per node.
+        q_arr = np.zeros(n)
+        if q_source is not None:
+            qs = np.asarray(q_source, dtype=float)
+            if qs.ndim == 0:
+                q_arr[0] = float(qs)
+            elif qs.shape == (n,):
+                q_arr = qs
+            else:
+                raise ValueError(f"q_source must be scalar or shape ({n},) — got {qs.shape}")
+
         lower = np.zeros(n)   # coupling of row i to T_{i-1}
         diag = np.zeros(n)
         upper = np.zeros(n)   # coupling of row i to T_{i+1}
@@ -162,7 +176,7 @@ class StratifiedTank:
 
         for i in range(n):
             diag[i] = mc_dt + ua
-            rhs[i] = mc_dt * self.T[i] + ua * T_amb
+            rhs[i] = mc_dt * self.T[i] + ua * T_amb + q_arr[i]
 
             # Boundary ports.
             if i == 0:

@@ -174,3 +174,29 @@ def test_draw_cools_from_bottom_preserving_stratification():
     assert bottom_hist[5] < 30.0   # bottom cooled quickly by makeup
     assert top_hist[5] > 55.0      # top still hot (front not arrived)
     assert top_hist[-1] < top_hist[5]  # cold front eventually reaches the top
+
+
+def test_energy_conservation_with_heat_source():
+    """Immersed heat source: ΔE = dt·[q_source − Σ UA_i(T_i − T_amb)]."""
+    n = 6
+    ua = 8.0
+    t = StratifiedTank(n, _VOL, _H, ua=ua)
+    t.reset(45.0)
+    e0 = t.stored_energy
+    q_hp, Ta = 3000.0, 18.0
+    t.step(_DT, q_source=q_hp, T_amb=Ta)
+    de = t.stored_energy - e0
+    loss = (ua / n) * np.sum(t.T - Ta)
+    assert de == pytest.approx(_DT * (q_hp - loss), rel=1e-9, abs=1e-6)
+
+
+def test_heat_source_array_and_validation():
+    n = 4
+    t = StratifiedTank(n, _VOL, _H, ua=0.0)
+    t.reset(40.0)
+    e0 = t.stored_energy
+    qarr = np.array([1000.0, 500.0, 0.0, 0.0])
+    t.step(_DT, q_source=qarr, T_amb=20.0)
+    assert (t.stored_energy - e0) == pytest.approx(_DT * qarr.sum(), rel=1e-9)
+    with pytest.raises(ValueError):
+        t.step(_DT, q_source=np.array([1.0, 2.0]))  # wrong length
