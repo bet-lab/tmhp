@@ -32,6 +32,7 @@ from .gshpb_stc_routed import GSHPB_STC_routed, default_solar_router
 from .gshpb_stc_tank import GSHPB_STC_tank
 from .heat_transfer import *  # noqa: F401, F403
 from .refrigerant import *  # noqa: F401, F403
+from .solar_routing_mpc import SolarRoutingMPC
 from .subsystems import *  # noqa: F401, F403
 from .surrogate_eval import (
     disagreement_gaps,
@@ -60,6 +61,7 @@ __all__ = [
     "GSHPB_STC_routed",
     "GSHPB_STC_tank",
     "OnlineCOPMap",
+    "SolarRoutingMPC",
     "WaterSourceHeatPumpBoiler",
     "default_solar_router",
     "disagreement_gaps",
