@@ -14,6 +14,7 @@ g-functions, enabling robust long-term ground temperature drift modeling.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 import CoolProp.CoolProp as CP
@@ -23,6 +24,7 @@ from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import ignore_minpack_progress_warning, safe_float_attr
+from .compressor_envelope import check_pr_envelope
 from .constants import c_w, k_w, mu_w, rho_w
 from .dynamic_context import (
     ControlState,
@@ -57,7 +59,9 @@ class WaterSourceHeatPumpBoiler:
         # 1. Refrigerant / cycle / compressor
         ref: str = "R410A",
         V_cmp_ref: float | None = None,
-        eta_cmp_isen: float = 0.7,
+        eta_cmp_isen: float | Callable | None = None,
+        eta_cmp_vol: float | Callable | None = None,
+        eta_cmp: float | Callable | None = None,
         # 2. Heat exchanger UA
         UA_tank_hx: float | None = None,
         UA_water: float | None = None,
@@ -121,6 +125,12 @@ class WaterSourceHeatPumpBoiler:
         # pass None explicitly to disable.
         dT_cycle_min: float | None = 20.0,
         dT_hx_min: float = 0.5,
+        # Compressor pressure-ratio envelope (PR = P_cond / P_evap)
+        PR_cycle_min: float = 1.5,
+        PR_cycle_max: float = 10.0,
+        # Compressor speed search bounds [rev/s]
+        rps_min: float = 10.0,
+        rps_max: float = 150.0,
         *,
         # Deprecated:
         refrigerant: str | None = None,
@@ -143,6 +153,14 @@ class WaterSourceHeatPumpBoiler:
         # Resolve deprecated mapping
         if V_cmp_ref is None:
             V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0005
+        # Common heat-pump-boiler default efficiencies (shared with ASHPB/GSHPB):
+        # isentropic 0.80, volumetric 0.95 - 0.05*PR, electro-mechanical 0.855.
+        # (eta_cmp_vol default is assigned at the attribute store below to keep
+        # the lambda off a bare local name — ruff E731.)
+        if eta_cmp_isen is None:
+            eta_cmp_isen = 0.80
+        if eta_cmp is None:
+            eta_cmp = 0.855
         if UA_tank_hx is None:
             UA_tank_hx = UA_tank if UA_tank is not None else (
                 UA_cond_design if UA_cond_design is not None else 500.0
@@ -167,6 +185,10 @@ class WaterSourceHeatPumpBoiler:
         self.ref = ref
         self.V_cmp_ref = V_cmp_ref
         self.eta_cmp_isen = eta_cmp_isen
+        self.eta_cmp_vol = (
+            eta_cmp_vol if eta_cmp_vol is not None else (lambda r: 0.95 - 0.05 * r)
+        )
+        self.eta_cmp = eta_cmp
 
         self.UA_tank_hx = UA_tank_hx
         self.UA_water = UA_water
@@ -197,6 +219,15 @@ class WaterSourceHeatPumpBoiler:
         self.dT_subcool = dT_subcool
         self.dT_cycle_min: float | None = dT_cycle_min
         self.dT_hx_min: float = dT_hx_min
+        # Compressor pressure-ratio envelope (floor -> clamp, ceiling -> reject)
+        self.PR_cycle_min: float = PR_cycle_min
+        self.PR_cycle_max: float = PR_cycle_max
+        # Compressor speed search bounds [rev/s]
+        self.rps_min: float = rps_min
+        self.rps_max: float = rps_max
+        # Records the PR-envelope event of the most recent _calc_state call
+        # (None | ("pr_below_min", pr, bound) | ("pr_above_max", pr, bound)).
+        self._last_pr_event: tuple[str, float, float] | None = None
 
         # BHE properties
         self.N_1 = N_1
@@ -385,13 +416,116 @@ class WaterSourceHeatPumpBoiler:
             return None
         actual_dT_subcool = min(self.dT_subcool, max(0.0, dT_ref_tank - self.dT_hx_min))
 
-        # 2. Refrigerant Cycle Evaluation
+        import inspect
+
+        def _eval_eff(
+            eff: float | Callable[..., float] | None, r_p: float, rps: float
+        ) -> float:
+            if eff is None:
+                return 1.0
+            if callable(eff):
+                sig = inspect.signature(eff)
+                if len(sig.parameters) == 2:
+                    return eff(r_p, rps)
+                return eff(r_p)
+            return eff
+
+        # 2. Refrigerant Cycle Evaluation (temporary isentropic eff = 1.0 to
+        #    obtain base states and the pressure ratio).
         try:
             cycle_states = calc_ref_state(
                 T_evap_K=T_water_sat_K,
                 T_cond_K=T_tank_sat_K,
                 refrigerant=self.ref,
-                eta_cmp_isen=self.eta_cmp_isen,
+                eta_cmp_isen=1.0,
+                dT_superheat=self.dT_superheat,
+                dT_subcool=actual_dT_subcool,
+            )
+        except Exception:
+            return None
+
+        rho_ref_cmp_in = cycle_states["rho_ref_cmp_in [kg/m3]"]
+        h_ref_cmp_in = cycle_states["h_ref_cmp_in [J/kg]"]
+        h_ref_exp_in = cycle_states["h_ref_exp_in [J/kg]"]
+        h_ref_exp_out = cycle_states["h_ref_exp_out [J/kg]"]
+        P_evap = cycle_states["P_ref_cmp_in [Pa]"]
+        P_cond = cycle_states["P_ref_cmp_out [Pa]"]
+        ratio_P_cmp = P_cond / P_evap if P_evap > 0 else 1.0
+
+        # Compressor pressure-ratio envelope guard (see compressor_envelope.py).
+        # Ceiling -> reject; floor -> clamp the cycle onto PR_cycle_min by holding
+        # the evaporator (water-source) pressure and projecting the condensing
+        # (tank-side) pressure, then refresh the state. Recorded for the
+        # analyze_steady hint; no print here (runs inside the optimiser loop).
+        self._last_pr_event = None
+        pr_event = check_pr_envelope(ratio_P_cmp, self.PR_cycle_min, self.PR_cycle_max)
+        if pr_event == "pr_above_max":
+            self._last_pr_event = ("pr_above_max", ratio_P_cmp, self.PR_cycle_max)
+            return None
+        if pr_event == "pr_below_min":
+            self._last_pr_event = ("pr_below_min", ratio_P_cmp, self.PR_cycle_min)
+            P_cond_clamp = self.PR_cycle_min * P_evap
+            T_tank_sat_K = CP.PropsSI("T", "P", P_cond_clamp, "Q", 0, self.ref)
+            try:
+                cycle_states = calc_ref_state(
+                    T_evap_K=T_water_sat_K,
+                    T_cond_K=T_tank_sat_K,
+                    refrigerant=self.ref,
+                    eta_cmp_isen=1.0,
+                    dT_superheat=self.dT_superheat,
+                    dT_subcool=actual_dT_subcool,
+                )
+            except Exception:
+                return None
+            rho_ref_cmp_in = cycle_states["rho_ref_cmp_in [kg/m3]"]
+            h_ref_cmp_in = cycle_states["h_ref_cmp_in [J/kg]"]
+            h_ref_exp_in = cycle_states["h_ref_exp_in [J/kg]"]
+            h_ref_exp_out = cycle_states["h_ref_exp_out [J/kg]"]
+            P_evap = cycle_states["P_ref_cmp_in [Pa]"]
+            P_cond = cycle_states["P_ref_cmp_out [Pa]"]
+            ratio_P_cmp = P_cond / P_evap if P_evap > 0 else self.PR_cycle_min
+
+        if (h_ref_cmp_in - h_ref_exp_in) <= 0:
+            return None
+
+        try:
+            s_cmp_in = cycle_states["s_ref_cmp_in [J/(kg·K)]"]
+            h_ref_cmp_out_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
+        except ValueError:
+            h_ref_cmp_out_isen = h_ref_cmp_in
+
+        # 3. Cycle Performance — search compressor speed (rev/s) so the
+        #    condenser duty matches the requested tank load.
+        def _residual_rps(rps):
+            val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
+            val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
+            h_cmp_out_local = h_ref_cmp_in + (h_ref_cmp_out_isen - h_ref_cmp_in) / val_eta_isen
+            dh_cond_local = h_cmp_out_local - h_ref_exp_in
+            m_dot = self.V_cmp_ref * rho_ref_cmp_in * val_eta_vol * rps
+            return (m_dot * dh_cond_local) - Q_tank_load
+
+        from scipy.optimize import brentq
+
+        try:
+            cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
+            converged_rps = True
+        except ValueError:
+            res_min = _residual_rps(self.rps_min)
+            res_max = _residual_rps(self.rps_max)
+            cmp_rps = self.rps_min if abs(res_min) < abs(res_max) else self.rps_max
+            converged_rps = False
+
+        val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
+        val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
+        val_eta_electro_mech = _eval_eff(self.eta_cmp, ratio_P_cmp, cmp_rps)
+
+        # Final state with the speed-resolved isentropic efficiency.
+        try:
+            cycle_states = calc_ref_state(
+                T_evap_K=T_water_sat_K,
+                T_cond_K=T_tank_sat_K,
+                refrigerant=self.ref,
+                eta_cmp_isen=val_eta_isen,
                 dT_superheat=self.dT_superheat,
                 dT_subcool=actual_dT_subcool,
             )
@@ -407,12 +541,11 @@ class WaterSourceHeatPumpBoiler:
         if (h_ref_cmp_out - h_ref_exp_in) <= 0:
             return None
 
-        # 3. Cycle Performance
-        m_dot_ref = Q_tank_load / (h_ref_cmp_out - h_ref_exp_in)
-        Q_ref_tank = Q_tank_load
+        # 3b. Cycle Performance (mass flow from the resolved compressor speed)
+        m_dot_ref = self.V_cmp_ref * rho_ref_cmp_in * val_eta_vol * cmp_rps
+        Q_ref_tank = m_dot_ref * (h_ref_cmp_out - h_ref_exp_in)
         Q_ref_water = m_dot_ref * (h_ref_cmp_in - h_ref_exp_out)
-        E_cmp = m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)
-        cmp_rps = m_dot_ref / (self.V_cmp_ref * rho_ref_cmp_in)
+        E_cmp = (m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)) / val_eta_electro_mech
 
         # 4. NTU Evaporator Analysis
         NTU_water = self.UA_water / m_dot_cp_b
@@ -441,8 +574,8 @@ class WaterSourceHeatPumpBoiler:
         result.update(
             {
                 "hp_is_on": True,
-                "converged": True,
-                "converged_rps": True,
+                "converged": converged_rps,
+                "converged_rps": converged_rps,
                 "_penalty": penalty,
                 "err_Q_water [W]": err,
                 "T_ref_evap_sat [°C]": cu.K2C(cycle_states.get("T_ref_evap_sat_K", np.nan)),
@@ -1015,8 +1148,13 @@ class WaterSourceHeatPumpBoiler:
             # Diagnose; the fallback trigger condition is unchanged from the
             # historical behaviour (`result is None or not isinstance(...)`).
             opt_success = bool(getattr(opt_result, "success", False))
+            pr_event = self._last_pr_event
             if result is None or not isinstance(result, dict):
-                failure_reason = "cycle_invalid"
+                failure_reason = (
+                    "pr_above_max"
+                    if pr_event is not None and pr_event[0] == "pr_above_max"
+                    else "cycle_invalid"
+                )
             elif not result.get("converged", False):
                 failure_reason = "hx_not_converged"
             elif not opt_success:
@@ -1066,6 +1204,28 @@ class WaterSourceHeatPumpBoiler:
                 and hasattr(opt_result, "success")
             ):
                 result["converged"] = opt_result.success
+
+            # Pressure-ratio envelope hint for the final operating point (one
+            # message per call; per-probe events inside the optimiser are
+            # silent). Floor -> clamp (cycle still solved); ceiling -> reject
+            # (HP-off fallback).
+            pr_event = self._last_pr_event
+            if pr_event is not None:
+                kind, pr_val, bound = pr_event
+                if kind == "pr_below_min":
+                    print(
+                        f"[PR guard] clamp 하한(below PR_cycle_min): "
+                        f"PR={pr_val:.3f} -> {bound:.2f} "
+                        f"(T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, "
+                        f"Q_ref_tank={Q_ref_tank:.0f}W)"
+                    )
+                else:  # pr_above_max
+                    print(
+                        f"[PR guard] reject 상한(above PR_cycle_max): "
+                        f"PR={pr_val:.3f} > {bound:.2f} "
+                        f"(T_tank_w={T_tank_w:.1f}°C, T_source={T_source:.1f}°C, "
+                        f"Q_ref_tank={Q_ref_tank:.0f}W)"
+                    )
 
         if result is None:
             result = {}
