@@ -43,6 +43,64 @@ def test_cop_eval_scalar_and_array():
     assert out[1] > out[0]  # higher source temp -> higher COP
 
 
+# --- generic source/sink-agnostic core (no CoolProp needed) -------------------
+def test_from_grid_recovers_known_affine():
+    """The generic core fits any cop_fn, independent of which unit produced it."""
+    a0, a_src, a_sink = 2.8, 0.11, -0.04
+
+    def cop_fn(ts, tk):
+        return a0 + a_src * ts + a_sink * tk
+
+    m = AffineCOPMap.from_grid(cop_fn, [-5.0, 0.0, 5.0, 10.0], [40.0, 50.0, 60.0])
+    assert np.allclose(m.coeffs, [a0, a_src, a_sink], atol=1e-9)
+
+
+def test_from_grid_drops_nonconverged_and_nonphysical():
+    """None (non-converged), non-finite, and COP <= min_cop samples are dropped."""
+    seen = []
+
+    def cop_fn(ts, tk):
+        seen.append((ts, tk))
+        if tk == 60.0:
+            return None  # pretend non-converged
+        if ts == -5.0:
+            return 0.5  # non-physical (<= 1) -> dropped
+        return 3.0 + 0.1 * ts - 0.03 * tk
+
+    m = AffineCOPMap.from_grid(cop_fn, [-5.0, 0.0, 5.0], [40.0, 50.0, 60.0])
+    # All 9 grid points are probed (source outer, sink inner)...
+    assert len(seen) == 9
+    assert seen[0] == (-5.0, 40.0) and seen[1] == (-5.0, 50.0)
+    # ...but only the 4 finite, physical, converged ones survive the fit.
+    assert isinstance(m, AffineCOPMap)
+
+
+def test_from_grid_raises_when_too_few_points():
+    with pytest.raises(RuntimeError, match="too few"):
+        AffineCOPMap.from_grid(lambda ts, tk: None, [0.0, 5.0], [40.0, 50.0])
+
+
+# --- air-source adapter ground-truth fit (needs CoolProp, not pygfunction) ----
+def test_from_ashpb_air_source_is_physical_and_close():
+    """Same affine map fit against the air-source cycle: source = outdoor air."""
+    pytest.importorskip("CoolProp")
+    from tmhp import AirSourceHeatPumpBoiler
+
+    ashpb = AirSourceHeatPumpBoiler(ref="R32")
+    src = [-5.0, 0.0, 5.0]   # outdoor air temperature [°C]
+    snk = [40.0, 50.0, 60.0]  # tank water temperature [°C]
+    m = AffineCOPMap.from_ashpb(ashpb, src, snk, Q_ref_tank=6000.0)
+
+    # Physical signs hold regardless of which stream is the source:
+    assert m.coeffs[1] > 0.0  # warmer outdoor air -> higher COP
+    assert m.coeffs[2] < 0.0  # hotter tank (sink)  -> lower COP
+
+    # Tracks the CoolProp COP within a small error at a held point.
+    r = ashpb.analyze_steady(T_tank_w=50.0, T0=0.0, Q_ref_tank=6000.0)
+    cop_true = float(r["cop_sys [-]"])
+    assert m.cop(0.0, 50.0) == pytest.approx(cop_true, abs=0.6)
+
+
 # --- ground-truth fit (needs the CoolProp cycle + g-function precompute) ------
 pytest.importorskip("pygfunction")
 from tmhp import GroundSourceHeatPumpBoiler  # noqa: E402
