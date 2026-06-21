@@ -33,6 +33,11 @@ from .gshpb_stc_tank import GSHPB_STC_tank
 from .heat_transfer import *  # noqa: F401, F403
 from .refrigerant import *  # noqa: F401, F403
 from .subsystems import *  # noqa: F401, F403
+from .surrogate_eval import (
+    disagreement_gaps,
+    pairwise_ordering_agreement,
+    selection_regret,
+)
 from .thermodynamics import *  # noqa: F401, F403
 from .visualization import *  # noqa: F401, F403
 from .water_source_heat_pump_boiler import WaterSourceHeatPumpBoiler
@@ -57,4 +62,7 @@ __all__ = [
     "OnlineCOPMap",
     "WaterSourceHeatPumpBoiler",
     "default_solar_router",
+    "disagreement_gaps",
+    "pairwise_ordering_agreement",
+    "selection_regret",
 ]
