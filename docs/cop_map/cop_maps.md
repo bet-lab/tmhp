@@ -83,3 +83,38 @@ Findings:
 Run::
 
     OMP_NUM_THREADS=2 .venv/bin/python docs/cop_map/compare_hp_cop_maps.py
+
+## Online adaptation — `OnlineCOPMap`
+
+`AffineCOPMap` is the static offline fit. `OnlineCOPMap` adds the controller-layer
+pieces from Rastegarpour 2021: a recursive-least-squares (forgetting-factor)
+update that adapts the coefficients to live measurements, and a first-order lag on
+the predicted COP. Per MPC step:
+
+```python
+m = OnlineCOPMap.from_affine(static_map, lam=0.99, tau_s=60.0)
+cop_hat = m.predict(T_source, T_sink)            # use in the optimiser
+m.update(T_source, T_sink, cop_measured)          # adapt to the plant
+cop_smooth = m.filtered_predict(T_source, T_sink, dt_s)   # lagged signal
+```
+
+`compare_hp_cop_maps.py`'s companion `online_adaptation.py` drives a slowly
+degrading COP relation (offset and source-slope decay — fouling/ageing the
+CoolProp steady cycle has no notion of) and compares a frozen static map against
+the RLS-adapted one.
+
+![online adaptation — drift tracking and first-order lag](fig2_online_adaptation.png)
+
+- **Drift tracking** (left): the static map's prediction error grows as the cycle
+  degrades; the RLS map (`lam = 0.985`) tracks it. Over the second half of the run
+  the prediction RMSE is **1.07 (static) vs 0.14 (online) — 7.5× better**.
+- **First-order lag** (right): the lag (`tau = 180 s`) smooths the noisy per-step
+  COP toward the true value, mirroring the cycle's thermal inertia.
+
+The forgetting factor `lam` trades tracking speed against noise sensitivity
+(0.97–0.999 typical); `tau_s` sets the lag. Both are controller knobs, not part of
+the plant model — `AffineCOPMap` remains the byte-identical static fit.
+
+Run::
+
+    .venv/bin/python docs/cop_map/online_adaptation.py
