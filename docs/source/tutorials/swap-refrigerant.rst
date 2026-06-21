@@ -34,7 +34,7 @@ Sweep
 
    T_tank_w   = 55.0   # °C
    T0         = 5.0    # °C
-   Q_ref_cond = 8_000  # W
+   Q_ref_tank = 8_000  # W
 
    refrigerants = ["R32", "R290", "R410A", "R134a"]
 
@@ -44,7 +44,7 @@ Sweep
        r = ashpb.analyze_steady(
            T_tank_w=T_tank_w,
            T0=T0,
-           Q_ref_cond=Q_ref_cond,
+           Q_ref_tank=Q_ref_tank,
        )
        rows.append({
            "ref": ref,

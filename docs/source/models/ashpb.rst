@@ -38,7 +38,7 @@ Base usage
    result = ashpb.analyze_steady(
        T_tank_w=55.0,    # tank water [°C]
        T0=7.0,           # outdoor air [°C]
-       Q_ref_cond=8_000, # target condenser duty [W]
+       Q_ref_tank=8_000, # target condenser duty [W]
    )
 
    # Time-stepping dynamic run — see Getting Started for full schedule
@@ -80,7 +80,7 @@ Composed variants
          result = ashpb.analyze_steady(
              T_tank_w=55.0,
              T0=7.0,
-             Q_ref_cond=8_000,
+             Q_ref_tank=8_000,
          )
 
    .. tab-item:: + STC preheat

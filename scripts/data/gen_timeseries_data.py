@@ -47,11 +47,11 @@ def build_timeseries() -> dict:
         cop, p_cmp_kw, q_cond_kw = float("nan"), 0.0, 0.0
         if q_call_kw > 0:
             res = ashpb.analyze_steady(
-                T_tank_w=T_tank, T0=t_amb, Q_ref_cond=q_call_kw * 1000.0,
+                T_tank_w=T_tank, T0=t_amb, Q_ref_tank=q_call_kw * 1000.0,
             )
             cop = res["cop_sys [-]"]
             p_cmp_kw = res["E_cmp [W]"] / 1000.0
-            q_cond_kw = res["Q_ref_cond [W]"] / 1000.0
+            q_cond_kw = res["Q_ref_tank [W]"] / 1000.0
 
         net_kw = q_cond_kw - q_demand_kw
         T_tank += net_kw * STEP_MIN * 60.0 / 837.0

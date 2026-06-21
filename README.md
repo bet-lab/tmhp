@@ -127,12 +127,12 @@ ashpb = AirSourceHeatPumpBoiler(ref="R32")
 result = ashpb.analyze_steady(
     T_tank_w=55.0,
     T0=5.0,
-    Q_ref_cond=8_000.0,
+    Q_ref_tank=8_000.0,
 )
 
 print(f"COP (refrigerant) : {result['cop_ref [-]']:.2f}")
 print(f"COP (system)      : {result['cop_sys [-]']:.2f}")
-print(f"Heating capacity  : {result['Q_ref_cond [W]'] / 1e3:.2f} kW")
+print(f"Heating capacity  : {result['Q_ref_tank [W]'] / 1e3:.2f} kW")
 print(f"Compressor power  : {result['E_cmp [W]'] / 1e3:.2f} kW")
 print(f"Evap sat. temp.   : {result['T_ref_evap_sat [°C]']:.1f} °C")
 print(f"Cond sat. temp.   : {result['T_ref_cond_sat_v [°C]']:.1f} °C")

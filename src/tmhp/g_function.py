@@ -577,13 +577,14 @@ def calc_borehole_thermal_resistance(
 
     Stage 2 — 2D cross-section (Local R_b via multipole method):
         SingleUTube solves the steady-state 2D Laplace equation in the grout
-        cross-section using Hellström's multipole expansion (default order J=10).
+        cross-section using Hellström's multipole expansion [1]_ [2]_ (default
+        order J=10); see [3]_ for an accuracy benchmark of this method.
         Boundary conditions: R_fp at each pipe surface, T=const at borehole wall.
         Outputs: Local R_b (fluid → borehole wall, cross-section only).
 
     Stage 3 — Axial short-circuit correction (Effective R_b*):
         pipe.effective_borehole_thermal_resistance() applies the Cimmino / Hellström
-        (1991) analytical solution for axial fluid temperature variation and
+        (1991) [1]_ analytical solution for axial fluid temperature variation and
         thermal short-circuiting between the two U-tube legs.
 
     For a Single U-tube (series flow), each pipe leg carries the full borehole
@@ -657,7 +658,7 @@ def calc_borehole_thermal_resistance(
     # pygfunction public API: internally applies Cimmino/Hellström axial correction
     R_b_eff = pipe.effective_borehole_thermal_resistance(m_flow_borehole, cp_f)
 
-    return R_b_eff
+    return float(R_b_eff)
 
 
 def calc_submerged_coil_thermal_resistance(

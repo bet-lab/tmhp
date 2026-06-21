@@ -111,19 +111,19 @@ Every system reuses the same closed cycle — only the blocks marked
 
      // ─── Data extracted from tmhp source ───────────────────────
      //   ASHPB._calc_state, refrigerant.calc_ref_state, heat_transfer.py,
-     //   _opt_utils.py (scalar minimizer over dT_ref_evap).
+     //   _opt_utils.py (scalar minimizer over dT_ref_ou).
      const nodes = [
        { id: "SRC",  type: "src",    title: "Source side",      sub: "air · ground · water",
          code: "ashpb.py / gshpb.py / wshpb.py — outdoor coil, borehole g-function, prescribed water inlet",
          api:  "../models/index.html" },
        { id: "EVAP", type: "cycle",  title: "Evaporator HX",    sub: "ε-NTU",
-         code: "_calc_state: T_evap_sat_K = T0_K − dT_ref_evap",
+         code: "_calc_state: T_ou_sat_K = T0_K − dT_ref_ou",
          api:  "../api/support/heat-transfer.html" },
        { id: "CMP",  type: "cycle",  title: "Compressor",       sub: "η_is · η_vol · η_mech",
          code: "_calc_state lines 410–471: h_cmp_out via η_isen, m_dot = V_disp·ρ·η_vol·rps",
          api:  "../models/ashpb.html" },
        { id: "COND", type: "cycle",  title: "Condenser HX",     sub: "ε-NTU",
-         code: "_calc_state: T_cond_sat_K = T_tank_w_K + dT_ref_cond, UA_cond_design",
+         code: "_calc_state: T_tank_sat_K = T_tank_w_K + dT_ref_tank, UA_tank",
          api:  "../api/support/heat-transfer.html" },
        { id: "EXP",  type: "cycle",  title: "Expander",         sub: "isenthalpic",
          code: "refrigerant.py:calc_ref_state (h_exp_out = h_exp_in throttle)",
@@ -132,7 +132,7 @@ Every system reuses the same closed cycle — only the blocks marked
          code: "dhw.py (tank energy balance) / air_source_heat_pump.py (building load)",
          api:  "../api/support/subsystems.html" },
        { id: "OPT",  type: "solver", title: "Cycle closure",    sub: "min E_cmp(ΔT_evap)",
-         code: "_opt_utils.py — scalar minimizer over dT_ref_evap that minimizes compressor power",
+         code: "_opt_utils.py — scalar minimizer over dT_ref_ou that minimizes compressor power",
          api:  "cycle-architecture.html#the-shared-core" },
      ];
      const edges = [
