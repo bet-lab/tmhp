@@ -65,9 +65,9 @@ class HybridStratifiedTank:
         # highest, node N-1 (bottom) lowest.
         self.y_mid = self.height - (np.arange(self.n) + 0.5) * self.dz
 
-        self.T = np.zeros(self.n)
+        self.T: np.ndarray = np.zeros(self.n)
         self.y_th = self.height          # thermocline at the top (no active front)
-        self.T_ref = np.zeros(self.n)    # frozen upstream reference temperatures
+        self.T_ref: np.ndarray = np.zeros(self.n)    # frozen upstream reference temperatures
         self._charging = False
 
     # ------------------------------------------------------------------
