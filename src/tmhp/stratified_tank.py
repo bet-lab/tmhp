@@ -98,7 +98,7 @@ class StratifiedTank:
         self.G = self.k_eff * self.area_cross / self.dz      # inter-node conductance [W/K]
         self.ua_node = self.ua_total / self.n                # per-node loss [W/K]
 
-        self.T = np.zeros(self.n)
+        self.T: np.ndarray = np.zeros(self.n)
 
     # ------------------------------------------------------------------
     def reset(self, T_init) -> np.ndarray:
