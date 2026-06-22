@@ -16,7 +16,7 @@ integrated model, its physical calculations represent the behavior of:
 4. **Heat Exchangers (Condenser & Evaporator):**
 
    - **Condenser:** Placed inside the tank (hydronic), utilizing a static overall heat
-     transfer coefficient (UA_tank).
+     transfer coefficient (UA_tank_hx).
    - **Evaporator:** Air-coupled outdoor unit, utilizing a dynamic overall heat transfer
      coefficient (UA_ou) that scales non-linearly with fan airflow (Colburn j-factor analogy).
 5. **Thermal Storage Tank:**
@@ -80,7 +80,7 @@ class AirSourceHeatPumpBoiler:
     The refrigerant cycle is resolved via CoolProp with
     user-specified superheat / subcool margins.  The condenser
     approach temperature is determined analytically
-    (``dT_ref_tank = Q_ref_tank / UA_tank``), and a bounded
+    (``dT_ref_tank = Q_ref_tank / UA_tank_hx``), and a bounded
     1-D optimiser (Brent's method) minimises total electrical
     input (``E_cmp + E_ou_fan``) over the evaporator approach.
     """
@@ -96,7 +96,7 @@ class AirSourceHeatPumpBoiler:
         dT_superheat: float = 5.0,
         dT_subcool: float = 5.0,
         # 2. Heat exchanger -----------------------------
-        UA_tank: float | None = None,
+        UA_tank_hx: float | None = None,
         UA_ou_rated: float | None = None,
         n_ou: float = 0.65,
         # 3. Outdoor unit fan ---------------------------
@@ -149,6 +149,7 @@ class AirSourceHeatPumpBoiler:
         # Deprecated compat arguments:
         V_disp_cmp: float | None = None,
         eta_cmp_electro_mech: float | Callable | None = None,
+        UA_tank: float | None = None,  # deprecated alias for UA_tank_hx
         UA_cond_design: float | None = None,
         UA_evap_design: float | None = None,
         dV_ou_fan_a_design: float | None = None,
@@ -162,8 +163,8 @@ class AirSourceHeatPumpBoiler:
             V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0002
         if eta_cmp is None:
             eta_cmp = eta_cmp_electro_mech if eta_cmp_electro_mech is not None else 0.855
-        if UA_tank is None:
-            UA_tank = UA_cond_design
+        if UA_tank_hx is None:
+            UA_tank_hx = UA_tank if UA_tank is not None else UA_cond_design
         if UA_ou_rated is None:
             UA_ou_rated = UA_evap_design
         if dV_fan_a_rated is None:
@@ -226,17 +227,17 @@ class AirSourceHeatPumpBoiler:
         # ~10.0 K approach temperature difference, which corresponds to the standard
         # performance specifications for industrial heat pumps.
         # Ref: Application of Industrial Heat Pumps. Annex 35 Final Report (IEA Heat Pump Centre, 2014)
-        if UA_tank is None:
-            self.UA_tank = hp_capacity / 6.0
+        if UA_tank_hx is None:
+            self.UA_tank_hx = hp_capacity / 6.0
         else:
-            self.UA_tank = UA_tank
+            self.UA_tank_hx = UA_tank_hx
 
         # The default evaporator UA is determined to ensure an approximate air-side
         # temperature drop of 7.0 K across the outdoor unit, aligning with empirical
         # laboratory observations of standard residential units.
         # Ref: Residential Air Source Heat Pump Water Heater Performance Testing (ORNL, Baxter 2011, DOI: 10.3390/su17052234)
         if UA_ou_rated is None:
-            self.UA_ou_rated = self.UA_tank * 0.8
+            self.UA_ou_rated = self.UA_tank_hx * 0.8
         else:
             self.UA_ou_rated = UA_ou_rated
 
@@ -280,7 +281,7 @@ class AirSourceHeatPumpBoiler:
             "k_ins": k_ins,
             "h_o": h_o,
         }
-        self.UA_tank_loss: float = calc_simple_tank_UA(
+        self.UA_tank_wall: float = calc_simple_tank_UA(
             **self.tank_physical,
         )
         self.T_sur_K: float = cu.C2K(T_sur)
@@ -359,7 +360,7 @@ class AirSourceHeatPumpBoiler:
         dict | None
             Cycle performance dictionary; ``None`` if infeasible.
         """
-        dT_ref_tank: float = Q_ref_tank / self.UA_tank if Q_ref_tank > 0 else 0.0
+        dT_ref_tank: float = Q_ref_tank / self.UA_tank_hx if Q_ref_tank > 0 else 0.0
 
         T_tank_w_K: float = cu.C2K(T_tank_w)
         T0_K: float = cu.C2K(T0)
@@ -1074,7 +1075,7 @@ class AirSourceHeatPumpBoiler:
         r.update(
             {
                 "hp_is_on": ctrl.is_on,
-                "Q_tank_loss [W]": (self.UA_tank_loss * (T_solved_K - self.T_sur_K)),
+                "Q_tank_loss [W]": (self.UA_tank_wall * (T_solved_K - self.T_sur_K)),
                 "T_tank_w [°C]": cu.K2C(T_solved_K),
                 "T_mix_w_out [°C]": T_mix_w_out_val,
                 "T_tank_w_in [°C]": cu.K2C(self.T_tank_w_in_K),
@@ -1170,7 +1171,7 @@ class AirSourceHeatPumpBoiler:
                 T_sup_w_K_n,
                 self.T_mix_w_out_K,
                 self.C_tank,
-                self.UA_tank_loss,
+                self.UA_tank_wall,
                 self.V_tank_full,
                 self._subsystems,
                 sub_states,
@@ -1377,7 +1378,7 @@ class AirSourceHeatPumpBoiler:
             )
             dV_out_curr = alp_curr * ctx.dV_mix_w_out
             Q_flow_curr = c_w * rho_w * dV_out_curr * (T_sup_w_K_n - ctx.T_tank_w_K)
-            Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
+            Q_loss_curr = self.UA_tank_wall * (ctx.T_tank_w_K - self.T_sur_K)
             Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr  # Assumes sub_total = 0 explicitly for fallback
 
             T_tank_w_K = ctx.T_tank_w_K + dt_s * Q_tot / self.C_tank

@@ -87,7 +87,7 @@ def build_model() -> AirSourceHeatPumpBoiler:
         # vapour injection, well beyond a single-stage envelope. Raise the
         # pressure-ratio ceiling so the guard does not clip catalogue points.
         PR_cycle_max=20.0,
-        UA_tank=2500.0,
+        UA_tank_hx=2500.0,
         UA_ou_rated=2000.0,
         n_ou=0.65,
         dV_fan_a_rated=1.5,

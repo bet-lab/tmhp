@@ -440,7 +440,7 @@ def tank_mass_energy_residual(
     T_sup_w_K: float,
     T_mix_w_out_K: float,
     C_tank: float,
-    UA_tank: float,
+    UA_tank_wall: float,
     V_tank_full: float,
     subsystems: dict[str, Subsystem],
     sub_states: dict[str, dict],
@@ -472,8 +472,8 @@ def tank_mass_energy_residual(
         Target mixing-valve outlet temperature [K].
     C_tank : float
         Tank thermal capacitance [J/K].
-    UA_tank : float
-        Tank overall heat-loss coefficient [W/K].
+    UA_tank_wall : float
+        Tank overall heat-loss coefficient [W/K] (shell/insulation envelope).
     V_tank_full : float
         Tank full volume [m³].
     subsystems : dict[str, Subsystem]
@@ -504,7 +504,7 @@ def tank_mass_energy_residual(
     C_curr: float = C_tank * max(0.001, ctx.tank_level)
     C_next: float = C_tank * max(0.001, level_next)
     T_sur_K = T_sur_K if T_sur_K is not None else ctx.T0_K
-    Q_loss: float = UA_tank * (T_next - T_sur_K)
+    Q_loss: float = UA_tank_wall * (T_next - T_sur_K)
 
     # Effective tank inlet temperature
     # (subsystems may override, e.g. mains preheat)

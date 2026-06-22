@@ -570,7 +570,7 @@ def calc_HX_perf_for_target_heat(
 # to uv_treatment.py.  Re-exported above via ``from .uv_treatment import …``
 
 
-def update_tank_temperature(T_tank_w_K, Q_gain, UA_tank, T0_K, C_tank, dt):
+def update_tank_temperature(T_tank_w_K, Q_gain, UA_tank_wall, T0_K, C_tank, dt):
     """Update tank temperature using the Crank-Nicolson implicit scheme.
 
     The governing ODE for a lumped-capacitance tank is:
@@ -591,8 +591,8 @@ def update_tank_temperature(T_tank_w_K, Q_gain, UA_tank, T0_K, C_tank, dt):
         Current tank temperature [K].
     Q_gain : float
         Total heat gain rate [W] (condenser, UV, STC, refill, etc.).
-    UA_tank : float
-        Overall tank heat-loss coefficient [W/K].
+    UA_tank_wall : float
+        Overall tank heat-loss coefficient [W/K] (shell/insulation envelope).
     T0_K : float
         Dead-state / ambient temperature [K].
     C_tank : float
@@ -606,7 +606,7 @@ def update_tank_temperature(T_tank_w_K, Q_gain, UA_tank, T0_K, C_tank, dt):
         Updated tank temperature [K].
     """
     a = C_tank / dt
-    T_tank_w_K_new = ((a - UA_tank / 2) * T_tank_w_K + Q_gain + UA_tank * T0_K) / (a + UA_tank / 2)
+    T_tank_w_K_new = ((a - UA_tank_wall / 2) * T_tank_w_K + Q_gain + UA_tank_wall * T0_K) / (a + UA_tank_wall / 2)
     return T_tank_w_K_new
 
 

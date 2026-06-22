@@ -153,7 +153,7 @@ class GSHPB_STC_tank(GroundSourceHeatPumpBoiler):
 
             # Energy flows [W]
             Q_flow: float = c_w * rho_w * (dV_in * T_tank_w_in_K_n - dV_out * T_cand_K)
-            Q_loss: float = self.UA_tank_loss * (T_cand_K - self.T_sur_K)
+            Q_loss: float = self.UA_tank_wall * (T_cand_K - self.T_sur_K)
 
             C_curr: float = self.C_tank * max(0.001, ctx.tank_level)
             C_next: float = self.C_tank * max(0.001, tank_level)

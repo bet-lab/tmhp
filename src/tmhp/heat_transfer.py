@@ -199,9 +199,9 @@ def calc_simple_tank_UA(
     R_side_tot = R_side + R_side_ext
 
     # U-value [W/K]
-    UA_tank = 2 / max(R_base_tot, 1e-10) + 1 / max(R_side_tot, 1e-10)
+    UA_tank_wall = 2 / max(R_base_tot, 1e-10) + 1 / max(R_side_tot, 1e-10)
 
-    return float(UA_tank)
+    return float(UA_tank_wall)
 
 
 def calc_LMTD_counter_flow(Th_in: float, Th_out: float, Tc_in: float, Tc_out: float) -> float:

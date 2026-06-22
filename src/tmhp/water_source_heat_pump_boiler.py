@@ -59,7 +59,7 @@ class WaterSourceHeatPumpBoiler:
         V_cmp_ref: float | None = None,
         eta_cmp_isen: float = 0.7,
         # 2. Heat exchanger UA
-        UA_tank: float | None = None,
+        UA_tank_hx: float | None = None,
         UA_water: float | None = None,
         # 3. Tank / control / load
         T0: float = 0.0,
@@ -125,6 +125,7 @@ class WaterSourceHeatPumpBoiler:
         # Deprecated:
         refrigerant: str | None = None,
         V_disp_cmp: float | None = None,
+        UA_tank: float | None = None,  # deprecated alias for UA_tank_hx
         UA_cond_design: float | None = None,
         UA_evap_design: float | None = None,
     ) -> None:
@@ -142,8 +143,10 @@ class WaterSourceHeatPumpBoiler:
         # Resolve deprecated mapping
         if V_cmp_ref is None:
             V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0005
-        if UA_tank is None:
-            UA_tank = UA_cond_design if UA_cond_design is not None else 500.0
+        if UA_tank_hx is None:
+            UA_tank_hx = UA_tank if UA_tank is not None else (
+                UA_cond_design if UA_cond_design is not None else 500.0
+            )
         if UA_water is None:
             UA_water = UA_evap_design if UA_evap_design is not None else 500.0
 
@@ -156,7 +159,7 @@ class WaterSourceHeatPumpBoiler:
             "k_ins": k_ins,
             "h_o": h_o,
         }
-        self.UA_tank_loss = calc_simple_tank_UA(**self.tank_physical)
+        self.UA_tank_wall = calc_simple_tank_UA(**self.tank_physical)
         self.T_sur_K = cu.C2K(T_sur)
         self.V_tank_full: float = math.pi * r0**2 * H
         self.C_tank = c_w * rho_w * self.V_tank_full
@@ -165,7 +168,7 @@ class WaterSourceHeatPumpBoiler:
         self.V_cmp_ref = V_cmp_ref
         self.eta_cmp_isen = eta_cmp_isen
 
-        self.UA_tank = UA_tank
+        self.UA_tank_hx = UA_tank_hx
         self.UA_water = UA_water
 
         self.T0_K = cu.C2K(T0)
@@ -365,7 +368,7 @@ class WaterSourceHeatPumpBoiler:
             return self._calc_off_state(T_tank_w, T0, flow_state)
 
         # 1. Analytical Condenser Approach Temperature
-        dT_ref_tank = Q_tank_load / self.UA_tank
+        dT_ref_tank = Q_tank_load / self.UA_tank_hx
 
         T_tank_w_K = cu.C2K(T_tank_w)
 
@@ -607,7 +610,7 @@ class WaterSourceHeatPumpBoiler:
                 T_sup_w_K_n,
                 self.T_mix_w_out_K,
                 self.C_tank,
-                self.UA_tank_loss,
+                self.UA_tank_wall,
                 self.V_tank_full,
                 self._subsystems,
                 sub_states,
@@ -659,7 +662,7 @@ class WaterSourceHeatPumpBoiler:
         r["T0 [°C]"] = cu.K2C(ctx.T0_K)
         r["hp_is_on"] = ctrl.is_on
 
-        Q_tank_loss = self.UA_tank_loss * (T_solved_K - self.T_sur_K)
+        Q_tank_loss = self.UA_tank_wall * (T_solved_K - self.T_sur_K)
         mix = calc_mixing_valve_temp(T_solved_K, self.T_tank_w_in_K, self.T_mix_w_out_K)
         r["T_mix_w_out [°C]"] = cu.K2C(mix["T_mix_w_out_K"])
 
@@ -857,7 +860,7 @@ class WaterSourceHeatPumpBoiler:
                 # explicit Euler fallback
                 Q_hp_val = ctrl.Q_heat_source
                 Q_flow_curr = c_w * rho_w * dV_tank_w_out_prev * (T_sup_w_K_n - ctx.T_tank_w_K)
-                Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
+                Q_loss_curr = self.UA_tank_wall * (ctx.T_tank_w_K - self.T_sur_K)
                 Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr
                 T_solved_K = ctx.T_tank_w_K + dt_s * Q_tot / (self.C_tank * tank_level_solve)
 
