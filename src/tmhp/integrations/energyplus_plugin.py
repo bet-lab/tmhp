@@ -45,10 +45,18 @@ variables ``"... for Plant Connection 1"``) are verified against EnergyPlus
 
 from __future__ import annotations
 
+import math
 import os
 from typing import Any
 
-from pyenergyplus.plugin import EnergyPlusPlugin
+try:
+    from pyenergyplus.plugin import EnergyPlusPlugin
+except ModuleNotFoundError:  # pragma: no cover - exercised where EnergyPlus is absent
+    class EnergyPlusPlugin:  # type: ignore[no-redef]
+        """Minimal stand-in so pure adapter helpers stay testable outside E+."""
+
+        def __init__(self) -> None:
+            self.api: Any = None
 
 from tmhp import AirSourceHeatPumpBoiler
 
@@ -62,6 +70,29 @@ _LOG = os.environ.get("TMHP_PLUGIN_LOG")  # None -> stdout only
 MDOT_FLOOR = 0.05   # kg/s — below this the inlet flow is treated as "off"
 TOUT_MAX = 95.0     # °C — clamp inside the liquid-water property range
 RHO_WATER = 1000.0  # kg/m³ — sizing only
+
+
+def _normalize_failure_reason(value: object) -> str | None:
+    """Normalize model diagnostics for adapter tally keys."""
+    if value is None or isinstance(value, str):
+        return value
+    return str(value)
+
+
+def _is_positive_finite(value: Any) -> bool:
+    """Return whether *value* is a usable positive finite number."""
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(out) and out > 0.0
+
+
+def _has_usable_cycle_output(res: dict[str, Any]) -> bool:
+    """Whether a steady result can actuate the EnergyPlus plant component."""
+    return _is_positive_finite(res.get("E_cmp [W]")) and _is_positive_finite(
+        res.get("Q_ref_tank [W]")
+    )
 
 
 def _log(msg: str) -> None:
@@ -222,8 +253,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
         q_target = min(q_req, HP_CAPACITY)
         res = self._solve(t_in, t0, q_target)
         converged = bool(res.get("converged"))
-        reason_raw = res.get("failure_reason")
-        reason = reason_raw if isinstance(reason_raw, str) or reason_raw is None else str(reason_raw)
+        reason = _normalize_failure_reason(res.get("failure_reason"))
 
         self._ndispatch += 1
         if converged and reason == "none":
@@ -234,7 +264,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
             _log(f"[tally @ dispatch {self._ndispatch}] converged={self._nconv} "
                  f"({100.0 * self._nconv / self._ndispatch:.1f}%) guard_trips={dict(self._reasons)}")
 
-        if converged and reason == "none":
+        if _has_usable_cycle_output(res):
             q = float(res["Q_ref_tank [W]"])
             e_cmp = float(res["E_cmp [W]"])
             t_out = min(t_in + q / (m_dot * cp), TOUT_MAX)
@@ -244,7 +274,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
             t_out = t_in
 
         ex.set_actuator_value(state, self.h["t_out_act"], t_out)
-        ex.set_actuator_value(state, self.h["mdot_act"], mdot)
+        ex.set_actuator_value(state, self.h["mdot_act"], m_dot)
         ex.set_global_value(state, self.h["e_cmp"], energy_j)
 
         if self._nlog < 40:

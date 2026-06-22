@@ -47,7 +47,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from . import calc_util as cu
-from ._opt_utils import safe_float_attr
+from ._opt_utils import ignore_minpack_progress_warning, safe_float_attr
 from .compressor_envelope import check_pr_envelope
 from .constants import c_w, k_w, mu_w, rho_w
 from .dynamic_context import (
@@ -921,7 +921,8 @@ class GroundSourceHeatPumpBoiler:
 
         T_guess_K = ctx.T_tank_w_K
         try:
-            T_solved_K_arr = cast(np.ndarray, fsolve(res_fn, x0=[T_guess_K]))
+            with ignore_minpack_progress_warning():
+                T_solved_K_arr = cast(np.ndarray, fsolve(res_fn, x0=[T_guess_K]))
             T_solved_K = float(T_solved_K_arr[0])
         except Exception:
             # explicit Euler fallback
