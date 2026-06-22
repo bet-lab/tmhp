@@ -433,8 +433,8 @@ class GroundSourceHeatPumpBoiler:
                 is_active=False,
             )
 
-            result = cs.copy()
-            result.update(
+            inactive_result = cs.copy()
+            inactive_result.update(
                 {
                     "hp_is_on": False,
                     "converged": True,
@@ -476,7 +476,7 @@ class GroundSourceHeatPumpBoiler:
                     "cop_sys [-]": np.nan,
                 }
             )
-            return result
+            return inactive_result
 
         if self.dT_cycle_min is not None and (T_tank_sat_K - T_ground_sat_K) <= self.dT_cycle_min:
             return None
@@ -618,10 +618,8 @@ class GroundSourceHeatPumpBoiler:
         T_bhe = T_bhe_f + Q_bhe_unit * self.R_b
 
         # 6. Assemble
-        # Plain assignment (no re-annotation) to avoid mypy [no-redef]: `result`
-        # is already annotated in the inactive-state branch above.
-        result = cs.copy()
-        result.update(
+        active_result: dict = cs.copy()
+        active_result.update(
             {
                 "hp_is_on": True,
                 "converged": converged_rps,
@@ -672,7 +670,7 @@ class GroundSourceHeatPumpBoiler:
                 "cop_sys [-]": (Q_ref_tank / (E_cmp + self.E_pmp)) if (E_cmp + self.E_pmp) > 0 else np.nan,
             }
         )
-        return result
+        return active_result
 
     def _optimize_operation(self, T_tank_w: float, Q_tank_load: float, T0: float, *, flow_state: dict):
         from scipy.optimize import brentq
@@ -993,6 +991,22 @@ class GroundSourceHeatPumpBoiler:
     # =============================================================
     # Orchestration
     # =============================================================
+
+    def step(self, state, inputs: dict, dt_s: float):
+        """Reject point-state stepping — GSHPB is history-dependent (#165 P0b).
+
+        ``_compute_bhe_superposition`` reads the *entire* past borehole
+        load-pulse history each timestep, so a point-state ``step()`` kernel
+        (as defined for ASHP/ASHPB) would silently corrupt the ground
+        temperature drift. Use ``analyze_dynamic()``, or implement a ``step()``
+        that carries the borehole pulse vector inside its state.
+        """
+        raise NotImplementedError(
+            "GroundSourceHeatPumpBoiler is history-dependent (borehole "
+            "superposition reads the full past load history each step) and "
+            "cannot be driven by a point-state step() kernel; use "
+            "analyze_dynamic(), or carry the borehole pulse vector in state."
+        )
 
     def analyze_dynamic(
         self,

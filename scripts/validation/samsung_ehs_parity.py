@@ -79,7 +79,7 @@ def build_model() -> AirSourceHeatPumpBoiler:
         V_cmp_ref=33.0e-6,
         eta_cmp_isen=eta_isen,
         eta_cmp_vol=eta_vol,
-        eta_cmp_electro_mech=eta_mech,
+        eta_cmp=eta_mech,
         dT_superheat=5.0,
         dT_subcool=5.0,
         # The Samsung EHS Mono HT unit is a high-temperature heat pump that

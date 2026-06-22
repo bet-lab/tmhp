@@ -55,6 +55,7 @@ from .compressor_envelope import check_pr_envelope
 from .constants import c_a, c_w, rho_a, rho_w
 from .dynamic_context import (
     ControlState,
+    DynamicState,
     StepContext,
     determine_heat_source_on_off,
     determine_tank_refill_flow,
@@ -1223,6 +1224,187 @@ class AirSourceHeatPumpBoiler:
         return self.postprocess_exergy(df)
 
     # =============================================================
+    # Public single-timestep kernel (#165 P0) — analyze_dynamic loops over it
+    # =============================================================
+
+    def make_initial_state(
+        self, T_tank_w_init_C: float, tank_level_init: float = 1.0
+    ) -> DynamicState:
+        """Build the initial carried state for a ``step()``-driven run."""
+        return DynamicState(
+            T_tank_w_K=cu.C2K(T_tank_w_init_C),
+            tank_level=tank_level_init,
+            is_refilling=False,
+            hp_is_on_prev=False,
+            dV_tank_w_out_prev=0.0,
+        )
+
+    def step(
+        self,
+        state: DynamicState,
+        inputs: dict,
+        dt_s: float,
+    ) -> tuple[DynamicState, dict]:
+        """Advance one timestep from *state* under *inputs*.
+
+        Returns ``(new_state, result_row)``. Re-entrant: every cross-step
+        quantity is read from ``state`` (never ``self``), so an external
+        co-simulation master (FMI/EnergyPlus) can drive the model one exchange
+        at a time and re-run it independently. The per-step environment is set
+        on ``self`` afresh from ``inputs`` each call (transient scratch shared
+        with the cycle/tank helpers).
+
+        Parameters
+        ----------
+        state : DynamicState
+            Carried state from ``make_initial_state`` or the previous ``step``.
+        inputs : dict
+            Per-step drivers: ``n`` (int), ``current_time_s`` [s], ``T0`` [°C],
+            ``dV_mix_w_out`` [m³/s], ``T_sup_w`` [°C], ``T_sur`` [°C], and
+            optional ``I_DN`` / ``I_dH`` [W/m²] (default 0).
+        dt_s : float
+            Timestep [s].
+        """
+        n = inputs["n"]
+        t_s: float = inputs["current_time_s"]
+        hr: float = t_s * cu.s2h
+        hour_of_day: float = (t_s % (24 * cu.h2s)) * cu.s2h
+
+        # Per-step mains water supply temperature
+        T_sup_w_n: float = inputs["T_sup_w"]
+        T_sup_w_K_n: float = cu.C2K(T_sup_w_n)
+        T_tank_w_in_K_n: float = T_sup_w_K_n
+
+        # Sync self fields for _calc_state compat (transient, set fresh per step)
+        self.T_sup_w = T_sup_w_n
+        self.T_sup_w_K = T_sup_w_K_n
+        self.T_tank_w_in = T_sup_w_n
+        self.T_tank_w_in_K = T_tank_w_in_K_n
+
+        # Per-step surrounding temperature
+        self.T_sur_K = cu.C2K(inputs["T_sur"])
+
+        # Subsystem activation schedule — delegated to Hook
+        activation_flags: dict[str, bool] = self._get_activation_flags(hour_of_day)
+
+        ctx: StepContext = StepContext(
+            n=n,
+            current_time_s=t_s,
+            current_hour=hr,
+            hour_of_day=hour_of_day,
+            T0=inputs["T0"],
+            T0_K=cu.C2K(inputs["T0"]),
+            activation_flags=activation_flags,
+            T_tank_w_K=state.T_tank_w_K,
+            tank_level=state.tank_level,
+            dV_mix_w_out=inputs["dV_mix_w_out"],
+            I_DN=inputs.get("I_DN", 0.0),
+            I_dH=inputs.get("I_dH", 0.0),
+            T_sup_w_K=T_sup_w_K_n,
+        )
+
+        # --- Phase A: control decisions ---
+        hp_is_on, hp_result, Q_ref_cond = self._determine_hp_state(
+            ctx, state.hp_is_on_prev
+        )
+
+        dV_tank_w_in_ctrl, is_refilling = determine_tank_refill_flow(
+            dt=dt_s,
+            tank_level=ctx.tank_level,
+            dV_tank_w_out=state.dV_tank_w_out_prev,
+            V_tank_full=self.V_tank_full,
+            tank_always_full=self.tank_always_full,
+            prevent_simultaneous_flow=self.prevent_simultaneous_flow,
+            tank_level_lower_bound=self.tank_level_lower_bound,
+            tank_level_upper_bound=self.tank_level_upper_bound,
+            dV_tank_w_in_refill=self.dV_tank_w_in_refill,
+            is_refilling=state.is_refilling,
+        )
+
+        ctrl: ControlState = ControlState(
+            is_on=hp_is_on,
+            Q_heat_source=Q_ref_cond,
+            dV_tank_w_in_ctrl=dV_tank_w_in_ctrl,
+            result=hp_result,
+        )
+
+        # --- Phase A-2: subsystem step (via Hook) ---
+        sub_states: dict[str, dict] = self._run_subsystems(
+            ctx,
+            ctrl,
+            dt_s,
+            T_tank_w_in_K_n,
+        )
+
+        # --- Phase B: implicit solve (1D over T_next since mass is explicit) ---
+        # Uncouple mass explicitly:
+        alp_prev: float = min(
+            1.0, max(0.0, (self.T_mix_w_out_K - T_sup_w_K_n) / max(1e-6, ctx.T_tank_w_K - T_sup_w_K_n))
+        )
+        dV_tank_w_out_prev = alp_prev * ctx.dV_mix_w_out
+        dV_tank_w_in_prev = dV_tank_w_out_prev if ctrl.dV_tank_w_in_ctrl is None else ctrl.dV_tank_w_in_ctrl
+        level_next_approx = ctx.tank_level + (dV_tank_w_in_prev - dV_tank_w_out_prev) * dt_s / self.V_tank_full
+        tank_level = max(0.001, min(1.0, level_next_approx))
+
+        residual_1d = self._build_residual_fn(
+            ctx,
+            ctrl,
+            dt_s,
+            T_tank_w_in_K_n,
+            T_sup_w_K_n,
+            tank_level,
+            sub_states,
+        )
+
+        from scipy.optimize import root_scalar
+
+        try:
+            res = root_scalar(residual_1d, bracket=[cu.C2K(0.0), cu.C2K(100.0)], method="brentq")
+            converged = getattr(res, "converged", False)
+            root_val = getattr(res, "root", np.nan)
+            if converged and not np.isnan(root_val):
+                T_tank_w_K = float(root_val)
+                ier = 1
+            else:
+                raise ValueError(f"Not converged or NaN: {res}")
+        except Exception:  # Fallback to explicit step if anything fails
+            # Exception ignored; explicit Euler fallback will correctly handle the state
+            # Explicit Euler step for energy:
+            # r_energy = C_curr * T_next - C_curr * T_curr - dt * (Q_total - UA*(T_curr - T0)) = 0
+            Q_hp_val = ctrl.Q_heat_source
+            alp_curr = min(
+                1.0, max(0.0, (self.T_mix_w_out_K - T_sup_w_K_n) / max(1e-6, ctx.T_tank_w_K - T_sup_w_K_n))
+            )
+            dV_out_curr = alp_curr * ctx.dV_mix_w_out
+            Q_flow_curr = c_w * rho_w * dV_out_curr * (T_sup_w_K_n - ctx.T_tank_w_K)
+            Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
+            Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr  # Assumes sub_total = 0 explicitly for fallback
+
+            T_tank_w_K = ctx.T_tank_w_K + dt_s * Q_tot / self.C_tank
+            ier = 0
+            if np.isnan(T_tank_w_K) and n < 10:
+                pass  # Silenced NaN fallback debug print
+
+        # --- Phase C: core + subsystem results (via Hook) ---
+        r: dict = self._assemble_core_results(
+            ctx,
+            ctrl,
+            T_tank_w_K,
+            tank_level,
+            ier,
+        )
+        r = self._augment_results(r, ctx, ctrl, sub_states, T_tank_w_K)
+
+        new_state = DynamicState(
+            T_tank_w_K=T_tank_w_K,
+            tank_level=tank_level,
+            is_refilling=is_refilling,
+            hp_is_on_prev=hp_is_on,
+            dV_tank_w_out_prev=self.dV_tank_w_out,
+        )
+        return new_state, r
+
+    # =============================================================
     # Main dynamic simulation
     # =============================================================
 
@@ -1336,143 +1518,27 @@ class AirSourceHeatPumpBoiler:
                 f"dhw_usage_schedule length ({len(self.dhw_flow_m3s)}) != tN ({tN})",
             )
 
-        T_tank_w_K: float = cu.C2K(T_tank_w_init_C)
-        tank_level: float = tank_level_init
-        is_refilling: bool = False
-        hp_is_on_prev: bool = False
         results_data: list[dict] = []
 
-        # STC/PV schedule flags — kept for StepContext.I_DN/I_dH defaults
+        # STC/PV schedule flags — resolve I_DN/I_dH per step before step()
         _use_solar: bool = self._needs_solar_input()
 
+        state: DynamicState = self.make_initial_state(
+            T_tank_w_init_C, tank_level_init
+        )
+
         for n in tqdm(range(tN), desc="ASHPB Simulating"):
-            t_s: float = time[n]
-            hr: float = t_s * cu.s2h
-            hour_of_day: float = (t_s % (24 * cu.h2s)) * cu.s2h
-
-            # Per-step mains water supply temperature
-            T_sup_w_n: float = T_sup_w_arr[n]
-            T_sup_w_K_n: float = cu.C2K(T_sup_w_n)
-            T_tank_w_in_K_n: float = T_sup_w_K_n
-
-            # Sync self fields for _calc_state compat
-            self.T_sup_w = T_sup_w_n
-            self.T_sup_w_K = T_sup_w_K_n
-            self.T_tank_w_in = T_sup_w_n
-            self.T_tank_w_in_K = T_tank_w_in_K_n
-
-            # Per-step surrounding temperature
-            self.T_sur_K = cu.C2K(T_sur_arr[n])
-
-            # Subsystem activation schedule — delegated to Hook
-            activation_flags: dict[str, bool] = self._get_activation_flags(hour_of_day)
-
-            ctx: StepContext = StepContext(
-                n=n,
-                current_time_s=t_s,
-                current_hour=hr,
-                hour_of_day=hour_of_day,
-                T0=T0_schedule[n],
-                T0_K=cu.C2K(T0_schedule[n]),
-                activation_flags=activation_flags,
-                T_tank_w_K=T_tank_w_K,
-                tank_level=tank_level,
-                dV_mix_w_out=self.dhw_flow_m3s[n],
-                I_DN=(I_DN_schedule[n] if _use_solar and I_DN_schedule is not None else 0.0),
-                I_dH=(I_dH_schedule[n] if _use_solar and I_dH_schedule is not None else 0.0),
-                T_sup_w_K=T_sup_w_K_n,
-            )
-
-            # --- Phase A: control decisions ---
-            hp_is_on, hp_result, Q_ref_tank = self._determine_hp_state(ctx, hp_is_on_prev)
-            hp_is_on_prev = hp_is_on
-
-            dV_tank_w_in_ctrl, is_refilling = determine_tank_refill_flow(
-                dt=dt_s,
-                tank_level=ctx.tank_level,
-                dV_tank_w_out=self.dV_tank_w_out,
-                V_tank_full=self.V_tank_full,
-                tank_always_full=self.tank_always_full,
-                prevent_simultaneous_flow=self.prevent_simultaneous_flow,
-                tank_level_lower_bound=self.tank_level_lower_bound,
-                tank_level_upper_bound=self.tank_level_upper_bound,
-                dV_tank_w_in_refill=self.dV_tank_w_in_refill,
-                is_refilling=is_refilling,
-            )
-
-            ctrl: ControlState = ControlState(
-                is_on=hp_is_on,
-                Q_heat_source=Q_ref_tank,
-                dV_tank_w_in_ctrl=dV_tank_w_in_ctrl,
-                result=hp_result,
-            )
-
-            # --- Phase A-2: subsystem step (via Hook) ---
-            sub_states: dict[str, dict] = self._run_subsystems(
-                ctx,
-                ctrl,
-                dt_s,
-                T_tank_w_in_K_n,
-            )
-
-            # --- Phase B: implicit solve (1D over T_next since mass is explicit) ---
-            # Uncouple mass explicitly:
-            alp_prev: float = min(
-                1.0, max(0.0, (self.T_mix_w_out_K - T_sup_w_K_n) / max(1e-6, ctx.T_tank_w_K - T_sup_w_K_n))
-            )
-            dV_tank_w_out_prev = alp_prev * ctx.dV_mix_w_out
-            dV_tank_w_in_prev = dV_tank_w_out_prev if ctrl.dV_tank_w_in_ctrl is None else ctrl.dV_tank_w_in_ctrl
-            level_next_approx = ctx.tank_level + (dV_tank_w_in_prev - dV_tank_w_out_prev) * dt_s / self.V_tank_full
-            tank_level = max(0.001, min(1.0, level_next_approx))
-
-            residual_1d = self._build_residual_fn(
-                ctx,
-                ctrl,
-                dt_s,
-                T_tank_w_in_K_n,
-                T_sup_w_K_n,
-                tank_level,
-                sub_states,
-            )
-
-            from scipy.optimize import root_scalar
-
-            try:
-                res = root_scalar(residual_1d, bracket=[cu.C2K(0.0), cu.C2K(100.0)], method="brentq")
-                converged = getattr(res, "converged", False)
-                root_val = getattr(res, "root", np.nan)
-                if converged and not np.isnan(root_val):
-                    T_tank_w_K = float(root_val)
-                    ier = 1
-                else:
-                    raise ValueError(f"Not converged or NaN: {res}")
-            except Exception:  # Fallback to explicit step if anything fails
-                # Exception ignored; explicit Euler fallback will correctly handle the state
-                # Explicit Euler step for energy:
-                # r_energy = C_curr * T_next - C_curr * T_curr - dt * (Q_total - UA*(T_curr - T0)) = 0
-                Q_hp_val = ctrl.Q_heat_source
-                alp_curr = min(
-                    1.0, max(0.0, (self.T_mix_w_out_K - T_sup_w_K_n) / max(1e-6, ctx.T_tank_w_K - T_sup_w_K_n))
-                )
-                dV_out_curr = alp_curr * ctx.dV_mix_w_out
-                Q_flow_curr = c_w * rho_w * dV_out_curr * (T_sup_w_K_n - ctx.T_tank_w_K)
-                Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
-                Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr  # Assumes sub_total = 0 explicitly for fallback
-
-                T_tank_w_K = ctx.T_tank_w_K + dt_s * Q_tot / self.C_tank
-                ier = 0
-                if np.isnan(T_tank_w_K) and n < 10:
-                    pass  # Silenced NaN fallback debug print
-
-            # --- Phase C: core + subsystem results (via Hook) ---
-            r: dict = self._assemble_core_results(
-                ctx,
-                ctrl,
-                T_tank_w_K,
-                tank_level,
-                ier,
-            )
-            r = self._augment_results(r, ctx, ctrl, sub_states, T_tank_w_K)
+            inputs: dict = {
+                "n": n,
+                "current_time_s": time[n],
+                "T0": T0_schedule[n],
+                "dV_mix_w_out": self.dhw_flow_m3s[n],
+                "T_sup_w": T_sup_w_arr[n],
+                "T_sur": T_sur_arr[n],
+                "I_DN": (I_DN_schedule[n] if _use_solar and I_DN_schedule is not None else 0.0),
+                "I_dH": (I_dH_schedule[n] if _use_solar and I_dH_schedule is not None else 0.0),
+            }
+            state, r = self.step(state, inputs, dt_s)
             results_data.append(r)
 
         results_df: pd.DataFrame = pd.DataFrame(results_data)
