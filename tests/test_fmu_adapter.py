@@ -8,7 +8,8 @@ the core test suite stays dependency-light::
 Correctness is anchored to the public ``step()`` kernel (#165 P0): the slave
 must reproduce a raw ``step()``-driven trajectory exactly (it only maps keys
 and sanitizes the FMI boundary), and — via the full PythonFMU build + fmpy
-round-trip — must run to completion with no NaN crossing the boundary.
+round-trip — must reproduce the public ``analyze_dynamic()`` reference while
+letting no NaN cross the boundary.
 """
 
 from __future__ import annotations
@@ -30,6 +31,13 @@ T_SUP = 15.0
 T_TANK_INIT = 55.0
 HPCAP = 15000.0
 _OUTPUTS = ("E_cmp", "E_tot", "Q_ref_tank", "cop_sys", "T_tank_w")
+_ANALYZE_DYNAMIC_OUTPUTS = {
+    "E_cmp": "E_cmp [W]",
+    "E_tot": "E_tot [W]",
+    "Q_ref_tank": "Q_ref_tank [W]",
+    "cop_sys": "cop_sys [-]",
+    "T_tank_w": "T_tank_w [°C]",
+}
 
 
 def _schedule():
@@ -63,6 +71,28 @@ def _raw_step_trajectory() -> list[dict]:
     return rows
 
 
+def _analyze_dynamic_reference():
+    """Run the public batch API over the same schedule used by the FMU smoke."""
+    t, T0, dhw = _schedule()
+    model = AirSourceHeatPumpBoiler(ref="R32", hp_capacity=HPCAP)
+    return model.analyze_dynamic(
+        simulation_period_sec=PERIOD_S,
+        dt_s=DT,
+        T_tank_w_init_C=T_TANK_INIT,
+        dhw_usage_schedule=dhw,
+        T0_schedule=T0,
+        T_sup_w_schedule=np.full(len(t), T_SUP),
+        T_sur_schedule=np.full(len(t), T_SUR),
+    )
+
+
+def _failure_reason(row: dict) -> str:
+    value = row.get("failure_reason", "none")
+    if value is None:
+        return "none"
+    return str(value)
+
+
 def _make_slave() -> TmhpAshpbSlave:
     slave = TmhpAshpbSlave(instance_name="tmhp_ashpb")
     slave.ref = "R32"
@@ -94,6 +124,8 @@ def test_fmu_slave_reproduces_step_kernel():
         assert slave.Q_ref_tank == pytest.approx(ref[n]["Q_ref_tank [W]"], rel=1e-12, abs=1e-9)
         assert slave.T_tank_w == pytest.approx(ref[n]["T_tank_w [°C]"], rel=1e-12, abs=1e-9)
         assert slave.hp_is_on == bool(ref[n]["hp_is_on"])
+        assert slave.converged == bool(ref[n].get("converged", True))
+        assert slave.failure_reason == _failure_reason(ref[n])
         # cop_sys is NaN-sanitized to 0.0 at the boundary when the cycle is off
         ref_cop = ref[n].get("cop_sys [-]", float("nan"))
         if not (ref_cop is None or math.isnan(float(ref_cop))):
@@ -104,8 +136,8 @@ def test_fmu_slave_reproduces_step_kernel():
 
 def test_fmu_builds_and_simulates(tmp_path):
     """Full PythonFMU build + fmpy round-trip: the FMU runs the prescribed
-    schedule to completion, emits no NaN, and its T_tank_w trajectory matches
-    the raw step() reference within tolerance."""
+    schedule to completion, emits no NaN, and matches analyze_dynamic() on
+    the FMI boundary outputs."""
     fmpy = pytest.importorskip("fmpy")
     from pythonfmu.builder import FmuBuilder
 
@@ -129,6 +161,7 @@ def test_fmu_builds_and_simulates(tmp_path):
         stop_time=PERIOD_S - DT,
         output_interval=DT,
         input=signals,
+        output=list(_ANALYZE_DYNAMIC_OUTPUTS),
         start_values={
             "ref": "R32",
             "hp_capacity": HPCAP,
@@ -137,15 +170,25 @@ def test_fmu_builds_and_simulates(tmp_path):
         },
     )
 
-    for nm in ("T_tank_w", "E_cmp", "Q_ref_tank", "cop_sys"):
+    for nm in _ANALYZE_DYNAMIC_OUTPUTS:
         assert not np.isnan(np.asarray(result[nm], dtype=float)).any(), f"{nm} NaN crossed FMI boundary"
 
-    ref = _raw_step_trajectory()
-    ref_T = np.array([r["T_tank_w [°C]"] for r in ref])
-    sim_T = np.asarray(result["T_tank_w"], dtype=float)
+    ref = _analyze_dynamic_reference()
     # fmpy records the initial value at t=0 (before the first do_step), so the
-    # post-step trajectory is sim_T[1:]; align it with the raw step() reference.
-    sim_after = sim_T[1:]
-    k = min(len(ref_T), len(sim_after))
-    assert k >= len(ref_T) - 1, f"FMU produced too few steps ({len(sim_after)} vs {len(ref_T)})"
-    np.testing.assert_allclose(sim_after[:k], ref_T[:k], rtol=1e-9, atol=1e-9)
+    # post-step trajectory is result[name][1:]; align it with analyze_dynamic().
+    for out_name, ref_col in _ANALYZE_DYNAMIC_OUTPUTS.items():
+        sim_after = np.asarray(result[out_name], dtype=float)[1:]
+        ref_values = ref[ref_col].to_numpy(dtype=float)
+        if out_name == "cop_sys":
+            ref_values = np.where(np.isnan(ref_values), 0.0, ref_values)
+        k = min(len(ref_values), len(sim_after))
+        assert k >= len(ref_values) - 1, (
+            f"FMU produced too few steps for {out_name} ({len(sim_after)} vs {len(ref_values)})"
+        )
+        np.testing.assert_allclose(
+            sim_after[:k],
+            ref_values[:k],
+            rtol=1e-9,
+            atol=1e-9,
+            err_msg=out_name,
+        )

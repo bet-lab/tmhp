@@ -17,6 +17,8 @@ Run::
 
 Lead track is FMI 2.0 (co-simulation only): ``tmhp`` exposes no continuous
 state derivatives, and 2.0 co-sim is the most broadly importable flavour.
+Boundary outputs are sanitized to avoid ``NaN`` values, while ``converged`` and
+``failure_reason`` preserve step-level diagnostics for the importing master.
 
 .. note::
    Native-wheel caveat (CoolProp/numpy/scipy): the FMU is a *tool-coupling*
@@ -49,6 +51,13 @@ def _finite(value: float | None) -> float:
         return 0.0
     out = float(value)
     return 0.0 if math.isnan(out) else out
+
+
+def _failure_reason(value: object) -> str:
+    """Normalize diagnostic reasons at the FMI string boundary."""
+    if value is None:
+        return "none"
+    return str(value)
 
 
 class TmhpAshpbSlave(Fmi2Slave):
@@ -90,6 +99,7 @@ class TmhpAshpbSlave(Fmi2Slave):
         self.T_tank_w = self.T_tank_w_init
         self.hp_is_on = False
         self.converged = True
+        self.failure_reason = "none"
         for nm in ("E_cmp", "E_tot", "Q_ref_tank", "cop_sys", "T_tank_w"):
             self.register_variable(Real(nm, causality=Fmi2Causality.output))
         # FMI forbids variability="continuous" on Boolean variables.
@@ -97,6 +107,13 @@ class TmhpAshpbSlave(Fmi2Slave):
             self.register_variable(
                 Boolean(nm, causality=Fmi2Causality.output, variability=Fmi2Variability.discrete)
             )
+        self.register_variable(
+            String(
+                "failure_reason",
+                causality=Fmi2Causality.output,
+                variability=Fmi2Variability.discrete,
+            )
+        )
 
         self._hp: AirSourceHeatPumpBoiler | None = None
         self._state: DynamicState | None = None
@@ -132,6 +149,7 @@ class TmhpAshpbSlave(Fmi2Slave):
         self.T_tank_w = _finite(res["T_tank_w [°C]"])
         self.hp_is_on = bool(res.get("hp_is_on", self.E_cmp > 0.0))
         self.converged = bool(res.get("converged", True))
+        self.failure_reason = _failure_reason(res.get("failure_reason", "none"))
 
         self._n += 1
         return True
