@@ -88,7 +88,7 @@ Inspecting the run
 
    # Energy balance over the day
    E_cmp_kWh   = df["E_cmp [W]"].sum() * dt_s / 3.6e6
-   Q_cond_kWh  = df["Q_ref_cond [W]"].sum() * dt_s / 3.6e6
+   Q_cond_kWh  = df["Q_ref_tank [W]"].sum() * dt_s / 3.6e6
    cop_sys_avg = df["cop_sys [-]"].mean()
 
    print(f"Total compressor energy  : {E_cmp_kWh:5.2f} kWh")

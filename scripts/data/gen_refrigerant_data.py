@@ -227,11 +227,15 @@ def worker(task: tuple) -> tuple[str, list[list[float]] | None]:
     return key, res
 
 
-def main() -> None:
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    out_dir = os.path.join(repo_root, "docs", "source", "_static", "widgets")
+def main(out_path: str | os.PathLike[str] | None = None) -> None:
+    if out_path is None:
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        out_dir = os.path.join(repo_root, "docs", "source", "_static", "widgets")
+        out_path_str = os.path.join(out_dir, "cycle_data.json")
+    else:
+        out_path_str = os.fspath(out_path)
+        out_dir = os.path.dirname(out_path_str)
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "cycle_data.json")
 
     saturation = {ref: build_saturation_curves(ref) for ref in REFRIGERANTS}
 
@@ -288,11 +292,11 @@ def main() -> None:
         "states": states,
     }
 
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(out_path_str, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
 
-    size_mb = os.path.getsize(out_path) / (1024 * 1024)
-    print(f"Wrote {out_path}")
+    size_mb = os.path.getsize(out_path_str) / (1024 * 1024)
+    print(f"Wrote {out_path_str}")
     print(f"Valid states: {len(states)} / {total}  ({100 * len(states) / total:.1f}%)")
     print(f"File size: {size_mb:.2f} MB")
 

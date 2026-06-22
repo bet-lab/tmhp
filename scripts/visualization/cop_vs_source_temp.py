@@ -46,7 +46,7 @@ def sweep_ashp() -> tuple[np.ndarray, np.ndarray]:
     ashpb = AirSourceHeatPumpBoiler(ref="R32")
     cops = []
     for t in T_AMB_RANGE:
-        res = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=float(t), Q_ref_cond=Q_COND)
+        res = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=float(t), Q_ref_tank=Q_COND)
         cops.append(_cop_or_nan(res if isinstance(res, dict) else None))
     return T_AMB_RANGE, np.array(cops)
 
@@ -67,7 +67,7 @@ def sweep_gshp() -> tuple[np.ndarray, np.ndarray]:
         res = gshpb.analyze_steady(
             T_tank_w=T_TANK_W,
             T_source=float(t),
-            Q_ref_cond=Q_COND,
+            Q_ref_tank=Q_COND,
         )
         cops.append(_cop_or_nan(res if isinstance(res, dict) else None))
     return T_SRC_RANGE, np.array(cops)

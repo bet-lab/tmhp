@@ -403,14 +403,16 @@ def calc_HX_perf_for_target_heat(
     T_a_in_C=None,
     T_ref_sat_K=None,
     A_cross=None,
-    UA_design=None,
-    dV_fan_design=None,
+    UA_rated=None,
+    dV_fan_rated=None,
     is_active=True,
     exponent=0.71,
     # Legacy parameters for backward compatibility
     T_ou_a_in_C=None,
     T_ref_evap_sat_K=None,
     T_ref_cond_sat_l_K=None,
+    UA_design=None,
+    dV_fan_design=None,
 ):
     """Numerically solve for the air-side flow rate of an ε-NTU heat exchanger.
 
@@ -428,10 +430,10 @@ def calc_HX_perf_for_target_heat(
         Refrigerant saturation temperature [K] on the constant-temperature side.
     A_cross : float
         Heat-exchanger cross-sectional area [m²].
-    UA_design : float
-        Design UA [W/K].
-    dV_fan_design : float
-        Design fan volumetric flow rate [m³/s].
+    UA_rated : float
+        Rated UA [W/K].
+    dV_fan_rated : float
+        Rated fan volumetric flow rate [m³/s].
 
     is_active : bool
         Active flag.
@@ -465,6 +467,10 @@ def calc_HX_perf_for_target_heat(
         T_a_in_C = T_ou_a_in_C
     if T_ref_sat_K is None:
         T_ref_sat_K = T_ref_evap_sat_K
+    if UA_rated is None:
+        UA_rated = UA_design
+    if dV_fan_rated is None:
+        dV_fan_rated = dV_fan_design
 
     if not is_active or T_a_in_C is None or T_ref_sat_K is None:
         return {
@@ -497,16 +503,16 @@ def calc_HX_perf_for_target_heat(
     def _error_function(dV_fan):
         if dV_fan <= 0:
             return -Q_ref_target
-        UA = calc_UA_from_dV_fan(dV_fan, dV_fan_design, A_cross, UA_design, exponent)
+        UA = calc_UA_from_dV_fan(dV_fan, dV_fan_rated, A_cross, UA_rated, exponent)
         C_air = c_a * rho_a * dV_fan
         epsilon = 1 - np.exp(-UA / C_air)
         # Heat transfer Q = C_air * epsilon * abs(T_air_in - T_ref_sat)
         Q_air = C_air * epsilon * abs(T_a_in_K - T_ref_sat_K)
         return Q_air - Q_ref_target
 
-    # Search range: 1% to 100% of design flow
-    dV_min = dV_fan_design * 0.05
-    dV_max = dV_fan_design
+    # Search range: 5% to 100% of rated flow
+    dV_min = dV_fan_rated * 0.05
+    dV_max = dV_fan_rated
 
     try:
         sol = root_scalar(_error_function, bracket=[dV_min, dV_max], method="bisect")
@@ -530,7 +536,7 @@ def calc_HX_perf_for_target_heat(
         }
 
     # Final calculations at solved point
-    UA_sol = calc_UA_from_dV_fan(dV_sol, dV_fan_design, A_cross, UA_design, exponent)
+    UA_sol = calc_UA_from_dV_fan(dV_sol, dV_fan_rated, A_cross, UA_rated, exponent)
     C_air_sol = c_a * rho_a * dV_sol
     eps_sol = 1 - np.exp(-UA_sol / C_air_sol) if dV_sol > 0 else 0.0
 

@@ -67,7 +67,7 @@ time step. The columns are the same units-bracketed keys you get from
 
 - **Cycle state points** — ``P_ref_*`` pressures, ``T_ref_*`` temperatures
   at compressor / expander / evaporator / condenser nodes.
-- **Energy flows** — ``Q_ref_cond [W]``, ``Q_ref_evap [W]``,
+- **Energy flows** — ``Q_ref_tank [W]``, ``Q_ref_ou [W]``,
   ``E_cmp [W]``, fan / pump auxiliary power.
 - **Tank state** — ``T_tank_w [°C]``, ``level [-]``.
 - **Figures of merit** — ``cop_ref [-]``, ``cop_sys [-]``.

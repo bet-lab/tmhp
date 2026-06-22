@@ -6,7 +6,7 @@ and the irreversible expansion (4 sits below 3 on s) visually obvious.
 This is the complement to ``mollier_cycle_R32.py`` for readers who think
 in entropy rather than enthalpy.
 
-Operating point: ``T_tank_w = 60 °C``, ``T0 = 12 °C``, ``Q_ref_cond =
+Operating point: ``T_tank_w = 60 °C``, ``T0 = 12 °C``, ``Q_ref_tank =
 8 kW``. Same as the P-h figure.
 """
 
@@ -70,7 +70,7 @@ def main() -> None:
     apply_style("report", hashsalt="tmhp.visualization.mollier-ts-r32")
 
     ashpb = AirSourceHeatPumpBoiler(ref=REF)
-    res = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=T0, Q_ref_cond=Q_COND)
+    res = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=T0, Q_ref_tank=Q_COND)
     assert isinstance(res, dict)
     pts = _cycle_ts(res)
     s_liq, s_vap, T_sat = _envelope_ts(REF)

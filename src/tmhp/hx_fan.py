@@ -11,7 +11,7 @@ import numpy as np
 
 def calc_UA_from_dV_fan(
     dV_fan: float,
-    dV_fan_design: float,
+    dV_fan_rated: float,
     A_cross: float,
     UA: float,
     exponent: float = 0.71,
@@ -22,12 +22,12 @@ def calc_UA_from_dV_fan(
     ----------
     dV_fan : float
         Current fan flow rate [m³/s].
-    dV_fan_design : float
-        Design fan flow rate [m³/s].
+    dV_fan_rated : float
+        Rated fan flow rate [m³/s].
     A_cross : float
         Heat exchanger cross-sectional area [m²].
     UA : float
-        Design UA value [W/K].
+        Rated UA value [W/K].
     exponent : float
         Exponent for velocity scaling. Default is 0.71 for a 1-row configuration.
 
@@ -46,8 +46,8 @@ def calc_UA_from_dV_fan(
     Reference: Wang et al. (2000), DOI: 10.1016/S0017-9310(99)00333-6
     """
     v = dV_fan / A_cross if A_cross > 0 else 0
-    v_design = dV_fan_design / A_cross if A_cross > 0 else 0
-    return float(UA * (v / v_design) ** exponent)
+    v_rated = dV_fan_rated / A_cross if A_cross > 0 else 0
+    return float(UA * (v / v_rated) ** exponent)
 
 
 def calc_fan_power_from_dV_fan(
