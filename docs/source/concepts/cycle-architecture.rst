@@ -123,7 +123,7 @@ Every system reuses the same closed cycle — only the blocks marked
          code: "_calc_state lines 410–471: h_cmp_out via η_isen, m_dot = V_disp·ρ·η_vol·rps",
          api:  "../models/ashpb.html" },
        { id: "COND", type: "cycle",  title: "Condenser HX",     sub: "ε-NTU",
-         code: "_calc_state: T_tank_sat_K = T_tank_w_K + dT_ref_tank, UA_tank",
+         code: "_calc_state: T_tank_sat_K = T_tank_w_K + dT_ref_tank, UA_tank_hx",
          api:  "../api/support/heat-transfer.html" },
        { id: "EXP",  type: "cycle",  title: "Expander",         sub: "isenthalpic",
          code: "refrigerant.py:calc_ref_state (h_exp_out = h_exp_in throttle)",

@@ -16,7 +16,7 @@ integrated model, its physical calculations represent the behavior of:
 4. **Heat Exchangers (Condenser & Evaporator):**
 
    - **Condenser:** Placed inside the hot-water tank (hydronic), utilizing a static
-     overall heat transfer coefficient (UA_tank).
+     overall heat transfer coefficient (UA_tank_hx).
    - **Evaporator:** Coupled to a borehole heat exchanger (BHE) fluid loop, acting as
      a secondary heat exchanger to absorb heat from the circulating ground fluid.
 5. **Thermal Storage Tank:**
@@ -90,7 +90,7 @@ class GroundSourceHeatPumpBoiler:
         eta_cmp_vol: float | Callable | None = None,
         eta_cmp: float | Callable | None = None,
         # 2. Heat exchanger UA
-        UA_tank: float | None = None,
+        UA_tank_hx: float | None = None,
         UA_ground: float | None = None,
         # 3. Tank / control / load
         T0: float = 0.0,
@@ -173,6 +173,7 @@ class GroundSourceHeatPumpBoiler:
         refrigerant: str | None = None,
         V_disp_cmp: float | None = None,
         eta_cmp_mech: float | Callable | None = None,
+        UA_tank: float | None = None,  # deprecated alias for UA_tank_hx
         UA_cond_design: float | None = None,
         UA_evap_design: float | None = None,
     ) -> None:
@@ -192,8 +193,10 @@ class GroundSourceHeatPumpBoiler:
             V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0005
         if eta_cmp is None:
             eta_cmp = eta_cmp_mech if eta_cmp_mech is not None else 0.855
-        if UA_tank is None:
-            UA_tank = UA_cond_design if UA_cond_design is not None else 500.0
+        if UA_tank_hx is None:
+            UA_tank_hx = UA_tank if UA_tank is not None else (
+                UA_cond_design if UA_cond_design is not None else 500.0
+            )
         if UA_ground is None:
             UA_ground = UA_evap_design if UA_evap_design is not None else 500.0
 
@@ -206,7 +209,7 @@ class GroundSourceHeatPumpBoiler:
             "k_ins": k_ins,
             "h_o": h_o,
         }
-        self.UA_tank_loss = calc_simple_tank_UA(**self.tank_physical)
+        self.UA_tank_wall = calc_simple_tank_UA(**self.tank_physical)
         self.T_sur_K = cu.C2K(T_sur)
         self.V_tank_full: float = math.pi * r0**2 * H
         self.C_tank = c_w * rho_w * self.V_tank_full
@@ -217,7 +220,7 @@ class GroundSourceHeatPumpBoiler:
         self.eta_cmp_vol = eta_cmp_vol
         self.eta_cmp = eta_cmp
 
-        self.UA_tank = UA_tank
+        self.UA_tank_hx = UA_tank_hx
         self.UA_ground = UA_ground
 
         self.T0_K = cu.C2K(T0)
@@ -339,7 +342,7 @@ class GroundSourceHeatPumpBoiler:
                 n_nodes=n_tank_nodes,
                 volume=self.V_tank_full,
                 height=self.tank_physical["H"],
-                ua=self.UA_tank_loss,
+                ua=self.UA_tank_wall,
             )
         elif tank_model != "lumped":
             raise ValueError(f"tank_model must be 'lumped' or 'stratified' — got {tank_model!r}")
@@ -396,7 +399,7 @@ class GroundSourceHeatPumpBoiler:
         is_active = Q_tank_load > 0
 
         # 1. Analytical Condenser Approach Temperature
-        dT_ref_tank = Q_tank_load / self.UA_tank if is_active else 0.0
+        dT_ref_tank = Q_tank_load / self.UA_tank_hx if is_active else 0.0
         T_tank_w_K = cu.C2K(T_tank_w)
         _t_bhe = getattr(self, "T_bhe_f_out_K", None)
         T_b_out_K = float(_t_bhe) if _t_bhe is not None else cu.C2K(15.0)
@@ -791,7 +794,7 @@ class GroundSourceHeatPumpBoiler:
                 T_sup_w_K_n,
                 self.T_mix_w_out_K,
                 self.C_tank,
-                self.UA_tank_loss,
+                self.UA_tank_wall,
                 self.V_tank_full,
                 self._subsystems,
                 sub_states,
@@ -843,7 +846,7 @@ class GroundSourceHeatPumpBoiler:
         r["T0 [°C]"] = cu.K2C(ctx.T0_K)
         r["hp_is_on"] = ctrl.is_on
 
-        Q_tank_loss = self.UA_tank_loss * (T_solved_K - self.T_sur_K)
+        Q_tank_loss = self.UA_tank_wall * (T_solved_K - self.T_sur_K)
         mix = calc_mixing_valve_temp(T_solved_K, self.T_tank_w_in_K, self.T_mix_w_out_K)
         r["T_mix_w_out [°C]"] = cu.K2C(mix["T_mix_w_out_K"])
 
@@ -927,7 +930,7 @@ class GroundSourceHeatPumpBoiler:
             # explicit Euler fallback
             Q_hp_val = ctrl.Q_heat_source
             Q_flow_curr = c_w * rho_w * dV_tank_w_out_prev * (T_sup_w_K_n - ctx.T_tank_w_K)
-            Q_loss_curr = self.UA_tank_loss * (ctx.T_tank_w_K - self.T_sur_K)
+            Q_loss_curr = self.UA_tank_wall * (ctx.T_tank_w_K - self.T_sur_K)
             Q_tot = Q_hp_val + Q_flow_curr - Q_loss_curr
             T_solved_K = ctx.T_tank_w_K + dt_s * Q_tot / (self.C_tank * tank_level_solve)
 
