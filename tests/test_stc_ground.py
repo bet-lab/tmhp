@@ -7,6 +7,8 @@ with sun the borehole field is warmed.
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 import pytest
 
@@ -15,9 +17,33 @@ pytest.importorskip("pygfunction")
 from tmhp import GroundSourceHeatPumpBoiler, GSHPB_STC_ground  # noqa: E402
 from tmhp.subsystems import SolarThermalCollector  # noqa: E402
 
-_CFG = dict(ref="R32", N_1=2, N_2=1, H_b=100.0, dt_s=3600.0, t_max_s=200 * 3600)
 _tN = 24
 _BHE_COLS = ["T_bhe [°C]", "T_bhe_f [°C]", "T_bhe_f_in [°C]", "T_bhe_f_out [°C]"]
+
+
+def _base_gshpb() -> GroundSourceHeatPumpBoiler:
+    return GroundSourceHeatPumpBoiler(
+        ref="R32",
+        N_1=2,
+        N_2=1,
+        H_b=100.0,
+        dt_s=3600.0,
+        t_max_s=200 * 3600,
+    )
+
+
+def _ground_gshpb(
+    stc: SolarThermalCollector | None = None,
+) -> GSHPB_STC_ground:
+    return GSHPB_STC_ground(
+        stc=stc or SolarThermalCollector(A_stc=6.0),
+        ref="R32",
+        N_1=2,
+        N_2=1,
+        H_b=100.0,
+        dt_s=3600.0,
+        t_max_s=200 * 3600,
+    )
 
 
 def _schedules(sun: bool):
@@ -48,22 +74,22 @@ def _run(model, sun: bool):
 
 def test_construction_type_check():
     with pytest.raises(TypeError):
-        GSHPB_STC_ground(stc=object(), **_CFG)
-    m = GSHPB_STC_ground(stc=SolarThermalCollector(A_stc=6.0), **_CFG)
+        _ground_gshpb(stc=cast(SolarThermalCollector, object()))
+    m = _ground_gshpb()
     assert m._stc is m.stc
 
 
 def test_zero_sun_matches_base_bhe():
     """No irradiance ⇒ the ground-STC scenario is a no-op vs the base GSHPB."""
-    base = _run(GroundSourceHeatPumpBoiler(**_CFG), sun=False)
-    grd = _run(GSHPB_STC_ground(stc=SolarThermalCollector(A_stc=6.0), **_CFG), sun=False)
+    base = _run(_base_gshpb(), sun=False)
+    grd = _run(_ground_gshpb(), sun=False)
     for col in _BHE_COLS:
         np.testing.assert_array_equal(grd[col].to_numpy(), base[col].to_numpy())
 
 
 def test_solar_charges_and_warms_ground():
     """Daytime irradiance injects heat into the ground, raising T_bhe."""
-    model = GSHPB_STC_ground(stc=SolarThermalCollector(A_stc=6.0), **_CFG)
+    model = _ground_gshpb()
     df_sun = _run(model, sun=True)
     # Solar heat was actually injected on some daytime steps.
     q_sol = df_sun["Q_solar_ground [W]"].to_numpy()
@@ -71,7 +97,7 @@ def test_solar_charges_and_warms_ground():
     assert df_sun["stc_active [-]"].to_numpy().any()
 
     # Compared with the no-sun baseline, the ground (and its fluid) is warmer.
-    base = _run(GSHPB_STC_ground(stc=SolarThermalCollector(A_stc=6.0), **_CFG), sun=False)
+    base = _run(_ground_gshpb(), sun=False)
     T_sun = df_sun["T_bhe [°C]"].to_numpy()
     T_base = base["T_bhe [°C]"].to_numpy()
     assert np.all(np.isfinite(T_sun))

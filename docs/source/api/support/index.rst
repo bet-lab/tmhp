@@ -17,5 +17,6 @@ weather inputs, and so on.
     demand-weather
     subsystems
     simulation
+    integrations
     visualization
     utilities

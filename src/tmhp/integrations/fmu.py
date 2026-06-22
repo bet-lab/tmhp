@@ -28,6 +28,7 @@ state derivatives, and 2.0 co-sim is the most broadly importable flavour.
 from __future__ import annotations
 
 import math
+from typing import Any
 
 from pythonfmu import (
     Boolean,
@@ -39,9 +40,10 @@ from pythonfmu import (
 )
 
 from tmhp import AirSourceHeatPumpBoiler
+from tmhp.dynamic_context import DynamicState
 
 
-def _finite(value: float) -> float:
+def _finite(value: float | None) -> float:
     """Sanitize a value before it crosses the FMI boundary (no NaN/None)."""
     if value is None:
         return 0.0
@@ -55,7 +57,7 @@ class TmhpAshpbSlave(Fmi2Slave):
     author = "BET Lab"
     description = "tmhp ASHPB one-dt co-simulation kernel (FMI 2.0)"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # --- Parameters (fixed at initialization) ---
@@ -97,17 +99,20 @@ class TmhpAshpbSlave(Fmi2Slave):
             )
 
         self._hp: AirSourceHeatPumpBoiler | None = None
-        self._state = None
+        self._state: DynamicState | None = None
         self._n = 0
 
-    def exit_initialization_mode(self):
+    def exit_initialization_mode(self) -> None:
         # Parameters are final here — build the model and seed the state.
         self._hp = AirSourceHeatPumpBoiler(ref=self.ref, hp_capacity=self.hp_capacity)
         self._state = self._hp.make_initial_state(self.T_tank_w_init)
         self._n = 0
         self.T_tank_w = self.T_tank_w_init
 
-    def do_step(self, current_time, step_size):
+    def do_step(self, current_time: float, step_size: float) -> bool:
+        if self._hp is None or self._state is None:
+            raise RuntimeError("FMU slave used before exit_initialization_mode()")
+
         inputs = {
             "n": self._n,
             "current_time_s": float(current_time),

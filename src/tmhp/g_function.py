@@ -5,8 +5,6 @@ Provides:
 - Air dynamic viscosity (Sutherland's formula) and Prandtl number
 """
 
-from typing import Any
-
 import numpy as np
 from scipy import integrate
 from scipy.interpolate import interp1d
@@ -69,10 +67,11 @@ def chi(s, rb, H, z0=0):
     return temp * Is
 
 
-_g_func_cache: dict[str, Any] = {}
+_GFuncCacheKey = tuple[float, float, float, float, float]
+_g_func_cache: dict[_GFuncCacheKey, float | np.ndarray] = {}
 
 
-def G_FLS(t, ks, as_, rb, H):
+def G_FLS(t: float | np.ndarray, ks: float, as_: float, rb: float, H: float) -> float | np.ndarray:
     """
     Calculate the g-function for finite line source (FLS) model.
 
@@ -98,16 +97,24 @@ def G_FLS(t, ks, as_, rb, H):
         g-function value [mK/W]. Returns scalar for single time value,
         array for multiple time values.
     """
-    key = (round(t, 0), round(ks, 2), round(as_, 6), round(rb, 2), round(H, 0))
-    if key in _g_func_cache:
-        return _g_func_cache[key]
+    t_arr = np.asarray(t, dtype=float)
+    single = t_arr.ndim == 0
+    key: _GFuncCacheKey | None = None
+    if single:
+        key = (
+            float(round(float(t_arr), 0)),
+            float(round(ks, 2)),
+            float(round(as_, 6)),
+            float(round(rb, 2)),
+            float(round(H, 0)),
+        )
+        if key in _g_func_cache:
+            return _g_func_cache[key]
 
     factor = 1 / (4 * np.pi * ks)
 
-    lbs = 1 / np.sqrt(4 * as_ * t)
+    lbs = 1 / np.sqrt(4 * as_ * t_arr)
 
-    # Handle scalar case: shape == (,)
-    single = len(lbs.shape) == 0
     # Reshape to 1D array
     lbs = lbs.reshape(-1)
 
@@ -120,14 +127,13 @@ def G_FLS(t, ks, as_, rb, H):
     def func(y, s):
         return chi(s, rb, H, z0=0)
 
-    values = total - integrate.odeint(func, first, lbs)[:, 0]
-
-    # For single time value, return first value as float
+    values = np.asarray(total - integrate.odeint(func, first, lbs)[:, 0], dtype=float)
     if single:
-        values = values[0]
-
-    result = factor * values
-    _g_func_cache[key] = result
+        result: float | np.ndarray = float(factor * values[0])
+    else:
+        result = factor * values
+    if key is not None:
+        _g_func_cache[key] = result
     return result
 
 

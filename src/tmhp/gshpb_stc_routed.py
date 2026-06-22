@@ -34,7 +34,8 @@ GSHPB exactly (only extra reporting columns are added).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
 from . import calc_util as cu
 from .constants import c_w, rho_w
@@ -42,12 +43,14 @@ from .ground_source_heat_pump_boiler import GroundSourceHeatPumpBoiler
 from .subsystems import SolarThermalCollector
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from .dynamic_context import ControlState, StepContext
 
 _ROUTES = ("ground", "tank", "off")
 
 
-def default_solar_router(*, T_tank_w: float, T_tank_lower: float, **_) -> str:
+def default_solar_router(*, T_tank_w: float, T_tank_lower: float, **_: Any) -> str:
     """Greedy exclusive policy: serve the tank when cold, else charge the ground.
 
     Called only when solar is available. Returns ``"tank"`` while the tank is
@@ -62,7 +65,13 @@ def default_solar_router(*, T_tank_w: float, T_tank_lower: float, **_) -> str:
 class GSHPB_STC_routed(GroundSourceHeatPumpBoiler):
     """GSHPB + SolarThermalCollector with a per-timestep ground/tank router."""
 
-    def __init__(self, *, stc: SolarThermalCollector, solar_router=None, **kwargs) -> None:
+    def __init__(
+        self,
+        *,
+        stc: SolarThermalCollector,
+        solar_router: Callable[..., str] | None = None,
+        **kwargs: Any,
+    ) -> None:
         if not isinstance(stc, SolarThermalCollector):
             raise TypeError(f"stc must be a SolarThermalCollector instance, got {type(stc)!r}")
         # Do NOT pass stc to super().__init__ — keeps self._subsystems empty; the
@@ -80,7 +89,13 @@ class GSHPB_STC_routed(GroundSourceHeatPumpBoiler):
     def _get_activation_flags(self, hour_of_day: float) -> dict[str, bool]:
         return {"stc": self._stc.is_preheat_on(hour_of_day)}
 
-    def _run_subsystems(self, ctx: StepContext, ctrl: ControlState, dt: float, T_tank_w_in_K: float) -> dict:
+    def _run_subsystems(
+        self,
+        ctx: StepContext,
+        ctrl: ControlState,
+        dt: float,
+        T_tank_w_in_K: float,
+    ) -> dict[str, dict[str, Any]]:
         """Decide the route, evaluate the collector at the route's inlet, store state."""
         has_sun = (ctx.I_DN + ctx.I_dH) > 0.0
         available = has_sun and ctx.activation_flags.get("stc", False)
@@ -139,12 +154,24 @@ class GSHPB_STC_routed(GroundSourceHeatPumpBoiler):
             }
         }
 
-    def _build_residual_fn(self, ctx, ctrl, dt_s, T_tank_w_in_K_n, T_sup_w_K_n, tank_level, sub_states):
+    def _build_residual_fn(
+        self,
+        ctx: StepContext,
+        ctrl: ControlState,
+        dt_s: float,
+        T_tank_w_in_K_n: float,
+        T_sup_w_K_n: float,
+        tank_level: float,
+        sub_states: dict[str, dict[str, Any]],
+    ) -> Callable[[float], float]:
         """Inject ``Q_STC`` into the tank balance only on the tank route."""
         if sub_states.get("stc", {}).get("route") != "tank":
             # ground / off: solar does not enter the tank balance — base residual.
-            return super()._build_residual_fn(
-                ctx, ctrl, dt_s, T_tank_w_in_K_n, T_sup_w_K_n, tank_level, sub_states,
+            return cast(
+                Callable[[float], float],
+                super()._build_residual_fn(
+                    ctx, ctrl, dt_s, T_tank_w_in_K_n, T_sup_w_K_n, tank_level, sub_states,
+                ),
             )
 
         stc_active: bool = sub_states.get("stc", {}).get("stc_active", False)
@@ -175,7 +202,13 @@ class GSHPB_STC_routed(GroundSourceHeatPumpBoiler):
 
         return residual
 
-    def _compute_bhe_superposition(self, n, time_arr, hp_result, hp_is_on) -> None:
+    def _compute_bhe_superposition(
+        self,
+        n: int,
+        time_arr: np.ndarray,
+        hp_result: dict[str, Any],
+        hp_is_on: bool,
+    ) -> None:
         """Inject solar heat into the ground only on the ground route (q_sol != 0)."""
         q_sol = self._q_solar_ground_W
         if q_sol != 0.0:
@@ -184,7 +217,14 @@ class GSHPB_STC_routed(GroundSourceHeatPumpBoiler):
             hp_is_on = True  # drive the ground response even when the HP is off
         super()._compute_bhe_superposition(n, time_arr, hp_result, hp_is_on)
 
-    def _augment_results(self, r: dict, ctx, ctrl, sub_states, T_solved_K) -> dict:
+    def _augment_results(
+        self,
+        r: dict[str, Any],
+        ctx: StepContext,
+        ctrl: ControlState,
+        sub_states: dict[str, dict[str, Any]],
+        T_solved_K: float,
+    ) -> dict[str, Any]:
         state = sub_states.get("stc", {})
         route = state.get("route", "off")
         sr = state.get("stc_result", {})

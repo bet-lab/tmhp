@@ -15,6 +15,11 @@ Overview
 The class is :class:`tmhp.GroundSourceHeatPump`. Use it when the heat
 pump's job is space conditioning rather than DHW production.
 
+For quick parametric studies that do not need the full refrigerant
+cycle, :class:`tmhp.GroundSourceHeatPumpEmpirical` provides a simpler
+EnergyPlus EquationFit COP model with the same borehole-response
+backbone.
+
 Base usage
 ==========
 
@@ -43,10 +48,23 @@ Sink-side mechanics
 A zone temperature / load proxy stands in for the building, as in
 :doc:`ashp`.
 
+Empirical alternative
+=====================
+
+.. autoclass:: tmhp.GroundSourceHeatPumpEmpirical
+    :members:
+    :show-inheritance:
+    :no-index:
+
 API reference
 =============
 
 .. automodule:: tmhp.ground_source_heat_pump
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: tmhp.gshp_empirical
     :members:
     :undoc-members:
     :show-inheritance:
