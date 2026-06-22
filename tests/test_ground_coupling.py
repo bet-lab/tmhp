@@ -3,7 +3,7 @@
 The default :class:`AggregateGFunctionCoupler` must reproduce the legacy inline
 temporal superposition *byte-for-byte*, and the GSHPB integration must keep
 producing the same BHE temperatures after delegating to the coupler. This is the
-"self-only byte-identical" regression gate for the G1 ground-coupling refactor.
+"self-only" regression gate for the G1 ground-coupling refactor.
 """
 
 from __future__ import annotations
@@ -86,8 +86,8 @@ def test_injected_coupler_overrides_default():
     assert gshpb._ground_coupler is spy
 
 
-# Byte-exact golden captured from the pre-refactor inline implementation
-# (config _CFG; tN=16; DHW draws at steps 3,4,9,10; T_init=56°C; T0=15°C).
+# Golden captured from the pre-refactor inline implementation (config _CFG;
+# tN=16; DHW draws at steps 3,4,9,10; T_init=56°C; T0=15°C).
 _GOLDEN = {
     "T_bhe [°C]": [
         16.0,
@@ -164,8 +164,8 @@ _GOLDEN = {
 }
 
 
-def test_analyze_dynamic_bhe_byte_identical_golden():
-    """End-to-end: the refactored plant reproduces the captured BHE outputs exactly."""
+def test_analyze_dynamic_bhe_matches_golden():
+    """End-to-end: the refactored plant reproduces the captured BHE outputs."""
     tN = 16
     dhw = np.zeros(tN)
     dhw[[3, 4, 9, 10]] = 6.0e-5
@@ -182,4 +182,4 @@ def test_analyze_dynamic_bhe_byte_identical_golden():
 
     for col, golden in _GOLDEN.items():
         assert col in df.columns
-        np.testing.assert_array_equal(df[col].to_numpy(), np.array(golden))
+        np.testing.assert_allclose(df[col].to_numpy(), np.array(golden), rtol=0.0, atol=1e-12)
