@@ -122,6 +122,11 @@ autodoc_default_options = {
     "exclude-members": "__weakref__",
 }
 
+# Optional co-simulation adapters depend on packages that are not part of the
+# docs dependency group. Mock them so the API reference can document the adapter
+# modules without forcing every docs build to install PythonFMU or EnergyPlus.
+autodoc_mock_imports = ["pythonfmu", "pyenergyplus"]
+
 # -- Napoleon -----------------------------------------------------------------
 
 napoleon_google_docstring = True

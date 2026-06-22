@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import cast
 
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -66,9 +67,11 @@ C_ESS_J  = 28_800_000  # 8 kWh
 
 def _dhw_profile(n: int) -> np.ndarray:
     t_h = np.arange(n) * DT_S / 3600.0
-    def peak(c, sigma, lpm):
-        return (lpm / 60_000.0) * np.exp(-0.5 * ((t_h - c) / sigma) ** 2)
-    return peak(7.0, 0.35, 12.0) + peak(20.0, 0.55, 8.0)
+
+    def peak(center_h: float, sigma_h: float, peak_lpm: float) -> np.ndarray:
+        return (peak_lpm / 60_000.0) * np.exp(-0.5 * ((t_h - center_h) / sigma_h) ** 2)
+
+    return cast(np.ndarray, peak(7.0, 0.35, 12.0) + peak(20.0, 0.55, 8.0))
 
 
 def _t0_profile(n: int) -> np.ndarray:

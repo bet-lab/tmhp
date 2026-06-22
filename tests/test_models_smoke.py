@@ -334,6 +334,7 @@ def test_ashp_pr_ceiling_rejects():
     )
     assert result["converged"] is False
     assert result["failure_reason"] == "pr_above_max"
+    assert ashp._last_pr_event is not None
     assert ashp._last_pr_event[0] == "pr_above_max"
 
 

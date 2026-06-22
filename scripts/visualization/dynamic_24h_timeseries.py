@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import cast
 
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -39,7 +40,8 @@ def _dhw_profile(n: int) -> np.ndarray:
     def peak(center_h: float, sigma_h: float, peak_lpm: float) -> np.ndarray:
         m3s_peak = peak_lpm / 60_000.0
         return m3s_peak * np.exp(-0.5 * ((t_h - center_h) / sigma_h) ** 2)
-    return peak(7.0, 0.35, 12.0) + peak(20.0, 0.55, 8.0)
+
+    return cast(np.ndarray, peak(7.0, 0.35, 12.0) + peak(20.0, 0.55, 8.0))
 
 
 def _ambient_profile(n: int) -> np.ndarray:

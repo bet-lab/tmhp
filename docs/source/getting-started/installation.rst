@@ -44,6 +44,23 @@ pollute the runtime install.
    # Everything at once (mirrors the docs CI job)
    uv sync --all-groups --locked
 
+Optional integration extras
+===========================
+
+The core package does not install co-simulation runtimes by default. Add the
+``integrations`` extra when you need the FMI 2.0 FMU adapter:
+
+.. code-block:: bash
+
+   uv sync --extra integrations --locked
+
+This installs ``pythonfmu`` and ``fmpy`` for building and smoke-testing the FMU
+wrapper around ``AirSourceHeatPumpBoiler.step()``. The EnergyPlus Python Plugin
+adapter does not have a pip-installable extra because ``pyenergyplus`` is
+bundled with EnergyPlus itself; run that adapter inside EnergyPlus's embedded
+Python or make the EnergyPlus Python package visible through
+``PythonPlugin:SearchPaths``.
+
 What's installed
 ================
 

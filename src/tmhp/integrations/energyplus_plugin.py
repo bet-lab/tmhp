@@ -46,6 +46,7 @@ variables ``"... for Plant Connection 1"``) are verified against EnergyPlus
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from pyenergyplus.plugin import EnergyPlusPlugin
 
@@ -80,12 +81,12 @@ class TmhpPlantInit(EnergyPlusPlugin):
     manager (E+ runs it once before plant sizing).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._need = True
         self.h: dict[str, int] = {}
 
-    def _get_handles(self, state):
+    def _get_handles(self, state: Any) -> None:
         ac = self.api.exchange.get_actuator_handle
         self.h = dict(
             design_vdot=ac(state, "Plant Connection 1", "Design Volume Flow Rate", UD_NAME),
@@ -97,7 +98,7 @@ class TmhpPlantInit(EnergyPlusPlugin):
         )
         self._need = False
 
-    def _valid(self, state) -> bool:
+    def _valid(self, state: Any) -> bool:
         ok = True
         for k, v in self.h.items():
             if v == -1:
@@ -105,7 +106,7 @@ class TmhpPlantInit(EnergyPlusPlugin):
                 self.api.runtime.issue_severe(state, f"[TmhpInit] handle not found: {k}")
         return ok
 
-    def on_user_defined_component_model(self, state) -> int:
+    def on_user_defined_component_model(self, state: Any) -> int:
         if not self.api.exchange.api_data_fully_ready(state):
             return 0
         if self._need:
@@ -132,7 +133,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
     ``PythonPlugin:OutputVariable``).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.hp = AirSourceHeatPumpBoiler(ref=REF, hp_capacity=HP_CAPACITY)
         self._need = True
@@ -143,7 +144,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
         # analyze_steady is a deterministic function of (T_in, T0, Q); the plant
         # solver re-calls with identical inputs many times per timestep, so
         # memoize on rounded inputs to avoid recomputing the CoolProp-heavy cycle.
-        self._cache: dict[tuple[float, float, float], dict] = {}
+        self._cache: dict[tuple[float, float, float], dict[str, Any]] = {}
         # Convergence tally over dispatched calls (cold-climate high-lift hours
         # may trip the pressure-ratio guard); dumped periodically to the log.
         self._ndispatch = 0
@@ -151,7 +152,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
         self._reasons: dict[str | None, int] = {}
         self._tally_every = 5000
 
-    def _solve(self, t_in: float, t0: float, q_target: float) -> dict:
+    def _solve(self, t_in: float, t0: float, q_target: float) -> dict[str, Any]:
         key = (round(t_in, 1), round(t0, 1), round(q_target, 0))
         res = self._cache.get(key)
         if res is None:
@@ -159,7 +160,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
             self._cache[key] = res
         return res
 
-    def _get_handles(self, state):
+    def _get_handles(self, state: Any) -> None:
         ex = self.api.exchange
         iv, ac = ex.get_internal_variable_handle, ex.get_actuator_handle
         self.h = dict(
@@ -174,7 +175,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
         )
         self._need = False
 
-    def _valid(self, state) -> bool:
+    def _valid(self, state: Any) -> bool:
         ok = True
         for k, v in self.h.items():
             if v == -1:
@@ -182,7 +183,7 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
                 self.api.runtime.issue_severe(state, f"[TmhpSurrogate] handle not found: {k}")
         return ok
 
-    def on_user_defined_component_model(self, state) -> int:
+    def on_user_defined_component_model(self, state: Any) -> int:
         ex = self.api.exchange
         if not ex.api_data_fully_ready(state):
             return 0
@@ -199,11 +200,11 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
                 return 1
 
         self._ncall += 1
-        t_in = ex.get_internal_variable_value(state, self.h["t_in"])
-        mdot = ex.get_internal_variable_value(state, self.h["mdot"])
-        cp = ex.get_internal_variable_value(state, self.h["cp"])
-        q_req = ex.get_internal_variable_value(state, self.h["load"])  # loop heating load request [W]
-        t0 = ex.get_variable_value(state, self.h["t0"])
+        t_in = float(ex.get_internal_variable_value(state, self.h["t_in"]))
+        mdot = float(ex.get_internal_variable_value(state, self.h["mdot"]))
+        cp = float(ex.get_internal_variable_value(state, self.h["cp"]))
+        q_req = float(ex.get_internal_variable_value(state, self.h["load"]))  # loop heating load request [W]
+        t0 = float(ex.get_variable_value(state, self.h["t0"]))
 
         # No load requested -> component off (request no flow).
         if q_req < 1.0:
@@ -221,7 +222,8 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
         q_target = min(q_req, HP_CAPACITY)
         res = self._solve(t_in, t0, q_target)
         converged = bool(res.get("converged"))
-        reason = res.get("failure_reason")
+        reason_raw = res.get("failure_reason")
+        reason = reason_raw if isinstance(reason_raw, str) or reason_raw is None else str(reason_raw)
 
         self._ndispatch += 1
         if converged and reason == "none":
@@ -233,8 +235,8 @@ class TmhpPlantSurrogate(EnergyPlusPlugin):
                  f"({100.0 * self._nconv / self._ndispatch:.1f}%) guard_trips={dict(self._reasons)}")
 
         if converged and reason == "none":
-            q = res["Q_ref_tank [W]"]
-            e_cmp = res["E_cmp [W]"]
+            q = float(res["Q_ref_tank [W]"])
+            e_cmp = float(res["E_cmp [W]"])
             t_out = min(t_in + q / (m_dot * cp), TOUT_MAX)
             energy_j = e_cmp * 3600.0 * ex.system_time_step(state)
         else:

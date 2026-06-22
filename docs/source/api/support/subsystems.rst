@@ -3,7 +3,8 @@ Subsystems
 ==========
 
 Composable subsystems that the ``*_stc_*`` and ``*_pv_ess`` model
-variants plug onto the core cycle, plus the UV-treatment subsystem.
+variants plug onto the core cycle, tank backends, plus the
+UV-treatment subsystem.
 
 Solar thermal collector
 =======================
@@ -37,6 +38,22 @@ UV treatment
 ============
 
 .. automodule:: tmhp.uv_treatment
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Stratified tank
+===============
+
+.. automodule:: tmhp.stratified_tank
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Hybrid stratified tank
+======================
+
+.. automodule:: tmhp.hybrid_tank
     :members:
     :undoc-members:
     :show-inheritance:

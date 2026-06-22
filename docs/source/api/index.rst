@@ -50,6 +50,13 @@ Lower-level building blocks used by the system models.
         Per-step dynamic context, energy / exergy helpers,
         and stdout summary tables.
 
+    .. grid-item-card:: Integrations
+        :link: support/integrations
+        :link-type: doc
+
+        FMI co-simulation and EnergyPlus Python Plugin adapters
+        built on the public model seams.
+
     .. grid-item-card:: Visualization
         :link: support/visualization
         :link-type: doc

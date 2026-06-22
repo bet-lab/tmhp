@@ -75,8 +75,9 @@ per-unit recalibration.
         :link: api/index
         :link-type: doc
 
-        Every model, support module, and helper exposed by the
-        ``tmhp`` package, with full type signatures.
+        Every model, support module, optional integration adapter,
+        and helper exposed by the ``tmhp`` package, with full type
+        signatures.
 
     .. grid-item-card:: Validation
         :link: validation/index

@@ -15,11 +15,33 @@ pytest.importorskip("pygfunction")
 
 from tmhp import GroundSourceHeatPumpBoiler  # noqa: E402
 from tmhp.stratified_tank import StratifiedTank  # noqa: E402
+from tmhp.subsystems import SolarThermalCollector  # noqa: E402
 
-_CFG = dict(ref="R32", N_1=2, N_2=1, H_b=100.0, dt_s=3600.0, t_max_s=200 * 3600)
+
+def _gshpb(
+    *,
+    tank_model: str = "lumped",
+    n_tank_nodes: int = 10,
+    condenser_node: int | None = None,
+    tank_always_full: bool = True,
+    stc: SolarThermalCollector | None = None,
+) -> GroundSourceHeatPumpBoiler:
+    return GroundSourceHeatPumpBoiler(
+        ref="R32",
+        N_1=2,
+        N_2=1,
+        H_b=100.0,
+        dt_s=3600.0,
+        t_max_s=200 * 3600,
+        tank_model=tank_model,
+        n_tank_nodes=n_tank_nodes,
+        condenser_node=condenser_node,
+        tank_always_full=tank_always_full,
+        stc=stc,
+    )
 
 
-def _run(hp, tN=24):
+def _run(hp: GroundSourceHeatPumpBoiler, tN: int = 24):
     dhw = np.zeros(tN)
     dhw[[i for i in (3, 4, 9, 10, 15, 16) if i < tN]] = 6.0e-5
     return hp.analyze_dynamic(
@@ -32,37 +54,38 @@ def _run(hp, tN=24):
 
 
 def test_default_is_lumped_single_node():
-    hp = GroundSourceHeatPumpBoiler(**_CFG)
+    hp = _gshpb()
     assert hp.tank_model == "lumped"
     assert hp._tank is None
 
 
 def test_stratified_builds_multinode_tank():
-    hp = GroundSourceHeatPumpBoiler(**_CFG, tank_model="stratified", n_tank_nodes=12)
+    hp = _gshpb(tank_model="stratified", n_tank_nodes=12)
     assert isinstance(hp._tank, StratifiedTank)
     assert hp._tank.n == 12
 
 
 def test_invalid_tank_model_raises():
     with pytest.raises(ValueError):
-        GroundSourceHeatPumpBoiler(**_CFG, tank_model="bogus")
+        _gshpb(tank_model="bogus")
 
 
 def test_stratified_rejects_partial_fill():
     with pytest.raises(NotImplementedError):
-        GroundSourceHeatPumpBoiler(**_CFG, tank_model="stratified", tank_always_full=False)
+        _gshpb(tank_model="stratified", tank_always_full=False)
 
 
 def test_stratified_rejects_subsystems():
     with pytest.raises(NotImplementedError):
-        GroundSourceHeatPumpBoiler(**_CFG, tank_model="stratified", stc=object())
+        _gshpb(tank_model="stratified", stc=SolarThermalCollector(A_stc=1.0))
 
 
 def test_stratified_run_is_finite_and_stratifies():
-    hp = GroundSourceHeatPumpBoiler(**_CFG, tank_model="stratified", n_tank_nodes=10)
+    hp = _gshpb(tank_model="stratified", n_tank_nodes=10)
     df = _run(hp)
     for col in ("T_tank_w [°C]", "T_bhe [°C]", "T_bhe_f_in [°C]"):
         assert np.all(np.isfinite(df[col].to_numpy()))
+    assert hp._tank is not None
     prof = hp._tank.T
     # The tank stratifies: top is hottest, monotone non-increasing downward.
     assert np.all(np.diff(prof) <= 1e-6)
@@ -70,8 +93,8 @@ def test_stratified_run_is_finite_and_stratifies():
 
 
 def test_lumped_and_stratified_both_physical():
-    df_l = _run(GroundSourceHeatPumpBoiler(**_CFG))
-    df_s = _run(GroundSourceHeatPumpBoiler(**_CFG, tank_model="stratified"))
+    df_l = _run(_gshpb())
+    df_s = _run(_gshpb(tank_model="stratified"))
     for df in (df_l, df_s):
         Tt = df["T_tank_w [°C]"].to_numpy()
         assert np.all(np.isfinite(Tt))
@@ -81,8 +104,10 @@ def test_lumped_and_stratified_both_physical():
 def test_condenser_node_concentrates_vs_spreads():
     """condenser_node=None spreads HP heat over the field; a fixed node
     concentrates it (so the two produce different profiles)."""
-    spread = GroundSourceHeatPumpBoiler(**_CFG, tank_model="stratified", n_tank_nodes=8)
-    concen = GroundSourceHeatPumpBoiler(**_CFG, tank_model="stratified", n_tank_nodes=8, condenser_node=0)
+    spread = _gshpb(tank_model="stratified", n_tank_nodes=8)
+    concen = _gshpb(tank_model="stratified", n_tank_nodes=8, condenser_node=0)
     _run(spread, tN=12)
     _run(concen, tN=12)
+    assert spread._tank is not None
+    assert concen._tank is not None
     assert not np.allclose(spread._tank.T, concen._tank.T)

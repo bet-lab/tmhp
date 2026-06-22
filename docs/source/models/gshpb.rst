@@ -15,11 +15,13 @@ Overview
 
 |gshpb| solves the closed refrigerant cycle against a borehole heat
 exchanger characterised by a precomputed **g-function**. The class is
-:class:`tmhp.GroundSourceHeatPumpBoiler`. Three composed variants
+:class:`tmhp.GroundSourceHeatPumpBoiler`. Composed variants
 extend it the same way ASHPB's do:
 
 - :class:`tmhp.GSHPB_STC_preheat`
 - :class:`tmhp.GSHPB_STC_tank`
+- :class:`tmhp.GSHPB_STC_ground`
+- :class:`tmhp.GSHPB_STC_routed`
 - :class:`tmhp.GSHPB_PV_ESS`
 
 Base usage
@@ -72,9 +74,10 @@ Same as ASHPB — single-node DHW tank, implicit per-step solve.
 Composed variants
 =================
 
-Usage patterns for the three variants are identical to ASHPB's —
-see :doc:`ashpb` for full STC preheat and PV + ESS examples. Only
-the base class swaps; the schedules and routing are unchanged.
+Usage patterns for the tank-side variants are identical to ASHPB's —
+see :doc:`ashpb` for full STC preheat and PV + ESS examples. The
+ground-side STC variants route collected solar heat into the borehole
+field instead of, or in exclusive alternation with, the tank.
 
 .. tab-set::
    :class: composition-tabs
@@ -125,6 +128,33 @@ the base class swaps; the schedules and routing are unchanged.
          stc = SolarThermalCollector(A_stc=4.0, stc_tilt=35.0, stc_azimuth=180.0)
          model = GSHPB_STC_tank(stc=stc, ref="R410A", N_1=1, N_2=1, H_b=150.0)
 
+   .. tab-item:: + STC ground
+
+      STC injects collected heat into the borehole loop for seasonal
+      ground charging; the DHW tank balance remains heat-pump-only.
+
+      .. code-block:: python
+
+         from tmhp import GSHPB_STC_ground
+         from tmhp.subsystems import SolarThermalCollector
+
+         stc = SolarThermalCollector(A_stc=4.0, stc_tilt=35.0, stc_azimuth=180.0)
+         model = GSHPB_STC_ground(stc=stc, ref="R410A", N_1=1, N_2=1, H_b=150.0)
+
+   .. tab-item:: + STC routed
+
+      A per-step router sends solar heat either to the tank or to the
+      borehole field. The default policy serves a cold tank first, then
+      charges the ground.
+
+      .. code-block:: python
+
+         from tmhp import GSHPB_STC_routed
+         from tmhp.subsystems import SolarThermalCollector
+
+         stc = SolarThermalCollector(A_stc=4.0, stc_tilt=35.0, stc_azimuth=180.0)
+         model = GSHPB_STC_routed(stc=stc, ref="R410A", N_1=1, N_2=1, H_b=150.0)
+
    .. tab-item:: + PV / ESS
 
       Photovoltaic generation + ESS preferentially feeds the
@@ -158,6 +188,22 @@ STC with stratified tank
     :show-inheritance:
     :no-index:
 
+STC to ground loop
+------------------
+
+.. autoclass:: tmhp.GSHPB_STC_ground
+    :members:
+    :show-inheritance:
+    :no-index:
+
+STC routed between tank and ground
+----------------------------------
+
+.. autoclass:: tmhp.GSHPB_STC_routed
+    :members:
+    :show-inheritance:
+    :no-index:
+
 PV + ESS
 --------
 
@@ -180,6 +226,16 @@ API reference
     :show-inheritance:
 
 .. automodule:: tmhp.gshpb_stc_tank
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: tmhp.gshpb_stc_ground
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: tmhp.gshpb_stc_routed
     :members:
     :undoc-members:
     :show-inheritance:

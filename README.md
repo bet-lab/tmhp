@@ -109,6 +109,14 @@ uv sync --group dev      # ruff, mypy, pytest, pytest-cov
 uv sync --group docs     # sphinx + shibuya theme + authoring / UX extensions
 ```
 
+Optional co-simulation tooling lives behind the `integrations` extra:
+
+```bash
+uv sync --extra integrations  # pythonfmu + fmpy for the FMI 2.0 FMU adapter
+```
+
+The EnergyPlus Python Plugin adapter uses `pyenergyplus`, which is bundled with an EnergyPlus installation rather than published on PyPI.
+
 See the [installation guide](https://bet-lab.github.io/tmhp/getting-started/installation.html) for the full per-group breakdown and the CI-equivalent `--locked` workflow.
 
 ---
@@ -196,6 +204,8 @@ df = ashpb.analyze_dynamic(
 | `GroundSourceHeatPumpBoiler` | Core GSHPB with g-function borehole model |
 | `GSHPB_STC_preheat`          | + STC preheat                             |
 | `GSHPB_STC_tank`             | + STC with stratified tank                |
+| `GSHPB_STC_ground`           | + STC charging the borehole loop          |
+| `GSHPB_STC_routed`           | + STC routed per step to tank or ground   |
 | `GSHPB_PV_ESS`               | + PV + Energy Storage System              |
 
 </details>
@@ -216,6 +226,7 @@ df = ashpb.analyze_dynamic(
 | ---------------------- | ------------------------ |
 | `AirSourceHeatPump`    | ASHP — heating & cooling |
 | `GroundSourceHeatPump` | GSHP — heating & cooling |
+| `GroundSourceHeatPumpEmpirical` | GSHP — EnergyPlus EquationFit COP model |
 
 </details>
 
@@ -226,18 +237,24 @@ df = ashpb.analyze_dynamic(
 | ----------------------- | -------------------------------------------------------------- |
 | `refrigerant.py`        | CoolProp state-point helpers                                   |
 | `thermodynamics.py`     | Cycle analysis — COP, compression ratio, isentropic efficiency |
+| `compressor_envelope.py` | Compressor pressure-ratio operating-envelope guard            |
 | `heat_transfer.py`      | ε-NTU heat exchanger calculations                              |
 | `hx_fan.py`             | Air-side fan & heat-exchanger model                            |
 | `g_function.py`         | Borehole g-function (pygfunction)                              |
+| `ground_coupling.py`    | Borehole load-history coupling abstraction                     |
 | `weather.py`            | Outdoor air temperature & weather utilities                    |
 | `dhw.py`                | Domestic hot water demand profiles                             |
 | `cop.py`                | COP correlations                                               |
 | `enex_functions.py`     | Energy / exergy helpers                                        |
 | `dynamic_context.py`    | Per-step simulation state                                      |
 | `subsystems.py`         | Subsystem composition (STC / PV / UV)                          |
+| `stratified_tank.py`    | Multi-node stratified tank backend                             |
+| `hybrid_tank.py`        | Hybrid thermocline tank backend                                |
 | `simulation_summary.py` | Stdout summary tables                                          |
 | `visualization.py`      | Plotting facade                                                |
 | `mollier_diagram.py`    | T-h / P-h / T-s plots                                          |
+| `integrations/fmu.py`   | FMI 2.0 co-simulation adapter for ASHPB `step()`               |
+| `integrations/energyplus_plugin.py` | EnergyPlus Python Plugin adapter for ASHPB steady-state coupling |
 | `uv_treatment.py`       | UV treatment subsystem                                         |
 | `calc_util.py`          | Unit conversions                                               |
 | `constants.py`          | Physical constants                                             |
@@ -323,24 +340,32 @@ tmhp/
 │   ├── ground_source_heat_pump_boiler.py  # GSHPB core
 │   ├── gshpb_stc_preheat.py
 │   ├── gshpb_stc_tank.py
+│   ├── gshpb_stc_ground.py
+│   ├── gshpb_stc_routed.py
 │   ├── gshpb_pv_ess.py
+│   ├── gshp_empirical.py
 │   │
 │   ├── water_source_heat_pump_boiler.py   # WSHPB core
 │   │
 │   ├── refrigerant.py             # CoolProp helpers
 │   ├── thermodynamics.py          # Cycle analysis
+│   ├── compressor_envelope.py     # Pressure-ratio guard
 │   ├── heat_transfer.py           # ε-NTU
 │   ├── hx_fan.py                  # Air-side fan & heat-exchanger model
 │   ├── g_function.py              # Borehole g-function
+│   ├── ground_coupling.py         # Borehole load-history coupling
 │   ├── weather.py
 │   ├── dhw.py
 │   ├── cop.py
 │   ├── enex_functions.py
 │   ├── dynamic_context.py
 │   ├── subsystems.py
+│   ├── stratified_tank.py
+│   ├── hybrid_tank.py
 │   ├── simulation_summary.py
 │   ├── visualization.py
 │   ├── mollier_diagram.py
+│   ├── integrations/                # FMI / EnergyPlus adapters
 │   ├── uv_treatment.py
 │   ├── calc_util.py
 │   └── constants.py

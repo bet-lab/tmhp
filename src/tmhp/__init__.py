@@ -5,9 +5,9 @@ import as::
 
     from tmhp import AirSourceHeatPumpBoiler
 
-Wildcard re-exports below are intentional: each submodule defines its own
-``__all__`` so the surface of ``from tmhp import *`` is constrained
-by the submodules rather than by everything they happen to define.
+Support modules are imported for compatibility with existing ``tmhp.<name>``
+lookups, while this package-level ``__all__`` keeps ``from tmhp import *``
+focused on the model-oriented public facade.
 """
 
 from .air_source_heat_pump import AirSourceHeatPump

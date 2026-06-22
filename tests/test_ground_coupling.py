@@ -8,6 +8,8 @@ producing the same BHE temperatures after delegating to the coupler. This is the
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 import pytest
 
@@ -18,10 +20,24 @@ pytest.importorskip("pygfunction")
 from tmhp import GroundSourceHeatPumpBoiler  # noqa: E402
 from tmhp.ground_coupling import AggregateGFunctionCoupler, GroundCoupler  # noqa: E402
 
-_CFG = dict(ref="R32", N_1=2, N_2=1, H_b=100.0, dt_s=3600.0, t_max_s=200 * 3600)
+
+def _gshpb() -> GroundSourceHeatPumpBoiler:
+    return GroundSourceHeatPumpBoiler(
+        ref="R32",
+        N_1=2,
+        N_2=1,
+        H_b=100.0,
+        dt_s=3600.0,
+        t_max_s=200 * 3600,
+    )
 
 
-def _legacy_dT_sequence(g_interp, time_arr, q_seq, tol=1e-6):
+def _legacy_dT_sequence(
+    g_interp: Callable[[np.ndarray], np.ndarray],
+    time_arr: np.ndarray,
+    q_seq: np.ndarray,
+    tol: float = 1e-6,
+) -> np.ndarray:
     """Verbatim replica of the legacy ``_compute_bhe_superposition`` dT loop.
 
     Serves as the independent oracle: the refactored coupler must match this
@@ -45,8 +61,8 @@ def _legacy_dT_sequence(g_interp, time_arr, q_seq, tol=1e-6):
 
 
 @pytest.fixture(scope="module")
-def gshpb():
-    return GroundSourceHeatPumpBoiler(**_CFG)
+def gshpb() -> GroundSourceHeatPumpBoiler:
+    return _gshpb()
 
 
 def test_default_coupler_satisfies_protocol(gshpb):
@@ -72,13 +88,18 @@ def test_aggregate_coupler_byte_identical_to_legacy(gshpb):
 
 def test_injected_coupler_overrides_default():
     """A user-supplied coupler must replace the default backend."""
-    seen = {}
+    seen: dict[str, int] = {}
 
     class _Spy:
-        def reset(self, n_steps, time_arr):
+        def reset(self, n_steps: int, time_arr: np.ndarray) -> None:
             seen["reset"] = n_steps
 
-        def wall_temperature_rise(self, n, time_arr, q_unit):
+        def wall_temperature_rise(
+            self,
+            n: int,
+            time_arr: np.ndarray,
+            q_unit: float,
+        ) -> float:
             return 0.0
 
     spy = _Spy()
@@ -86,7 +107,7 @@ def test_injected_coupler_overrides_default():
     assert gshpb._ground_coupler is spy
 
 
-# Golden captured from the pre-refactor inline implementation (config _CFG;
+# Golden captured from the pre-refactor inline implementation (config _gshpb();
 # tN=16; DHW draws at steps 3,4,9,10; T_init=56°C; T0=15°C).
 _GOLDEN = {
     "T_bhe [°C]": [
@@ -171,7 +192,7 @@ def test_analyze_dynamic_bhe_matches_golden():
     dhw[[3, 4, 9, 10]] = 6.0e-5
     T0 = np.full(tN, 15.0)
 
-    gshpb = GroundSourceHeatPumpBoiler(**_CFG)
+    gshpb = _gshpb()
     df = gshpb.analyze_dynamic(
         simulation_period_sec=tN * 3600.0,
         dt_s=3600.0,
