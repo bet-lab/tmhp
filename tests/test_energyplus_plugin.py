@@ -21,6 +21,36 @@ CP_WATER = 4181.0  # J/(kg·K)
 TOUT_MAX_REF = 95.0  # mirror the plugin's outlet clamp; fails if it drifts
 
 
+class _FakeExchange:
+    def __init__(self, values):
+        self.values = values
+        self.actuators = {}
+        self.globals = {}
+
+    def api_data_fully_ready(self, state):
+        return True
+
+    def get_internal_variable_value(self, state, handle):
+        return self.values[handle]
+
+    def get_variable_value(self, state, handle):
+        return self.values[handle]
+
+    def set_actuator_value(self, state, handle, value):
+        self.actuators[handle] = value
+
+    def set_global_value(self, state, handle, value):
+        self.globals[handle] = value
+
+    def system_time_step(self, state):
+        return 0.25
+
+
+class _FakeApi:
+    def __init__(self, values):
+        self.exchange = _FakeExchange(values)
+
+
 def _steady():
     hp = AirSourceHeatPumpBoiler(ref="R32", hp_capacity=15000.0)
     return hp.analyze_steady(T_tank_w=54.0, T0=7.0, Q_ref_tank=10000.0)
@@ -55,6 +85,85 @@ def test_plugin_derived_formulas_are_unit_consistent():
     dt = q / (m_dot * CP_WATER)
     assert 0.1 < dt < 10.0, f"outlet dT not a small °C rise: {dt}"
     assert 54.0 + dt < TOUT_MAX_REF
+
+
+def test_surrogate_uses_usable_diagnostic_cycle_numbers(monkeypatch):
+    """EnergyPlus should use positive cycle outputs even when diagnostics warn."""
+    from tmhp.integrations.energyplus_plugin import (
+        LOOP_DESIGN_VDOT,
+        RHO_WATER,
+        TmhpPlantSurrogate,
+    )
+
+    plant = TmhpPlantSurrogate()
+    plant._requested = True
+    plant._need = False
+    plant._tally_every = 10_000
+    plant.h = {
+        "t_in": 1,
+        "mdot": 2,
+        "cp": 3,
+        "load": 4,
+        "t_out_act": 5,
+        "mdot_act": 6,
+        "t0": 7,
+        "e_cmp": 8,
+    }
+    monkeypatch.setattr(
+        plant,
+        "_solve",
+        lambda t_in, t0, q_target: {
+            "converged": False,
+            "failure_reason": "hx_not_converged",
+            "Q_ref_tank [W]": 6000.0,
+            "E_cmp [W]": 2000.0,
+        },
+    )
+    plant.api = _FakeApi({1: 50.0, 2: 0.0, 3: CP_WATER, 4: 8000.0, 7: 7.0})
+
+    assert plant.on_user_defined_component_model(object()) == 0
+
+    ex = plant.api.exchange
+    assert ex.actuators[5] > 50.0
+    assert ex.actuators[6] == pytest.approx(LOOP_DESIGN_VDOT * RHO_WATER)
+    assert ex.globals[8] == pytest.approx(2000.0 * 3600.0 * 0.25)
+
+
+def test_surrogate_zeroes_true_off_mode_cycle_outputs(monkeypatch):
+    """Off-mode placeholders must not heat the EnergyPlus loop."""
+    from tmhp.integrations.energyplus_plugin import TmhpPlantSurrogate
+
+    plant = TmhpPlantSurrogate()
+    plant._requested = True
+    plant._need = False
+    plant._tally_every = 10_000
+    plant.h = {
+        "t_in": 1,
+        "mdot": 2,
+        "cp": 3,
+        "load": 4,
+        "t_out_act": 5,
+        "mdot_act": 6,
+        "t0": 7,
+        "e_cmp": 8,
+    }
+    monkeypatch.setattr(
+        plant,
+        "_solve",
+        lambda t_in, t0, q_target: {
+            "converged": False,
+            "failure_reason": "cycle_invalid",
+            "Q_ref_tank [W]": 0.0,
+            "E_cmp [W]": 0.0,
+        },
+    )
+    plant.api = _FakeApi({1: 50.0, 2: 0.0, 3: CP_WATER, 4: 8000.0, 7: 7.0})
+
+    assert plant.on_user_defined_component_model(object()) == 0
+
+    ex = plant.api.exchange
+    assert ex.actuators[5] == 50.0
+    assert ex.globals[8] == 0.0
 
 
 def test_plugin_classes_when_energyplus_available():

@@ -17,8 +17,9 @@ Run::
 
 Lead track is FMI 2.0 (co-simulation only): ``tmhp`` exposes no continuous
 state derivatives, and 2.0 co-sim is the most broadly importable flavour.
-Boundary outputs are sanitized to avoid ``NaN`` values, while ``converged`` and
-``failure_reason`` preserve step-level diagnostics for the importing master.
+Boundary outputs are sanitized to avoid non-finite numeric values, while
+``converged`` and ``failure_reason`` preserve step-level diagnostics for the
+importing master.
 
 .. note::
    Native-wheel caveat (CoolProp/numpy/scipy): the FMU is a *tool-coupling*
@@ -46,11 +47,11 @@ from tmhp.dynamic_context import DynamicState
 
 
 def _finite(value: float | None) -> float:
-    """Sanitize a value before it crosses the FMI boundary (no NaN/None)."""
+    """Sanitize a value before it crosses the FMI boundary."""
     if value is None:
         return 0.0
     out = float(value)
-    return 0.0 if math.isnan(out) else out
+    return out if math.isfinite(out) else 0.0
 
 
 def _failure_reason(value: object) -> str:

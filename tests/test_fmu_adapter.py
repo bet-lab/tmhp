@@ -22,7 +22,7 @@ import pytest
 pytest.importorskip("pythonfmu")
 
 from tmhp import AirSourceHeatPumpBoiler
-from tmhp.integrations.fmu import TmhpAshpbSlave
+from tmhp.integrations.fmu import TmhpAshpbSlave, _finite
 
 PERIOD_S = 3 * 86400
 DT = 600
@@ -38,6 +38,21 @@ _ANALYZE_DYNAMIC_OUTPUTS = {
     "cop_sys": "cop_sys [-]",
     "T_tank_w": "T_tank_w [°C]",
 }
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (None, 0.0),
+        (float("nan"), 0.0),
+        (float("inf"), 0.0),
+        (float("-inf"), 0.0),
+        (2.5, 2.5),
+    ],
+)
+def test_fmi_numeric_boundary_outputs_are_finite(raw, expected):
+    """FMI numeric outputs never expose NaN or infinities."""
+    assert _finite(raw) == expected
 
 
 def _schedule():

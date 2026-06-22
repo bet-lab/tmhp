@@ -8,6 +8,7 @@ producing the same BHE temperatures after delegating to the coupler. This is the
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 
 import numpy as np
@@ -193,13 +194,15 @@ def test_analyze_dynamic_bhe_matches_golden():
     T0 = np.full(tN, 15.0)
 
     gshpb = _gshpb()
-    df = gshpb.analyze_dynamic(
-        simulation_period_sec=tN * 3600.0,
-        dt_s=3600.0,
-        T_tank_w_init_C=56.0,
-        dhw_usage_schedule=dhw,
-        T0_schedule=T0,
-    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        df = gshpb.analyze_dynamic(
+            simulation_period_sec=tN * 3600.0,
+            dt_s=3600.0,
+            T_tank_w_init_C=56.0,
+            dhw_usage_schedule=dhw,
+            T0_schedule=T0,
+        )
 
     for col, golden in _GOLDEN.items():
         assert col in df.columns
