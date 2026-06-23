@@ -354,6 +354,7 @@ def test_wshpb_pr_ceiling_rejects():
     )
     assert result["converged"] is False
     assert result["failure_reason"] == "pr_above_max"
+    assert wshpb._last_pr_event is not None
     assert wshpb._last_pr_event[0] == "pr_above_max"
 
 
