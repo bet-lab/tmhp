@@ -1,6 +1,6 @@
 <div align="center">
 
-# Thermodynamic Models for Heat Pumps
+# TMHP: Thermodynamic Models for Heat Pumps
 
 **A physics-based Python library for heat pump simulation**
 
