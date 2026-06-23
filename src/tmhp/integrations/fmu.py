@@ -31,7 +31,8 @@ importing master.
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, cast
+from xml.etree.ElementTree import Element, SubElement
 
 from pythonfmu import (
     Boolean,
@@ -45,6 +46,20 @@ from pythonfmu import (
 from tmhp import AirSourceHeatPumpBoiler
 from tmhp.dynamic_context import DynamicState
 
+_REAL_UNITS = {
+    "hp_capacity": "W",
+    "T_tank_w_init": "degC",
+    "T_sur": "degC",
+    "T0": "degC",
+    "dhw_draw": "m3/s",
+    "T_sup_w": "degC",
+    "E_cmp": "W",
+    "E_tot": "W",
+    "Q_ref_tank": "W",
+    "cop_sys": "1",
+    "T_tank_w": "degC",
+}
+
 
 def _finite(value: float | None) -> float:
     """Sanitize a value before it crosses the FMI boundary."""
@@ -54,11 +69,85 @@ def _finite(value: float | None) -> float:
     return out if math.isfinite(out) else 0.0
 
 
+def _is_finite(value: Any) -> bool:
+    """Return whether *value* is a finite FMI scalar."""
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(out)
+
+
 def _failure_reason(value: object) -> str:
     """Normalize diagnostic reasons at the FMI string boundary."""
     if value is None:
         return "none"
     return str(value)
+
+
+def _ensure_initial_unknowns(root: Element) -> None:
+    """Add FMI 2.0 InitialUnknowns for PythonFMU-generated outputs.
+
+    PythonFMU 0.7 writes ``ModelStructure/Outputs`` but omits
+    ``ModelStructure/InitialUnknowns``. FMPy validation expects the output set
+    to be listed there, so mirror the output indexes to keep the generated FMU
+    statically interoperable.
+    """
+    model_structure = root.find("ModelStructure")
+    if model_structure is None or model_structure.find("InitialUnknowns") is not None:
+        return
+
+    outputs = model_structure.find("Outputs")
+    if outputs is None:
+        return
+
+    indexes = [
+        unknown.attrib["index"]
+        for unknown in outputs.findall("Unknown")
+        if "index" in unknown.attrib
+    ]
+    if not indexes:
+        return
+
+    initial_unknowns = SubElement(model_structure, "InitialUnknowns")
+    for index in indexes:
+        SubElement(initial_unknowns, "Unknown", attrib={"index": index})
+
+
+def _ensure_unit_definitions(root: Element) -> None:
+    """Add FMI unit definitions for importer-side unit checks."""
+    if root.find("UnitDefinitions") is not None:
+        return
+
+    unit_definitions = Element("UnitDefinitions")
+    unit_specs: tuple[tuple[str, dict[str, str]], ...] = (
+        ("W", {"kg": "1", "m": "2", "s": "-3"}),
+        ("degC", {"K": "1", "offset": "273.15"}),
+        ("m3/s", {"m": "3", "s": "-1"}),
+        ("1", {}),
+    )
+    for name, base_attrs in unit_specs:
+        unit = SubElement(unit_definitions, "Unit", attrib={"name": name})
+        SubElement(unit, "BaseUnit", attrib=base_attrs)
+
+    insertion_index = 0
+    for index, child in enumerate(list(root)):
+        if child.tag in {"CoSimulation", "ModelExchange"}:
+            insertion_index = index + 1
+    root.insert(insertion_index, unit_definitions)
+
+
+def _apply_real_units(root: Element) -> None:
+    """Attach unit metadata to Real variables in the FMI model description."""
+    model_variables = root.find("ModelVariables")
+    if model_variables is None:
+        return
+
+    for scalar in model_variables.findall("ScalarVariable"):
+        unit = _REAL_UNITS.get(scalar.attrib.get("name", ""))
+        real = scalar.find("Real")
+        if unit is not None and real is not None:
+            real.set("unit", unit)
 
 
 class TmhpAshpbSlave(Fmi2Slave):
@@ -120,6 +209,14 @@ class TmhpAshpbSlave(Fmi2Slave):
         self._state: DynamicState | None = None
         self._n = 0
 
+    def to_xml(self, model_options: dict[str, str] | None = None) -> Element:
+        """Build a static FMI 2.0 model description for PythonFMU."""
+        root = cast(Element, super().to_xml({} if model_options is None else model_options))
+        _ensure_unit_definitions(root)
+        _apply_real_units(root)
+        _ensure_initial_unknowns(root)
+        return root
+
     def exit_initialization_mode(self) -> None:
         # Parameters are final here — build the model and seed the state.
         self._hp = AirSourceHeatPumpBoiler(ref=self.ref, hp_capacity=self.hp_capacity)
@@ -130,6 +227,20 @@ class TmhpAshpbSlave(Fmi2Slave):
     def do_step(self, current_time: float, step_size: float) -> bool:
         if self._hp is None or self._state is None:
             raise RuntimeError("FMU slave used before exit_initialization_mode()")
+        if not (
+            _is_finite(current_time)
+            and _is_finite(step_size)
+            and float(step_size) > 0.0
+            and _is_finite(self.T0)
+            and _is_finite(self.dhw_draw)
+            and float(self.dhw_draw) >= 0.0
+            and _is_finite(self.T_sup_w)
+            and _is_finite(self.T_sur)
+        ):
+            self.hp_is_on = False
+            self.converged = False
+            self.failure_reason = "invalid_input"
+            return False
 
         inputs = {
             "n": self._n,

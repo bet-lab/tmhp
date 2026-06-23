@@ -15,6 +15,8 @@ letting no NaN cross the boundary.
 from __future__ import annotations
 
 import math
+from xml.etree import ElementTree
+from zipfile import ZipFile
 
 import numpy as np
 import pytest
@@ -118,6 +120,28 @@ def _make_slave() -> TmhpAshpbSlave:
     return slave
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "step_size"),
+    [
+        ("T0", float("nan"), DT),
+        ("dhw_draw", -1.0e-5, DT),
+        ("T_sup_w", float("inf"), DT),
+        ("T_sur", float("-inf"), DT),
+        ("T0", 7.0, 0.0),
+    ],
+)
+def test_fmu_slave_rejects_invalid_importer_inputs(field, value, step_size):
+    """Invalid importer inputs fail the FMI step before the model advances."""
+    slave = _make_slave()
+    setattr(slave, field, value)
+
+    assert slave.do_step(0.0, step_size) is False
+    assert slave.converged is False
+    assert slave.failure_reason == "invalid_input"
+    assert slave.hp_is_on is False
+    assert slave._n == 0
+
+
 def test_fmu_slave_reproduces_step_kernel():
     """do_step() over the schedule reproduces the raw step() trajectory and
     lets no NaN cross the FMI boundary."""
@@ -154,12 +178,30 @@ def test_fmu_builds_and_simulates(tmp_path):
     schedule to completion, emits no NaN, and matches analyze_dynamic() on
     the FMI boundary outputs."""
     fmpy = pytest.importorskip("fmpy")
+    from fmpy.validation import validate_fmu
     from pythonfmu.builder import FmuBuilder
 
     import tmhp.integrations.fmu as fmu_mod
 
     fmu_file = FmuBuilder.build_FMU(fmu_mod.__file__, dest=str(tmp_path))
     assert fmu_file is not None
+    assert validate_fmu(str(fmu_file)) == []
+    with ZipFile(fmu_file) as archive:
+        root = ElementTree.fromstring(archive.read("modelDescription.xml"))
+    unit_names = {
+        unit.attrib["name"]
+        for unit in root.findall("./UnitDefinitions/Unit")
+    }
+    assert {"W", "degC", "m3/s", "1"} <= unit_names
+    units = {}
+    for scalar in root.findall("./ModelVariables/ScalarVariable"):
+        real = scalar.find("Real")
+        if real is not None:
+            units[scalar.attrib["name"]] = real.attrib["unit"]
+    assert units["T0"] == "degC"
+    assert units["dhw_draw"] == "m3/s"
+    assert units["E_cmp"] == "W"
+    assert units["cop_sys"] == "1"
 
     t, T0, dhw = _schedule()
     # Prescribed inputs as (time, value) signals for fmpy.
