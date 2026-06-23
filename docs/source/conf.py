@@ -10,7 +10,7 @@ sys.path.insert(0, src_path)
 
 # -- Project information -------------------------------------------------------
 
-project = "Thermodynamic Models for Heat Pumps"
+project = "TMHP"
 copyright = "2025, betlab"
 author = "Habin Jo, Wonjun Choi"
 release = "0.1.0"
@@ -65,6 +65,7 @@ myst_enable_extensions = [
 
 html_theme = "shibuya"
 html_title = "TMHP"
+html_short_title = "TMHP"
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
 
@@ -93,16 +94,16 @@ html_theme_options = {
     # keeps headings, links, and the active-nav indicator on one consistent hue.
     "accent_color": "iris",
     "github_url": "https://github.com/bet-lab/tmhp",
-    # Expand top-level toctree captions in the sidebar by default so the six
-    # planned sections (Getting Started, Concepts, Models, Tutorials, API,
-    # Validation) are visible without the reader hunting for them.
+    # Expand top-level toctree captions in the sidebar by default so the main
+    # sections are visible without the reader hunting for them.
     "globaltoc_expand_depth": 1,
     "nav_links": [
-        {"title": "Getting Started", "url": "getting-started/index"},
+        {"title": "Start", "url": "getting-started/index"},
         {"title": "Concepts", "url": "concepts/index"},
         {"title": "Models", "url": "models/index"},
         {"title": "Tutorials", "url": "tutorials/index"},
-        {"title": "API Reference", "url": "api/index"},
+        {"title": "Integrations", "url": "integrations/index"},
+        {"title": "API", "url": "api/index"},
         {"title": "Validation", "url": "validation/index"},
     ],
     # Social-card image shown when the docs are linked on GitHub, Slack, etc.
