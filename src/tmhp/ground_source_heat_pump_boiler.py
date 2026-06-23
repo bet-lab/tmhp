@@ -216,8 +216,13 @@ class GroundSourceHeatPumpBoiler:
 
         self.ref = ref
         self.V_cmp_ref = V_cmp_ref
-        self.eta_cmp_isen = eta_cmp_isen
-        self.eta_cmp_vol = eta_cmp_vol
+        # Common heat-pump-boiler default efficiencies (shared with ASHPB/WSHPB):
+        # isentropic 0.80, volumetric 0.95 - 0.05*PR (eta_cmp already resolved
+        # to 0.855 above). Resolve here so an unconfigured model is not ideal.
+        self.eta_cmp_isen = eta_cmp_isen if eta_cmp_isen is not None else 0.80
+        self.eta_cmp_vol = (
+            eta_cmp_vol if eta_cmp_vol is not None else (lambda r: 0.95 - 0.05 * r)
+        )
         self.eta_cmp = eta_cmp
 
         self.UA_tank_hx = UA_tank_hx
