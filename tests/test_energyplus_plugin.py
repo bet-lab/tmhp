@@ -22,8 +22,9 @@ TOUT_MAX_REF = 95.0  # mirror the plugin's outlet clamp; fails if it drifts
 
 
 class _FakeExchange:
-    def __init__(self, values):
+    def __init__(self, values, system_time_step=0.25):
         self.values = values
+        self._system_time_step = system_time_step
         self.actuators = {}
         self.globals = {}
 
@@ -43,12 +44,36 @@ class _FakeExchange:
         self.globals[handle] = value
 
     def system_time_step(self, state):
-        return 0.25
+        return self._system_time_step
+
+
+class _FakeRuntime:
+    def __init__(self):
+        self.severe = []
+
+    def issue_severe(self, state, msg):
+        self.severe.append(msg)
 
 
 class _FakeApi:
-    def __init__(self, values):
-        self.exchange = _FakeExchange(values)
+    def __init__(self, values, system_time_step=0.25):
+        self.exchange = _FakeExchange(values, system_time_step=system_time_step)
+        self.runtime = _FakeRuntime()
+
+
+def _surrogate_handles(e_cmp_j=8, e_cmp_w=9, e_cmp_legacy=-1):
+    return {
+        "t_in": 1,
+        "mdot": 2,
+        "cp": 3,
+        "load": 4,
+        "t_out_act": 5,
+        "mdot_act": 6,
+        "t0": 7,
+        "e_cmp_j": e_cmp_j,
+        "e_cmp_w": e_cmp_w,
+        "e_cmp_legacy": e_cmp_legacy,
+    }
 
 
 def _steady():
@@ -99,16 +124,7 @@ def test_surrogate_uses_usable_diagnostic_cycle_numbers(monkeypatch):
     plant._requested = True
     plant._need = False
     plant._tally_every = 10_000
-    plant.h = {
-        "t_in": 1,
-        "mdot": 2,
-        "cp": 3,
-        "load": 4,
-        "t_out_act": 5,
-        "mdot_act": 6,
-        "t0": 7,
-        "e_cmp": 8,
-    }
+    plant.h = _surrogate_handles()
     monkeypatch.setattr(
         plant,
         "_solve",
@@ -127,6 +143,7 @@ def test_surrogate_uses_usable_diagnostic_cycle_numbers(monkeypatch):
     assert ex.actuators[5] > 50.0
     assert ex.actuators[6] == pytest.approx(LOOP_DESIGN_VDOT * RHO_WATER)
     assert ex.globals[8] == pytest.approx(2000.0 * 3600.0 * 0.25)
+    assert ex.globals[9] == pytest.approx(2000.0)
 
 
 def test_surrogate_zeroes_true_off_mode_cycle_outputs(monkeypatch):
@@ -137,16 +154,7 @@ def test_surrogate_zeroes_true_off_mode_cycle_outputs(monkeypatch):
     plant._requested = True
     plant._need = False
     plant._tally_every = 10_000
-    plant.h = {
-        "t_in": 1,
-        "mdot": 2,
-        "cp": 3,
-        "load": 4,
-        "t_out_act": 5,
-        "mdot_act": 6,
-        "t0": 7,
-        "e_cmp": 8,
-    }
+    plant.h = _surrogate_handles()
     monkeypatch.setattr(
         plant,
         "_solve",
@@ -164,6 +172,107 @@ def test_surrogate_zeroes_true_off_mode_cycle_outputs(monkeypatch):
     ex = plant.api.exchange
     assert ex.actuators[5] == 50.0
     assert ex.globals[8] == 0.0
+    assert ex.globals[9] == 0.0
+
+
+def test_surrogate_rejects_invalid_energyplus_boundary_values(monkeypatch):
+    """Invalid EnergyPlus numeric inputs must not enter analyze_steady()."""
+    from tmhp.integrations.energyplus_plugin import TmhpPlantSurrogate
+
+    plant = TmhpPlantSurrogate()
+    plant._requested = True
+    plant._need = False
+    plant.h = _surrogate_handles()
+    monkeypatch.setattr(
+        plant,
+        "_solve",
+        lambda t_in, t0, q_target: pytest.fail("_solve should not be called"),
+    )
+    plant.api = _FakeApi({1: 50.0, 2: 0.0, 3: None, 4: 8000.0, 7: 7.0})
+
+    assert plant.on_user_defined_component_model(object()) == 1
+
+    ex = plant.api.exchange
+    assert ex.actuators[5] == 50.0
+    assert ex.actuators[6] == 0.0
+    assert ex.globals[8] == 0.0
+    assert ex.globals[9] == 0.0
+    assert plant.api.runtime.severe
+    assert "cp=None" in plant.api.runtime.severe[0]
+
+
+def test_surrogate_rejects_invalid_system_timestep(monkeypatch):
+    """EnergyPlus timestep must be finite and positive before J integration."""
+    from tmhp.integrations.energyplus_plugin import TmhpPlantSurrogate
+
+    plant = TmhpPlantSurrogate()
+    plant._requested = True
+    plant._need = False
+    plant.h = _surrogate_handles()
+    monkeypatch.setattr(
+        plant,
+        "_solve",
+        lambda t_in, t0, q_target: pytest.fail("_solve should not be called"),
+    )
+    plant.api = _FakeApi(
+        {1: 50.0, 2: 0.0, 3: CP_WATER, 4: 8000.0, 7: 7.0},
+        system_time_step=0.0,
+    )
+
+    assert plant.on_user_defined_component_model(object()) == 1
+
+    ex = plant.api.exchange
+    assert ex.actuators[5] == 50.0
+    assert ex.actuators[6] == 0.0
+    assert ex.globals[8] == 0.0
+    assert ex.globals[9] == 0.0
+    assert "system timestep" in plant.api.runtime.severe[0]
+
+
+def test_surrogate_accepts_legacy_energy_global_without_new_name():
+    """Older IDFs may still expose only tmhp_E_cmp for timestep joules."""
+    from tmhp.integrations.energyplus_plugin import TmhpPlantSurrogate
+
+    plant = TmhpPlantSurrogate()
+    plant.h = _surrogate_handles(e_cmp_j=-1, e_cmp_w=-1, e_cmp_legacy=8)
+    plant.api = _FakeApi({})
+
+    assert plant._valid(object()) is True
+    assert plant.api.runtime.severe == []
+
+
+def test_surrogate_uses_legacy_energy_global_when_new_name_missing(monkeypatch):
+    """Legacy tmhp_E_cmp receives timestep joules when tmhp_E_cmp_J is absent."""
+    from tmhp.integrations.energyplus_plugin import (
+        LOOP_DESIGN_VDOT,
+        RHO_WATER,
+        TmhpPlantSurrogate,
+    )
+
+    plant = TmhpPlantSurrogate()
+    plant._requested = True
+    plant._need = False
+    plant._tally_every = 10_000
+    plant.h = _surrogate_handles(e_cmp_j=-1, e_cmp_w=-1, e_cmp_legacy=8)
+    monkeypatch.setattr(
+        plant,
+        "_solve",
+        lambda t_in, t0, q_target: {
+            "converged": True,
+            "failure_reason": "none",
+            "Q_ref_tank [W]": 6000.0,
+            "E_cmp [W]": 2000.0,
+        },
+    )
+    plant.api = _FakeApi({1: 50.0, 2: 0.0, 3: CP_WATER, 4: 8000.0, 7: 7.0})
+
+    assert plant.on_user_defined_component_model(object()) == 0
+
+    ex = plant.api.exchange
+    assert ex.actuators[5] > 50.0
+    assert ex.actuators[6] == pytest.approx(LOOP_DESIGN_VDOT * RHO_WATER)
+    assert ex.globals[8] == pytest.approx(2000.0 * 3600.0 * 0.25)
+    assert 9 not in ex.globals
 
 
 def test_plugin_classes_when_energyplus_available():
