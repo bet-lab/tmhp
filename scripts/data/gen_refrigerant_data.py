@@ -33,6 +33,7 @@ Output
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 
@@ -228,6 +229,14 @@ def worker(task: tuple) -> tuple[str, list[list[float]] | None]:
 
 
 def main(out_path: str | os.PathLike[str] | None = None) -> None:
+    """Build the cycle-widget JSON payload.
+
+    Parameters
+    ----------
+    out_path:
+        Optional output path. When omitted, the generated asset is written to
+        ``docs/source/_static/widgets/cycle_data.json`` for the Sphinx build.
+    """
     if out_path is None:
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         out_dir = os.path.join(repo_root, "docs", "source", "_static", "widgets")
@@ -235,7 +244,8 @@ def main(out_path: str | os.PathLike[str] | None = None) -> None:
     else:
         out_path_str = os.fspath(out_path)
         out_dir = os.path.dirname(out_path_str)
-    os.makedirs(out_dir, exist_ok=True)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
 
     saturation = {ref: build_saturation_curves(ref) for ref in REFRIGERANTS}
 
@@ -301,5 +311,22 @@ def main(out_path: str | os.PathLike[str] | None = None) -> None:
     print(f"File size: {size_mb:.2f} MB")
 
 
+def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the data generator."""
+    parser = argparse.ArgumentParser(
+        description="Generate the JSON payload used by cycle_widget.html.",
+    )
+    parser.add_argument(
+        "out_path",
+        nargs="?",
+        help=(
+            "optional output path; defaults to "
+            "docs/source/_static/widgets/cycle_data.json"
+        ),
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    args = _parse_args()
+    main(args.out_path)
