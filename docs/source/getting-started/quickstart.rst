@@ -46,6 +46,8 @@ required. Any fluid CoolProp recognises works:
 
 .. code-block:: python
 
+   from tmhp import AirSourceHeatPumpBoiler
+
    AirSourceHeatPumpBoiler(ref="R290")     # propane
    AirSourceHeatPumpBoiler(ref="R744")     # CO₂ (transcritical)
    AirSourceHeatPumpBoiler(ref="R410A")

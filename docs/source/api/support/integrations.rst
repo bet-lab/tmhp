@@ -2,9 +2,9 @@
 Integrations
 ============
 
-Optional adapters for coupling ``tmhp`` to building-energy simulators and
+Optional adapters for coupling TMHP to building-energy simulators and
 co-simulation masters. These modules are intentionally kept out of the
-top-level ``tmhp`` import path so the core package remains usable without the
+top-level package import path so the core package remains usable without the
 adapter-specific runtimes.
 
 Install the FMI dependencies with the ``integrations`` extra:
@@ -20,7 +20,7 @@ Interoperability contracts
 ==========================
 
 FMI co-simulation uses FMI 2.0 through PythonFMU. The generated FMU is a
-tool-coupling artifact: Python, ``tmhp``, CoolProp, NumPy, and SciPy must be
+tool-coupling artifact: Python, TMHP, CoolProp, NumPy, and SciPy must be
 available in the importing environment. The FMU model description is validated
 with FMPy in CI; all output variables are listed in both ``Outputs`` and
 ``InitialUnknowns`` so importers can resolve the initial output dependency set.

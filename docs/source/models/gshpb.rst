@@ -48,7 +48,7 @@ Source-side mechanics
 
 For ground-source models, the source-side dynamics are encoded in a
 **g-function** — the dimensionless thermal response of a borehole
-field to a unit heat-extraction step. ``tmhp`` precomputes the
+field to a unit heat-extraction step. TMHP precomputes the
 g-function once via
 `pygfunction <https://github.com/MassimoCimmino/pygfunction>`_ and
 interpolates it during the simulation, so the per-step cost stays

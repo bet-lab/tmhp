@@ -6,6 +6,30 @@ import CoolProp.CoolProp as CP
 from scripts.data import gen_refrigerant_data as gen
 
 
+def _patch_single_cycle_grid(monkeypatch) -> list[tuple[str, list]]:
+    axes = [
+        ("refrigerant", ["R32"]),
+        ("T_source", [10.0]),
+        ("T_sink", [45.0]),
+        ("dT_subcool", [3.0]),
+        ("dT_superheat", [5.0]),
+        ("Q_cond", [14000.0]),
+        ("UA_cond", [2500.0]),
+        ("UA_evap", [2000.0]),
+    ]
+    monkeypatch.setattr(gen, "REFRIGERANTS", ["R32"])
+    monkeypatch.setattr(gen, "T_SOURCES_C", [10.0])
+    monkeypatch.setattr(gen, "T_SINKS_C", [45.0])
+    monkeypatch.setattr(gen, "DT_SUBCOOL_K", [3.0])
+    monkeypatch.setattr(gen, "DT_SUPERHEAT_K", [5.0])
+    monkeypatch.setattr(gen, "Q_COND_W", [14000.0])
+    monkeypatch.setattr(gen, "UA_COND_WK", [2500.0])
+    monkeypatch.setattr(gen, "UA_EVAP_WK", [2000.0])
+    monkeypatch.setattr(gen, "PARAM_AXES", axes)
+    monkeypatch.setattr(gen, "SAT_CURVE_POINTS", 64)
+    return axes
+
+
 def test_supported_refrigerants() -> None:
     assert gen.REFRIGERANTS == ["R410A", "R134a", "R32", "R290"]
 
@@ -41,26 +65,7 @@ def test_solve_cycle_returns_seven_display_points() -> None:
 
 
 def test_writes_cycle_widget_payload(tmp_path, monkeypatch) -> None:
-    axes = [
-        ("refrigerant", ["R32"]),
-        ("T_source", [10.0]),
-        ("T_sink", [45.0]),
-        ("dT_subcool", [3.0]),
-        ("dT_superheat", [5.0]),
-        ("Q_cond", [14000.0]),
-        ("UA_cond", [2500.0]),
-        ("UA_evap", [2000.0]),
-    ]
-    monkeypatch.setattr(gen, "REFRIGERANTS", ["R32"])
-    monkeypatch.setattr(gen, "T_SOURCES_C", [10.0])
-    monkeypatch.setattr(gen, "T_SINKS_C", [45.0])
-    monkeypatch.setattr(gen, "DT_SUBCOOL_K", [3.0])
-    monkeypatch.setattr(gen, "DT_SUPERHEAT_K", [5.0])
-    monkeypatch.setattr(gen, "Q_COND_W", [14000.0])
-    monkeypatch.setattr(gen, "UA_COND_WK", [2500.0])
-    monkeypatch.setattr(gen, "UA_EVAP_WK", [2000.0])
-    monkeypatch.setattr(gen, "PARAM_AXES", axes)
-    monkeypatch.setattr(gen, "SAT_CURVE_POINTS", 64)
+    axes = _patch_single_cycle_grid(monkeypatch)
 
     out_path = tmp_path / "cycle_data.json"
     gen.main(out_path)
@@ -80,3 +85,20 @@ def test_writes_cycle_widget_payload(tmp_path, monkeypatch) -> None:
     assert payload["meta"]["n_total"] == 1
     assert payload["params"]["refrigerant"] == ["R32"]
     assert payload["saturation"]["R32"]["p_sat"]
+
+
+def test_writes_cycle_widget_payload_to_current_directory(tmp_path, monkeypatch) -> None:
+    _patch_single_cycle_grid(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+
+    gen.main("cycle_data.json")
+
+    assert (tmp_path / "cycle_data.json").is_file()
+
+
+def test_cli_accepts_optional_output_path(monkeypatch) -> None:
+    monkeypatch.setattr("sys.argv", ["gen_refrigerant_data", "out/cycle_data.json"])
+
+    args = gen._parse_args()
+
+    assert args.out_path == "out/cycle_data.json"

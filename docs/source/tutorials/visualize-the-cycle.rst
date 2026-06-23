@@ -2,7 +2,7 @@
 Visualize thermodynamic cycle
 =============================
 
-Because ``tmhp`` solves the cycle from first principles, every
+Because TMHP solves the cycle from first principles, every
 ``analyze_steady`` call returns the full thermodynamic state at each
 cycle node (compressor in / out, expander in / out, evaporator /
 condenser saturation). Plotting those points on a

@@ -3,7 +3,7 @@ Refrigerants and CoolProp
 =========================
 
 "Refrigerant-agnostic" is one of the headline properties of
-``tmhp`` — and this is the page that makes it concrete. The
+TMHP — and this is the page that makes it concrete. The
 refrigerant is a constructor argument on every model
 (``ref="<name>"``); state queries route through
 `CoolProp <http://www.coolprop.org>`_, which carries the
@@ -28,6 +28,8 @@ that CoolProp can resolve via its built-in alias table is usable
 out of the box:
 
 .. code-block:: python
+
+   from tmhp import AirSourceHeatPumpBoiler
 
    AirSourceHeatPumpBoiler(ref="R32")        # difluoromethane
    AirSourceHeatPumpBoiler(ref="R290")       # propane
@@ -77,7 +79,7 @@ CoolProp raises when state queries fall outside the EOS
 envelope — for example, asking for a saturation pressure above
 the critical point, or asking for a property at a state that
 crossed into two-phase by accident. These show up inside
-``tmhp`` as:
+TMHP as:
 
 - ``failure_reason == "cycle_invalid"`` when the cycle couldn't
   produce a coherent state at all (often the EOS itself rejected

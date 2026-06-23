@@ -10,7 +10,7 @@ Thermodynamic cycle architecture
 
    <span class="glossary" data-term="cop">COP</span>
 
-Every model in ``tmhp`` is the same closed refrigerant cycle wrapped
+Every model in TMHP is the same closed refrigerant cycle wrapped
 in a different source / sink pairing. That single piece of shared
 machinery is what lets one library cover ASHPB, GSHPB, WSHPB, ASHP,
 GSHP, and every subsystem variant on top — without rewriting the
@@ -29,7 +29,7 @@ Every system reuses the same closed cycle — only the blocks marked
      .cycle-arch-card {
        margin: 1.25em auto;
        border: 1px solid var(--sy-c-border, #e5e7eb);
-       border-radius: 10px;
+       border-radius: 8px;
        background: var(--sy-c-bg, #fff);
        padding: 16px 18px;
        position: relative;
@@ -46,7 +46,6 @@ Every system reuses the same closed cycle — only the blocks marked
        background: rgba(255,255,255,0.9);
        border: 1px solid #e5e7eb; border-radius: 8px;
        padding: 4px; z-index: 5;
-       backdrop-filter: blur(4px);
      }
      .cycle-arch-toolbar button {
        background: transparent; border: 0;
@@ -100,7 +99,7 @@ Every system reuses the same closed cycle — only the blocks marked
    </div>
 
    <p class="cycle-arch-caption">
-     Data flow shared by every <code>tmhp</code> model.  Bold blocks are
+     Data flow shared by every <strong>TMHP</strong> model.  Bold blocks are
      reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP.
    </p>
 
@@ -109,7 +108,7 @@ Every system reuses the same closed cycle — only the blocks marked
    (function () {
      if (!document.getElementById("cy-arch")) return;
 
-     // ─── Data extracted from tmhp source ───────────────────────
+     // ─── Data extracted from TMHP source ───────────────────────
      //   ASHPB._calc_state, refrigerant.calc_ref_state, heat_transfer.py,
      //   _opt_utils.py (scalar minimizer over dT_ref_ou).
      const nodes = [

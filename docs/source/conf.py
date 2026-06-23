@@ -4,7 +4,7 @@
 import os
 import sys
 
-# Add the src directory to sys.path so autodoc can find the tmhp package.
+# Add the src directory to sys.path so autodoc can find the TMHP package.
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 sys.path.insert(0, src_path)
 

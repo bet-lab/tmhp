@@ -73,5 +73,5 @@ jobs:
       - name: Install project (dev + docs groups, lockfile pinned)
         run: uv sync --all-groups --locked
 
-      - name: Sphinx build (warnings-as-errors)
-        run: uv run sphinx-build -W --keep-going -b html docs/source docs/build/html
+      - name: Build docs with interactive data (warnings-as-errors)
+        run: make -C docs html SPHINXOPTS="-W --keep-going"
