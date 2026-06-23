@@ -11,7 +11,7 @@ Why physics-based?
    <span class="glossary" data-term="epsilon-ntu">ε-NTU</span>
 
 The name "Thermodynamic Models for Heat Pumps" describes *what*
-``tmhp`` is — a library of thermodynamic cycle models. *How* those
+TMHP is — a library of thermodynamic cycle models. *How* those
 models are written is the part this page is about: every cycle is
 solved from first principles, not fitted against catalogue data.
 
@@ -31,7 +31,7 @@ The three structural limits of curve fits
 
     * -
       - Curve-fit models
-      - ``tmhp``
+      - TMHP
     * - **Operating range**
       - Tied to the manufacturer's test points; extrapolation is
         unreliable.
@@ -116,7 +116,7 @@ steps per second on a single core for a vanilla ASHPB — fast enough
 that a year-long minute-resolution run takes hours, not minutes.
 
 If that is still too slow for your use case, a fitted surrogate is
-the right escape hatch. ``tmhp`` tracks commercial catalogue data
+the right escape hatch. TMHP tracks commercial catalogue data
 well enough (see :doc:`../validation/index`) that you can train the
 surrogate against this library itself, without collecting fresh
 bench data.

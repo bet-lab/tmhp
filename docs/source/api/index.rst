@@ -2,7 +2,7 @@
 API Reference
 =============
 
-Reference for the ``tmhp`` package's support modules — the
+Reference for the TMHP package's support modules — the
 lower-level building blocks the system models compose internally.
 For the system-level models you instantiate directly (ASHPB, GSHPB,
 WSHPB, ASHP, GSHP), see :doc:`../models/index`.

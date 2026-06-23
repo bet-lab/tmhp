@@ -15,7 +15,7 @@ DataFrame."
         :link: installation
         :link-type: doc
 
-        Install ``tmhp`` with ``uv`` and verify the
+        Install TMHP with ``uv`` and verify the
         package imports cleanly.
 
     .. grid-item-card:: Quick start

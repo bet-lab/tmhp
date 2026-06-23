@@ -2,7 +2,7 @@
 Concepts
 ========
 
-Background reading for ``tmhp``. These pages cover *why* the library
+Background reading for TMHP. These pages cover *why* the library
 is built the way it is — what physics-based cycle solving buys you,
 how the model pieces fit together across system families, and how to
 interpret the diagnostic fields each call returns.

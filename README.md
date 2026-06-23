@@ -20,7 +20,7 @@ Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/e
 
 ## Overview
 
-`tmhp` is a Python library of **thermodynamic cycle models** for air-source, ground-source, and water-source heat pumps. The models cover domestic hot water (DHW), space heating, and space cooling.
+TMHP is a Python library of **thermodynamic cycle models** for air-source, ground-source, and water-source heat pumps. The models cover domestic hot water (DHW), space heating, and space cooling.
 
 Every model solves the same closed refrigerant cycle from first principles at every time step — no manufacturer-specific curve fits, no per-unit recalibration. Swap the refrigerant, change the source side, or move the operating point, and the same code path produces a coherent answer.
 
@@ -149,6 +149,8 @@ print(f"Cond sat. temp.   : {result['T_ref_cond_sat_v [°C]']:.1f} °C")
 Swap the refrigerant by changing one argument — no recalibration, no manufacturer data:
 
 ```python
+from tmhp import AirSourceHeatPumpBoiler
+
 ashpb_r290 = AirSourceHeatPumpBoiler(ref="R290")    # propane
 ashpb_r744 = AirSourceHeatPumpBoiler(ref="R744")    # CO₂
 ashpb_r410 = AirSourceHeatPumpBoiler(ref="R410A")
@@ -400,7 +402,7 @@ If you use this library in academic work, please cite the validation paper:
 
 ## Related work
 
-- Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/enex-analysis-engine) — an energy / exergy analysis library developed in parallel by the same team. It consumes simulation output from `tmhp` (or any other source) and computes the second-law balance; the two projects ship as separate packages.
+- Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/enex-analysis-engine) — an energy / exergy analysis library developed in parallel by the same team. It consumes simulation output from TMHP (or any other source) and computes the second-law balance; the two projects ship as separate packages.
 
 ---
 

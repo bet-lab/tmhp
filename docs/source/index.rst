@@ -12,7 +12,7 @@ A physics-based Python library for heat pump simulation.
    water-source heat pumps — covering DHW, space heating, and space
    cooling.
 
-``tmhp`` solves the closed refrigerant cycle at every time step using
+TMHP solves the closed refrigerant cycle at every time step using
 `CoolProp <http://www.coolprop.org>`_ as the equation-of-state
 backend. The same model code applies across refrigerants and
 operating envelopes, with no manufacturer-specific curve fits and no
@@ -76,7 +76,7 @@ per-unit recalibration.
         :link-type: doc
 
         Every model, support module, optional integration adapter,
-        and helper exposed by the ``tmhp`` package, with full type
+        and helper exposed by the TMHP package, with full type
         signatures.
 
     .. grid-item-card:: Validation

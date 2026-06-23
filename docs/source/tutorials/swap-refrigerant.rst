@@ -2,7 +2,7 @@
 Swap refrigerants
 ==================
 
-The refrigerant is a constructor argument on every model in ``tmhp``.
+The refrigerant is a constructor argument on every model in TMHP.
 Changing it requires no recalibration and no manufacturer data —
 pick any name CoolProp recognises and the library re-solves the
 cycle from first principles. That's the single most concrete way to
@@ -443,7 +443,7 @@ Refrigerant catalogue
         expander details dominate COP; can't be analysed with a
         subcritical-condenser model — see
         :doc:`../concepts/refrigerant-and-coolprop` for how
-        ``tmhp`` currently treats this case.
+        TMHP currently treats this case.
 
         *Typical use*: sanitary-water heat pumps (Japan, Europe),
         commercial / supermarket refrigeration, transport
@@ -496,7 +496,7 @@ guide:
 
 *High-temperature industrial heat pump (LWT 80–95 °C)*
     R1234ze(E), R134a, or R717 (ammonia). R600a is occasionally
-    used for niche small units. ``tmhp`` solves these
+    used for niche small units. TMHP solves these
     subcritically as long as T\ :sub:`crit` clears the condenser
     by ~10 K; check ``failure_reason`` for ``cycle_invalid``.
 
@@ -509,7 +509,7 @@ guide:
 *Transcritical sanitary hot water (≥ 65 °C, cold return)*
     R744 — the only mainstream refrigerant whose cycle is
     optimised for this duty. Not subcritical, so the
-    ``tmhp`` result is a sanity check rather than a design;
+    TMHP result is a sanity check rather than a design;
     see :doc:`../concepts/refrigerant-and-coolprop`.
 
 *Industrial refrigeration and process cooling*
