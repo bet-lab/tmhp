@@ -7,6 +7,10 @@ co-simulation masters. These modules are intentionally kept out of the
 top-level package import path so the core package remains usable without the
 adapter-specific runtimes.
 
+For usage-first guides, model boundaries, and simulator wiring, see
+:doc:`../../integrations/energyplus-python` and
+:doc:`../../integrations/fmu`.
+
 Install the FMI dependencies with the ``integrations`` extra:
 
 .. code-block:: bash

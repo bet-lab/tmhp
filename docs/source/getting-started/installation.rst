@@ -59,7 +59,8 @@ wrapper around ``AirSourceHeatPumpBoiler.step()``. The EnergyPlus Python Plugin
 adapter does not have a pip-installable extra because ``pyenergyplus`` is
 bundled with EnergyPlus itself; run that adapter inside EnergyPlus's embedded
 Python or make the EnergyPlus Python package visible through
-``PythonPlugin:SearchPaths``.
+``PythonPlugin:SearchPaths``. See :doc:`../integrations/fmu` and
+:doc:`../integrations/energyplus-python` for the simulator-specific wiring.
 
 What's installed
 ================

@@ -54,8 +54,9 @@ Lower-level building blocks used by the system models.
         :link: support/integrations
         :link-type: doc
 
-        FMI co-simulation and EnergyPlus Python Plugin adapters
-        built on the public model seams.
+        Implementation reference for the FMI co-simulation and
+        EnergyPlus Python Plugin adapters. For usage guides, see
+        :doc:`../integrations/index`.
 
     .. grid-item-card:: Visualization
         :link: support/visualization

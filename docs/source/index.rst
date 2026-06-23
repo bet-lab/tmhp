@@ -1,8 +1,8 @@
 .. Thermodynamic Models for Heat Pumps documentation master file
 
-===================================
-Thermodynamic Models for Heat Pumps
-===================================
+===============================================
+TMHP: Thermodynamic Models for Heat Pumps
+===============================================
 
 A physics-based Python library for heat pump simulation.
 
@@ -35,6 +35,7 @@ per-unit recalibration.
 
    :doc:`Install <getting-started/installation>`
    :doc:`Quick start <getting-started/quickstart>`
+   :doc:`Integrations <integrations/index>`
    :doc:`Validation <validation/index>`
    `GitHub <https://github.com/bet-lab/tmhp>`_
 
@@ -71,6 +72,13 @@ per-unit recalibration.
         Focused walkthroughs — swap refrigerants, drive realistic
         schedules, compose PV / STC / ESS subsystems.
 
+    .. grid-item-card:: Integrations
+        :link: integrations/index
+        :link-type: doc
+
+        Couple TMHP to EnergyPlus Python Plugins or export the
+        ASHPB dynamic kernel as an FMI 2.0 co-simulation FMU.
+
     .. grid-item-card:: API Reference
         :link: api/index
         :link-type: doc
@@ -102,6 +110,7 @@ per-unit recalibration.
    concepts/index
    models/index
    tutorials/index
+   integrations/index
    api/index
    validation/index
 
