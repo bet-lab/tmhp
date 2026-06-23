@@ -28,8 +28,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install project (with dev group, lockfile pinned)
-        run: uv sync --group dev --locked
+      - name: Install project (dev group + integrations extra, lockfile pinned)
+        run: uv sync --group dev --extra integrations --locked
 
       - name: Ruff lint
         run: uv run ruff check src/tmhp tests
