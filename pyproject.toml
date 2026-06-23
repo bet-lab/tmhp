@@ -44,6 +44,7 @@ dependencies = [
 integrations = [
     "fmpy>=0.3.21",
     "pythonfmu>=0.7.0,<0.8",
+    "pythonfmu3>=0.3.4,<0.4",
 ]
 
 [build-system]

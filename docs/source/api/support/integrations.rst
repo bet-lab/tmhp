@@ -23,16 +23,16 @@ EnergyPlus installation and is not a PyPI dependency.
 Interoperability contracts
 ==========================
 
-FMI co-simulation uses FMI 2.0 through PythonFMU. The generated FMU is a
-tool-coupling artifact: Python, TMHP, CoolProp, NumPy, and SciPy must be
-available in the importing environment. The FMU model description is validated
-with FMPy in CI; all output variables are listed in both ``Outputs`` and
-``InitialUnknowns`` so importers can resolve the initial output dependency set.
-The XML also declares units for power, temperature, DHW draw, and COP so
-importers can perform basic unit checks. The slave rejects invalid importer
-inputs (non-finite time/input values, non-positive communication step sizes, or
-negative DHW draw) before advancing the internal ``step()`` state and exposes
-``failure_reason="invalid_input"``.
+FMI co-simulation is exposed through separate FMI 2.0 and FMI 3.0 adapters.
+FMI 2.0 uses PythonFMU; FMI 3.0 uses PythonFMU3. The generated FMUs are
+tool-coupling artifacts: Python, TMHP, CoolProp, NumPy, and SciPy must be
+available in the importing environment. The FMU model descriptions are validated
+with FMPy in tests. The XML declares units for power, temperature, DHW draw, and
+COP so importers can perform basic unit checks. The slaves reject invalid
+importer inputs (non-finite time/input values, non-positive communication step
+sizes, or negative DHW draw) before advancing the internal ``step()`` state and
+expose ``failure_reason="invalid_input"``. The FMI 3.0 slave reports that case
+as a discarded step with early return.
 
 EnergyPlus coupling uses the Python Plugin DataExchange API. The adapter first
 resolves and validates all handles, then reads only finite boundary values
@@ -54,10 +54,18 @@ Adapter package
     :undoc-members:
     :show-inheritance:
 
-FMI co-simulation
-=================
+FMI 2.0 co-simulation
+=====================
 
 .. automodule:: tmhp.integrations.fmu
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+FMI 3.0 co-simulation
+=====================
+
+.. automodule:: tmhp.integrations.fmu3
     :members:
     :undoc-members:
     :show-inheritance:

@@ -2427,6 +2427,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pythonfmu3"
+version = "0.3.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/87/aa/d1249d2b3c3e0b5cd7d661e842956f2fb27a6df3cddb3ba5ca7063382704/pythonfmu3-0.3.4.tar.gz", hash = "sha256:aed8b87de9598b6653f2bbac37453db1e911de75f1bbce471c2df9526a9d6471", size = 346781, upload_time = "2025-09-30T14:48:36.663Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/2e/15b0d4a2cf2960e50cd18402078a63e77d381453cfc5253cf0e7d896eb06/pythonfmu3-0.3.4-py3-none-any.whl", hash = "sha256:1723ec5937285de07121e1c4eb8e60efdd7b074063a6906a4133408a489ec1da", size = 363149, upload_time = "2025-09-30T14:48:34.964Z" },
+]
+
+[[package]]
 name = "pytz"
 version = "2026.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3447,6 +3456,7 @@ dependencies = [
 integrations = [
     { name = "fmpy" },
     { name = "pythonfmu" },
+    { name = "pythonfmu3" },
 ]
 
 [package.dev-dependencies]
@@ -3490,6 +3500,7 @@ requires-dist = [
     { name = "pvlib", specifier = ">=0.15.0" },
     { name = "pygfunction", specifier = ">=2.3.1" },
     { name = "pythonfmu", marker = "extra == 'integrations'", specifier = ">=0.7.0,<0.8" },
+    { name = "pythonfmu3", marker = "extra == 'integrations'", specifier = ">=0.3.4,<0.4" },
     { name = "scipy", specifier = ">=1.15.2" },
     { name = "tqdm", specifier = ">=4.67.1" },
 ]

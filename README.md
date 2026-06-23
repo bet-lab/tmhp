@@ -27,14 +27,14 @@ TMHP is a Python library of **thermodynamic cycle models** for air-source, groun
 
 Every model solves the same closed refrigerant cycle from first principles at every time step — no manufacturer-specific curve fits, no per-unit recalibration. Swap the refrigerant, change the source side, or move the operating point, and the same code path produces a coherent answer.
 
-TMHP is now also an integration package. The same cycle-resolved ASHPB model can run natively in Python, answer an EnergyPlus `PlantComponent:UserDefined` callback through a Python Plugin, or be exported as an FMI 2.0 Co-Simulation FMU for external masters.
+TMHP is now also an integration package. The same cycle-resolved ASHPB model can run natively in Python, answer an EnergyPlus `PlantComponent:UserDefined` callback through a Python Plugin, or be exported as FMI 2.0 and FMI 3.0 Co-Simulation FMUs for external masters.
 
 | What you need | What TMHP gives you |
 | --- | --- |
 | Physics beyond catalogue curves | Refrigerant state points, compressor work, heat exchangers, COP, and convergence diagnostics from a shared thermodynamic cycle core |
 | Refrigerant and operating-point studies | Any CoolProp-supported refrigerant can be swapped at runtime without re-fitting empirical coefficients |
 | Building-simulation coupling | EnergyPlus Python Plugin support for plant-loop surrogate modeling |
-| Tool-to-tool co-simulation | FMI 2.0 FMU export for ASHPB `step()` workflows |
+| Tool-to-tool co-simulation | FMI 2.0 and FMI 3.0 FMU export for ASHPB `step()` workflows |
 | Reproducible validation | Samsung EHS Mono HT Quiet R32 parity benchmark regenerated from source |
 
 ---
@@ -62,7 +62,7 @@ TMHP keeps the heat-pump thermodynamics in one reusable model boundary instead o
 | --- | --- | --- |
 | [Native Python](https://bet-lab.github.io/tmhp/getting-started/) | You are running design studies, validation, notebooks, or regression tests directly in Python | `analyze_steady()`, `analyze_dynamic()`, and `step()` |
 | [EnergyPlus Python Plugin](https://bet-lab.github.io/tmhp/integrations/energyplus-python.html) | EnergyPlus should keep the IDF, schedules, plant loop, tank state, meters, and reporting | TMHP answers each plant-solver request through a steady ASHPB cycle solve |
-| [FMI 2.0 FMU](https://bet-lab.github.io/tmhp/integrations/fmu.html) | A co-simulation master such as FMPy, Modelica tooling, OMSimulator, Dymola, or Simulink should drive the heat pump as an external component | TMHP exposes weather, draw, tank, power, heat, COP, and diagnostics as FMI variables |
+| [FMI FMU](https://bet-lab.github.io/tmhp/integrations/fmu.html) | A co-simulation master such as FMPy, Modelica tooling, OMSimulator, Dymola, or Simulink should drive the heat pump as an external component | TMHP provides separate FMI 2.0 and FMI 3.0 adapters over the same weather, draw, tank, power, heat, COP, and diagnostic variables |
 
 This makes TMHP useful for whole-building studies, model-based controls, refrigerant screening, heat-pump component benchmarking, and cross-tool validation while keeping the core package independent of any one simulator.
 
@@ -137,7 +137,7 @@ uv sync --group docs     # sphinx + shibuya theme + authoring / UX extensions
 Optional co-simulation tooling lives behind the `integrations` extra:
 
 ```bash
-uv sync --extra integrations  # pythonfmu + fmpy for the FMI 2.0 FMU adapter
+uv sync --extra integrations  # pythonfmu, pythonfmu3, and fmpy for FMU adapters
 ```
 
 The EnergyPlus Python Plugin adapter uses `pyenergyplus`, which is bundled with an EnergyPlus installation rather than published on PyPI.
@@ -281,6 +281,7 @@ df = ashpb.analyze_dynamic(
 | `visualization.py`      | Plotting facade                                                |
 | `mollier_diagram.py`    | T-h / P-h / T-s plots                                          |
 | `integrations/fmu.py`   | FMI 2.0 co-simulation adapter for ASHPB `step()`               |
+| `integrations/fmu3.py`  | FMI 3.0 co-simulation adapter for ASHPB `step()`               |
 | `integrations/energyplus_plugin.py` | EnergyPlus Python Plugin adapter for ASHPB steady-state coupling |
 | `uv_treatment.py`       | UV treatment subsystem                                         |
 | `calc_util.py`          | Unit conversions                                               |

@@ -48,19 +48,21 @@ Optional integration extras
 ===========================
 
 The core package does not install co-simulation runtimes by default. Add the
-``integrations`` extra when you need the FMI 2.0 FMU adapter:
+``integrations`` extra when you need the FMI FMU adapters:
 
 .. code-block:: bash
 
    uv sync --extra integrations --locked
 
-This installs ``pythonfmu`` and ``fmpy`` for building and smoke-testing the FMU
-wrapper around ``AirSourceHeatPumpBoiler.step()``. The EnergyPlus Python Plugin
-adapter does not have a pip-installable extra because ``pyenergyplus`` is
-bundled with EnergyPlus itself; run that adapter inside EnergyPlus's embedded
-Python or make the EnergyPlus Python package visible through
-``PythonPlugin:SearchPaths``. See :doc:`../integrations/fmu` and
-:doc:`../integrations/energyplus-python` for the simulator-specific wiring.
+This installs ``pythonfmu`` for FMI 2.0 export, ``pythonfmu3`` for FMI 3.0
+export, and ``fmpy`` for model-description validation and smoke simulation. Both
+FMU adapters wrap ``AirSourceHeatPumpBoiler.step()`` but produce separate FMI
+major-version artifacts. The EnergyPlus Python Plugin adapter does not have a
+pip-installable extra because ``pyenergyplus`` is bundled with EnergyPlus
+itself; run that adapter inside EnergyPlus's embedded Python or make the
+EnergyPlus Python package visible through ``PythonPlugin:SearchPaths``. See
+:doc:`../integrations/fmu` and :doc:`../integrations/energyplus-python` for the
+simulator-specific wiring.
 
 What's installed
 ================

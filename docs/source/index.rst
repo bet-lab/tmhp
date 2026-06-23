@@ -77,7 +77,7 @@ per-unit recalibration.
         :link-type: doc
 
         Couple TMHP to EnergyPlus Python Plugins or export the
-        ASHPB dynamic kernel as an FMI 2.0 co-simulation FMU.
+        ASHPB dynamic kernel as FMI 2.0 / FMI 3.0 co-simulation FMUs.
 
     .. grid-item-card:: API Reference
         :link: api/index

@@ -51,12 +51,13 @@ Two adapter paths are currently supported:
         owns the plant loop and tank state; TMHP answers each plant-solver
         call through ``analyze_steady()``.
 
-    .. grid-item-card:: FMI 2.0 FMU
+    .. grid-item-card:: FMI FMU
         :link: fmu
         :link-type: doc
 
         Export the ASHPB dynamic ``step()`` kernel as a co-simulation FMU
         with explicit input, output, unit, and diagnostic boundaries.
+        TMHP provides separate FMI 2.0 and FMI 3.0 artifacts.
 
 Integration vocabulary
 ======================
@@ -76,9 +77,18 @@ for exchanging dynamic models. The current specification defines an FMU
 as a ZIP archive plus API for XML metadata, binaries, and source code; it
 also distinguishes Co-Simulation, Model Exchange, and Scheduled
 Execution interface types (`FMI specification
-<https://fmi-standard.org/docs/main/>`_). TMHP exports an FMI 2.0
-Co-Simulation FMU: the importing tool sets scalar inputs, calls
-``do_step``, then reads scalar outputs.
+<https://fmi-standard.org/docs/main/>`_). TMHP exports Co-Simulation
+FMUs: the importing tool sets scalar inputs, calls ``do_step``, then
+reads scalar outputs.
+
+FMI 3.0 is managed as a separate major version rather than as an FMU file
+that automatically contains FMI 2.0. The FMI 3.0.2 specification frames
+compatibility within the same major version and adds features such as
+Scheduled Execution, clocks, early return, event mode, and intermediate
+update (`FMI 3.0.2 specification
+<https://fmi-standard.org/docs/3.0.2/>`_). TMHP therefore provides
+separate FMI 2.0 and FMI 3.0 adapters over the same ASHPB ``step()``
+kernel.
 
 The reason this matters is reach. The FMI project maintains a tools page
 covering hundreds of FMI-capable tools (`FMI tools
@@ -108,15 +118,15 @@ advances it one communication step at a time.
        border: 1px solid var(--sy-c-border, #e5e7eb);
        border-radius: 8px;
        background: var(--sy-c-bg, #fff);
-       padding: 16px 18px;
+       padding: 18px 20px;
        position: relative;
-       width: min(980px, calc(100vw - 360px));
-       max-width: none;
+       width: 100%;
+       max-width: 1120px;
      }
      #tmhp-integration-boundary {
        width: 100%;
-       height: 520px;
-       min-height: 420px;
+       height: 500px;
+       min-height: 460px;
        border-radius: 6px;
      }
      .integration-graph-toolbar {
@@ -188,7 +198,7 @@ advances it one communication step at a time.
        border-radius: 3px; border: 1px solid currentColor;
      }
      @media (max-width: 720px) {
-       #tmhp-integration-boundary { height: 760px; }
+       #tmhp-integration-boundary { height: 680px; }
        .integration-graph-toolbar { position: static; margin-bottom: 8px; }
        .integration-graph-legend { margin-right: 0; }
        .integration-graph-card {
@@ -206,7 +216,6 @@ advances it one communication step at a time.
      </div>
      <div class="integration-graph-legend" aria-label="Diagram legend">
        <span><i style="background:#fef3c7;color:#d97706"></i>External tool</span>
-       <span><i style="background:#dbeafe;color:#2563eb"></i>Boundary values</span>
        <span><i style="background:#eef2ff;color:#6366f1"></i>Adapter</span>
        <span><i style="background:#f5f3ff;color:#8b5cf6"></i>Public TMHP API</span>
        <span><i style="background:#dcfce7;color:#16a34a"></i>Cycle core</span>
@@ -236,20 +245,26 @@ advances it one communication step at a time.
      }
 
      const desktopPositions = {
-       EPLUS: { x: 95, y: 105 }, EPLUS_IO: { x: 300, y: 105 },
-       EPLUS_ADAPTER: { x: 505, y: 105 }, STEADY: { x: 710, y: 105 },
-       CORE: { x: 925, y: 245 }, EPLUS_OUT: { x: 1145, y: 105 },
-       FMU_MASTER: { x: 95, y: 385 }, FMU_IO: { x: 300, y: 385 },
-       FMU_ADAPTER: { x: 505, y: 385 }, STEP: { x: 710, y: 385 },
-       FMU_OUT: { x: 1145, y: 385 }
+       EPLUS: { x: 120, y: 180 },
+       EPLUS_ADAPTER: { x: 340, y: 180 },
+       STEADY: { x: 560, y: 180 },
+       CORE: { x: 660, y: 310 },
+       EPLUS_OUT: { x: 940, y: 180 },
+       FMU_MASTER: { x: 120, y: 440 },
+       FMU_ADAPTER: { x: 340, y: 440 },
+       STEP: { x: 560, y: 440 },
+       FMU_OUT: { x: 940, y: 440 }
      };
      const mobilePositions = {
-       EPLUS: { x: 95, y: 70 }, EPLUS_IO: { x: 95, y: 190 },
-       EPLUS_ADAPTER: { x: 95, y: 310 }, STEADY: { x: 95, y: 430 },
-       FMU_MASTER: { x: 320, y: 70 }, FMU_IO: { x: 320, y: 190 },
-       FMU_ADAPTER: { x: 320, y: 310 }, STEP: { x: 320, y: 430 },
-       CORE: { x: 207, y: 555 }, EPLUS_OUT: { x: 95, y: 690 },
-       FMU_OUT: { x: 320, y: 690 }
+       EPLUS: { x: 115, y: 90 },
+       EPLUS_ADAPTER: { x: 115, y: 225 },
+       STEADY: { x: 115, y: 360 },
+       CORE: { x: 255, y: 440 },
+       EPLUS_OUT: { x: 415, y: 360 },
+       FMU_MASTER: { x: 115, y: 600 },
+       FMU_ADAPTER: { x: 115, y: 735 },
+       STEP: { x: 275, y: 735 },
+       FMU_OUT: { x: 415, y: 600 }
      };
 
      const nodes = [
@@ -261,16 +276,9 @@ advances it one communication step at a time.
          api: "energyplus-python.html"
        },
        {
-         id: "EPLUS_IO", type: "io", title: "EnergyPlus boundary",
-         sub: "T_in · mdot · cp · load · T0",
-         contract: "TMHP reads finite plant boundary values and writes outlet temperature, mass flow, and electricity globals.",
-         code: "tmhp_E_cmp_J [J], optional tmhp_E_cmp_W [W]",
-         api: "energyplus-python.html#input-output-boundary"
-       },
-       {
          id: "EPLUS_ADAPTER", type: "adapter", title: "EnergyPlus adapter",
-         sub: "TmhpPlantSurrogate",
-         contract: "Resolves DataExchange handles, guards invalid values, memoizes repeated plant-solver calls, and actuates the user-defined component.",
+         sub: "T_in · mdot · cp · load · T0",
+         contract: "TmhpPlantSurrogate resolves DataExchange handles, guards invalid boundary values, memoizes repeated plant-solver calls, and actuates the user-defined component.",
          code: "tmhp.integrations.energyplus_plugin",
          api: "../api/support/integrations.html#module-tmhp.integrations.energyplus_plugin"
        },
@@ -299,21 +307,14 @@ advances it one communication step at a time.
          id: "FMU_MASTER", type: "external", title: "FMI master",
          sub: "fmpy · OMSimulator · Dymola",
          contract: "Owns the co-simulation schedule and sets FMI input variables before each communication step.",
-         code: "FMI 2.0 Co-Simulation importer",
+         code: "FMI 2.0/3.0 Co-Simulation importer",
          api: "fmu.html"
        },
        {
-         id: "FMU_IO", type: "io", title: "FMU boundary",
-         sub: "T0 · dhw_draw · T_sup_w",
-         contract: "The importer sets outdoor, DHW draw, and mains-water inputs; the FMU returns power, heat, tank temperature, COP, and diagnostics.",
-         code: "E_cmp, E_tot, Q_ref_tank, cop_sys, T_tank_w",
-         api: "fmu.html#input-output-boundary"
-       },
-       {
          id: "FMU_ADAPTER", type: "adapter", title: "FMU adapter",
-         sub: "TmhpAshpbSlave",
-         contract: "Builds an FMI 2.0 model description, validates input scalars, owns the dynamic ASHPB state, and sanitizes FMI outputs.",
-         code: "tmhp.integrations.fmu",
+         sub: "T0 · dhw_draw · T_sup_w",
+         contract: "TmhpAshpbSlave and TmhpAshpbFmi3Slave build FMI model descriptions, validate input scalars, own the dynamic ASHPB state, and sanitize outputs.",
+         code: "tmhp.integrations.fmu / fmu3",
          api: "../api/support/integrations.html#module-tmhp.integrations.fmu"
        },
        {
@@ -332,13 +333,11 @@ advances it one communication step at a time.
        }
      ];
      const edges = [
-       { source: "EPLUS", target: "EPLUS_IO" },
-       { source: "EPLUS_IO", target: "EPLUS_ADAPTER" },
+       { source: "EPLUS", target: "EPLUS_ADAPTER" },
        { source: "EPLUS_ADAPTER", target: "STEADY" },
        { source: "STEADY", target: "CORE" },
        { source: "CORE", target: "EPLUS_OUT" },
-       { source: "FMU_MASTER", target: "FMU_IO" },
-       { source: "FMU_IO", target: "FMU_ADAPTER" },
+       { source: "FMU_MASTER", target: "FMU_ADAPTER" },
        { source: "FMU_ADAPTER", target: "STEP" },
        { source: "STEP", target: "CORE" },
        { source: "CORE", target: "FMU_OUT" }
@@ -365,8 +364,8 @@ advances it one communication step at a time.
              "text-valign": "center", "text-halign": "center",
              "font-size": 12, "font-weight": 600,
              "font-family": "-apple-system, BlinkMacSystemFont, Inter, sans-serif",
-             "width": 172, "height": 70,
-             "text-max-width": 154,
+             "width": 176, "height": 76,
+             "text-max-width": 156,
              "padding": "11px", "shape": "round-rectangle",
              "corner-radius": "10", "border-width": 1.5,
              "line-height": 1.35
@@ -382,13 +381,13 @@ advances it one communication step at a time.
              "border-style": "dashed" } },
          { selector: 'node[type = "core"]', style: {
              "background-color": palette.core.fill, "border-color": palette.core.border, "color": palette.core.text,
-             "border-width": 2.5, "width": 184, "height": 90,
-             "text-max-width": 164 } },
+             "border-width": 2.5, "width": 198, "height": 100,
+             "text-max-width": 174 } },
          { selector: 'node[type = "output"]', style: {
              "background-color": palette.output.fill, "border-color": palette.output.border, "color": palette.output.text,
-             "width": 186, "height": 74, "text-max-width": 166 } },
+             "width": 190, "height": 82, "text-max-width": 168 } },
          { selector: "edge", style: {
-             "width": 1.8, "line-color": "#475569",
+             "width": 2, "line-color": "#475569",
              "target-arrow-color": "#475569", "target-arrow-shape": "triangle",
              "arrow-scale": 1.05, "curve-style": "straight"
          } },
@@ -402,6 +401,27 @@ advances it one communication step at a time.
        autoungrabify: true,
        minZoom: 0.1, maxZoom: 2.5
      });
+
+     function applyNodeScale() {
+       const compact = container.clientWidth < 560;
+       cy.nodes().style({
+         width: compact ? 132 : 176,
+         height: compact ? 68 : 76,
+         "font-size": compact ? 11 : 12,
+         "text-max-width": compact ? 116 : 156
+       });
+       cy.nodes('[type = "core"]').style({
+         width: compact ? 150 : 198,
+         height: compact ? 84 : 100,
+         "text-max-width": compact ? 132 : 174
+       });
+       cy.nodes('[type = "output"]').style({
+         width: compact ? 138 : 190,
+         height: compact ? 72 : 82,
+         "text-max-width": compact ? 120 : 168
+       });
+     }
+     applyNodeScale();
 
      const info = document.getElementById("tmhp-integration-info");
      const placeholder = '<span class="placeholder">Click a node to see the integration contract.</span>';
@@ -436,6 +456,7 @@ advances it one communication step at a time.
      let compactLayout = container.clientWidth < 560;
      function applyResponsiveLayout() {
        const shouldCompact = container.clientWidth < 560;
+       applyNodeScale();
        if (shouldCompact !== compactLayout) {
          compactLayout = shouldCompact;
          cy.layout({
@@ -520,7 +541,7 @@ Examples of FMU host workflows
        tanks, district plants, or controllers.
    * - `FMPy <https://github.com/CATIA-Systems/FMPy>`_
      - FMPy is a Python library and GUI for inspecting and simulating
-       FMUs, including FMI 2.0 Co-Simulation.
+       FMUs across FMI major versions, including Co-Simulation FMUs.
      - Run local smoke tests, parameter sweeps, notebooks, and regression
        comparisons between FMU output and native TMHP Python output.
    * - `Simulink FMU block

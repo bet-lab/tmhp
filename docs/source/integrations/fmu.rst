@@ -1,9 +1,9 @@
-=====================
-FMI 2.0 FMU export
-=====================
+==============
+FMI FMU export
+==============
 
 TMHP's FMU adapter wraps
-:class:`~tmhp.AirSourceHeatPumpBoiler` as an FMI 2.0 co-simulation
+:class:`~tmhp.AirSourceHeatPumpBoiler` as an FMI Co-Simulation
 component. The FMI master owns the communication schedule; the FMU owns
 the ASHPB dynamic state and advances it through
 :meth:`~tmhp.AirSourceHeatPumpBoiler.step` at each ``do_step`` call.
@@ -21,13 +21,29 @@ Functional Mock-up Unit, is the packaged model artifact: a ZIP archive
 with XML metadata and implementation files exposed through the FMI API
 (`FMI specification <https://fmi-standard.org/docs/main/>`_).
 
-FMI separates several interface types. TMHP currently targets FMI 2.0
-Co-Simulation, where the importing tool owns the communication schedule,
-sets inputs at communication points, calls ``do_step``, and reads
-outputs. In Co-Simulation, the FMU abstracts its internal computation
-from the importer; the importer coordinates time advancement and data
-exchange across connected components (`FMI for Co-Simulation
+FMI separates several interface types. TMHP targets Co-Simulation, where
+the importing tool owns the communication schedule, sets inputs at
+communication points, calls ``do_step``, and reads outputs. In
+Co-Simulation, the FMU abstracts its internal computation from the
+importer; the importer coordinates time advancement and data exchange
+across connected components (`FMI for Co-Simulation
 <https://fmi-standard.org/docs/main/#fmi-for-co-simulation>`_).
+
+FMI 3.0 is a separate major standard, not a container that automatically
+includes FMI 2.0. The FMI 3.0.2 specification states compatibility in
+terms of the same major version and any minor version, and adds FMI 3.0
+features such as Scheduled Execution, clocks, early return, event mode,
+intermediate update, array variables, and additional scalar types
+(`FMI 3.0.2 specification
+<https://fmi-standard.org/docs/3.0.2/>`_). For tool reach, TMHP therefore
+ships two adapters over the same ASHPB ``step()`` seam:
+
+- :mod:`tmhp.integrations.fmu` builds an FMI 2.0 Co-Simulation FMU with
+  ``pythonfmu``. This is the conservative compatibility path.
+- :mod:`tmhp.integrations.fmu3` builds an FMI 3.0 Co-Simulation FMU with
+  ``pythonfmu3``. This is the modern-major-version path. It does not
+  expose clocks, Scheduled Execution, or arrays because the current TMHP
+  boundary is a scalar one-step heat-pump component.
 
 The practical benefit is tool reach. The FMI project maintains a tools
 catalog across importers, exporters, platforms, and FMI versions (`FMI
@@ -65,20 +81,30 @@ The core TMHP package does not install PythonFMU or FMPy. Add the
 This installs:
 
 - ``pythonfmu`` for building the FMI 2.0 co-simulation FMU.
+- ``pythonfmu3`` for building the FMI 3.0 co-simulation FMU.
 - ``fmpy`` for model-description validation and local smoke simulation.
 
 Build and simulate
 ==================
 
-Build from the repository root:
+Build the FMI 2.0 FMU from the repository root:
 
 .. code-block:: bash
 
    uv run pythonfmu build -f src/tmhp/integrations/fmu.py .
 
 PythonFMU writes ``TmhpAshpbSlave.fmu`` into the current output
-directory. A local smoke test can then validate and simulate the FMU
-through FMPy:
+directory.
+
+Build the FMI 3.0 FMU separately:
+
+.. code-block:: bash
+
+   uv run pythonfmu3 build -f src/tmhp/integrations/fmu3.py .
+
+PythonFMU3 writes ``TmhpAshpbFmi3Slave.fmu``. A local smoke test can then
+validate and simulate either FMU through FMPy, as long as the importer
+supports the FMU's FMI major version:
 
 .. code-block:: python
 
@@ -109,13 +135,18 @@ importing environment must provide a compatible Python runtime plus
 TMHP, CoolProp, NumPy, SciPy, and the other native dependencies for the
 target operating system, architecture, and Python ABI.
 
-The adapter intentionally targets FMI 2.0 co-simulation only:
+Both adapters intentionally target Co-Simulation only:
 
 - TMHP exposes no continuous state derivatives for FMI model exchange.
 - The ASHPB state is advanced in one pass for each communication step.
 - Save-state and rollback support are outside the current adapter scope.
 - FMI outputs are sanitized so NaN or infinity does not cross the
   importer boundary.
+
+The FMI 3.0 adapter returns ``Fmi3StepResult`` and can signal invalid
+input as a discarded step with early return. It otherwise exposes the
+same scalar boundary as the FMI 2.0 adapter so regression tests can
+compare both FMUs against the same native ``analyze_dynamic()`` schedule.
 
 Compatible host examples
 ========================

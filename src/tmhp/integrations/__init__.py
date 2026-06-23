@@ -11,6 +11,8 @@ helpers:
 
 * :mod:`tmhp.integrations.fmu` (#165 P1) — FMI 2.0 FMU wrapping ``step()``
   (the dynamic kernel; the FMU owns the storage-tank state). Needs ``pythonfmu``.
+* :mod:`tmhp.integrations.fmu3` — FMI 3.0 Co-Simulation FMU wrapping the same
+  ``step()`` seam. Needs ``pythonfmu3``.
 * :mod:`tmhp.integrations.energyplus_plugin` (#165 P2) — EnergyPlus Python
   Plugin surrogating the ASHPB as a ``PlantComponent:UserDefined`` through
   ``analyze_steady()`` (the *steady-state* seam; EnergyPlus owns the
@@ -26,6 +28,13 @@ try:  # pragma: no cover - depends on the optional pythonfmu extra
     from .fmu import TmhpAshpbSlave  # noqa: F401 - conditional re-export
 
     __all__.append("TmhpAshpbSlave")
+except ImportError:
+    pass
+
+try:  # pragma: no cover - depends on the optional pythonfmu3 extra
+    from .fmu3 import TmhpAshpbFmi3Slave  # noqa: F401 - conditional re-export
+
+    __all__.append("TmhpAshpbFmi3Slave")
 except ImportError:
     pass
 
