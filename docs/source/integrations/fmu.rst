@@ -12,6 +12,46 @@ Use this path when TMHP needs to participate in a tool-level
 co-simulation workflow, or when a non-Python master should drive a
 cycle-resolved ASHPB component with explicit FMI variables.
 
+FMI and FMU in one minute
+=========================
+
+FMI, the Functional Mock-up Interface, is a Modelica Association standard
+for exchanging dynamic models between simulation tools. An FMU,
+Functional Mock-up Unit, is the packaged model artifact: a ZIP archive
+with XML metadata and implementation files exposed through the FMI API
+(`FMI specification <https://fmi-standard.org/docs/main/>`_).
+
+FMI separates several interface types. TMHP currently targets FMI 2.0
+Co-Simulation, where the importing tool owns the communication schedule,
+sets inputs at communication points, calls ``do_step``, and reads
+outputs. In Co-Simulation, the FMU abstracts its internal computation
+from the importer; the importer coordinates time advancement and data
+exchange across connected components (`FMI for Co-Simulation
+<https://fmi-standard.org/docs/main/#fmi-for-co-simulation>`_).
+
+The practical benefit is tool reach. The FMI project maintains a tools
+catalog across importers, exporters, platforms, and FMI versions (`FMI
+tools <https://fmi-standard.org/tools/>`_). A 2025 FMI project note
+reported 250 listed tools, including 178 Co-Simulation importers and 133
+Co-Simulation exporters (`FMI tools milestone
+<https://fmi-standard.org/news/2025-07-14-fmi-supported-by-250-tools/>`_).
+
+What becomes possible
+=====================
+
+The FMU adapter turns TMHP from a Python-only model into a reusable
+co-simulation component. That enables:
+
+- putting the same heat-pump model behind a Modelica plant loop, an
+  EnergyPlus envelope FMU, a Python regression harness, or a controller
+  model;
+- comparing native Python ``analyze_dynamic()`` results against the FMU
+  boundary under the same weather and draw schedules;
+- running parameter sweeps or controller experiments without rewriting
+  the TMHP cycle model for every host tool;
+- keeping thermal physics, plant control, building loads, and
+  post-processing in the tools that already model each part best.
+
 Install the optional FMU tooling
 ================================
 
@@ -76,6 +116,67 @@ The adapter intentionally targets FMI 2.0 co-simulation only:
 - Save-state and rollback support are outside the current adapter scope.
 - FMI outputs are sanitized so NaN or infinity does not cross the
   importer boundary.
+
+Compatible host examples
+========================
+
+An FMU is useful only if the importing environment can load both the FMI
+interface and the runtime dependencies of the packaged model. TMHP's
+current PythonFMU-based FMU is therefore best treated as a transparent
+co-simulation package that still needs a compatible Python environment.
+Within that constraint, the same FMU boundary can be used in several
+well-established ecosystems:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 26 34 40
+
+   * - Host ecosystem
+     - Official capability
+     - Example TMHP use
+   * - `Modelica Buildings Library
+       <https://simulationresearch.lbl.gov/modelica/>`_
+     - LBNL's Buildings library provides open-source dynamic models for
+       buildings, district energy systems, storage, HVAC, and controls,
+       and documents use cases such as rapid prototyping, integrated
+       energy-system testing, controls development, and Spawn/EnergyPlus
+       coupling.
+     - Place a TMHP ASHPB FMU inside a Modelica hydronic plant, compare
+       it with Modelica-native heat-pump models, or study refrigerant
+       choices in a district-energy controls scenario.
+   * - `Spawn of EnergyPlus
+       <https://www.energy.gov/cmei/buildings/articles/spawn-energyplus-spawn>`_
+       and `EnergyPlusToFMU
+       <https://simulationresearch.lbl.gov/fmu/EnergyPlus/export/>`_
+     - Spawn is described by DOE as a BEM-controls engine based on FMI
+       and Modelica; EnergyPlusToFMU exports EnergyPlus 8.0+ models as
+       co-simulation FMUs that can be linked to system models such as
+       Modelica/Dymola HVAC models.
+     - Use EnergyPlus for loads and envelope, TMHP for heat-pump
+       thermodynamics, and a separate controller or plant model for
+       supervisory logic.
+   * - `OpenModelica / OMSimulator
+       <https://openmodelica.org/doc/OpenModelicaUsersGuide/v1.12.0/omsimulator.html>`_
+       and `Dymola
+       <https://www.3ds.com/products/catia/dymola/export-capabilities-interfacing-other-software>`_
+     - Modelica toolchains can import FMUs and build composite
+       co-simulation models that combine Modelica and non-Modelica
+       submodels.
+     - Couple TMHP with equation-based tanks, hydronic loops, storage,
+       district plants, or control sequences without translating TMHP to
+       Modelica.
+   * - `FMPy <https://github.com/CATIA-Systems/FMPy>`_
+     - FMPy is a Python library, GUI, CLI, and notebook-oriented tool for
+       inspecting and simulating FMUs across FMI 1.0, 2.0, and 3.0.
+     - Validate the exported FMU, run local smoke simulations, and keep
+       regression tests aligned with native TMHP Python simulations.
+   * - `Simulink FMU block
+       <https://www.mathworks.com/help/simulink/ref_extras/fmu.html>`_
+     - Simulink can import FMUs; its Co-Simulation mode integrates FMUs
+       that may contain local solvers for tool coupling.
+     - Drive TMHP from controller prototypes, supervisory logic, or
+       hardware-in-the-loop style experiments while preserving the same
+       heat-pump FMU interface.
 
 Input / output boundary
 =======================

@@ -8,6 +8,36 @@ integration adapters are optional so the core heat-pump package stays
 lightweight: import ``tmhp`` for native Python simulation, then opt into
 the adapter that matches the external tool boundary.
 
+The selling point is model reuse. TMHP keeps the cycle-resolved heat
+pump model in one place, while external tools keep doing what they are
+already good at: EnergyPlus owns whole-building loads and plant dispatch,
+Modelica tools own equation-based HVAC and controls, and FMI masters own
+tool-to-tool scheduling.
+
+What integrations enable
+========================
+
+.. grid:: 1 2 2 3
+    :gutter: 3
+
+    .. grid-item-card:: Keep EnergyPlus as the building model
+
+        Replace an empirical plant component with a TMHP steady
+        refrigerant-cycle solve while EnergyPlus still owns the IDF,
+        schedules, plant loop, and reporting.
+
+    .. grid-item-card:: Export the heat pump as a reusable FMU
+
+        Package the dynamic ASHPB ``step()`` kernel behind FMI variables
+        so a co-simulation master can set weather and DHW draw inputs and
+        read power, heat, COP, tank temperature, and diagnostics.
+
+    .. grid-item-card:: Connect to other simulation ecosystems
+
+        Use the same TMHP model in Python smoke tests, Modelica-based
+        plant and controls studies, Simulink controller workflows, or
+        composite FMU co-simulation.
+
 Two adapter paths are currently supported:
 
 .. grid:: 1 2 2 2
@@ -28,6 +58,39 @@ Two adapter paths are currently supported:
         Export the ASHPB dynamic ``step()`` kernel as a co-simulation FMU
         with explicit input, output, unit, and diagnostic boundaries.
 
+Integration vocabulary
+======================
+
+EnergyPlus is a whole-building energy simulation program. Its Python
+Plugin interface lets EnergyPlus call user-defined Python classes at
+specific simulation calling points; the official Input Output Reference
+describes a plugin as a class derived from ``EnergyPlusPlugin`` whose
+overridden methods determine when EnergyPlus calls user code
+(`EnergyPlus Python Plugin documentation
+<https://bigladdersoftware.com/epx/docs/9-3/input-output-reference/group-python-plugins.html>`_).
+TMHP uses that mechanism to answer a plant-component request without
+moving the building model out of EnergyPlus.
+
+FMI, the Functional Mock-up Interface, is a Modelica Association standard
+for exchanging dynamic models. The current specification defines an FMU
+as a ZIP archive plus API for XML metadata, binaries, and source code; it
+also distinguishes Co-Simulation, Model Exchange, and Scheduled
+Execution interface types (`FMI specification
+<https://fmi-standard.org/docs/main/>`_). TMHP exports an FMI 2.0
+Co-Simulation FMU: the importing tool sets scalar inputs, calls
+``do_step``, then reads scalar outputs.
+
+The reason this matters is reach. The FMI project maintains a tools page
+covering hundreds of FMI-capable tools (`FMI tools
+<https://fmi-standard.org/tools/>`_), and a 2025 project note reported
+250 listed tools with 178 Co-Simulation importers and 133
+Co-Simulation exporters (`FMI tools milestone
+<https://fmi-standard.org/news/2025-07-14-fmi-supported-by-250-tools/>`_).
+Actual compatibility still depends on the importer and on the Python
+runtime required by TMHP's current PythonFMU-based package, but the
+interface is deliberately the standard FMI boundary rather than a
+TMHP-specific socket or file protocol.
+
 Integration boundary
 ====================
 
@@ -47,12 +110,13 @@ advances it one communication step at a time.
        background: var(--sy-c-bg, #fff);
        padding: 16px 18px;
        position: relative;
-       max-width: 100%;
+       width: min(980px, calc(100vw - 360px));
+       max-width: none;
      }
      #tmhp-integration-boundary {
        width: 100%;
-       height: 430px;
-       min-height: 360px;
+       height: 520px;
+       min-height: 420px;
        border-radius: 6px;
      }
      .integration-graph-toolbar {
@@ -110,9 +174,27 @@ advances it one communication step at a time.
        color: var(--sy-c-text-secondary, #6b7280);
        font-size: 0.92em; margin-top: 0.6em;
      }
+     .integration-graph-legend {
+       display: flex; gap: 8px; flex-wrap: wrap;
+       margin: 2px 110px 10px 0;
+       color: #475569; font-size: 12px;
+     }
+     .integration-graph-legend span {
+       display: inline-flex; align-items: center; gap: 5px;
+       white-space: nowrap;
+     }
+     .integration-graph-legend i {
+       display: inline-block; width: 10px; height: 10px;
+       border-radius: 3px; border: 1px solid currentColor;
+     }
      @media (max-width: 720px) {
-       #tmhp-integration-boundary { height: 520px; }
+       #tmhp-integration-boundary { height: 760px; }
        .integration-graph-toolbar { position: static; margin-bottom: 8px; }
+       .integration-graph-legend { margin-right: 0; }
+       .integration-graph-card {
+         width: 100%;
+         max-width: 100%;
+       }
      }
    </style>
 
@@ -122,6 +204,13 @@ advances it one communication step at a time.
        <button id="tmhp-integration-zoom-in" title="Zoom in">+</button>
        <button id="tmhp-integration-zoom-out" title="Zoom out">−</button>
      </div>
+     <div class="integration-graph-legend" aria-label="Diagram legend">
+       <span><i style="background:#fef3c7;color:#d97706"></i>External tool</span>
+       <span><i style="background:#dbeafe;color:#2563eb"></i>Boundary values</span>
+       <span><i style="background:#eef2ff;color:#6366f1"></i>Adapter</span>
+       <span><i style="background:#f5f3ff;color:#8b5cf6"></i>Public TMHP API</span>
+       <span><i style="background:#dcfce7;color:#16a34a"></i>Cycle core</span>
+     </div>
      <div id="tmhp-integration-boundary"></div>
      <div id="tmhp-integration-info">
        <span class="placeholder">Click a node to see the integration contract.</span>
@@ -130,8 +219,9 @@ advances it one communication step at a time.
    </div>
 
    <p class="integration-graph-caption">
-     TMHP integration data flow. EnergyPlus uses the steady seam; FMU
-     co-simulation uses the dynamic seam.
+     TMHP integration data flow. Both paths move left to right: external
+     simulator inputs enter TMHP, the cycle core solves, then each adapter
+     publishes outputs back to its host tool.
    </p>
 
    <script src="../_static/js/lib/cytoscape.min.js"></script>
@@ -144,6 +234,23 @@ advances it one communication step at a time.
          '<span class="placeholder">Cytoscape did not load, so the integration graph cannot render.</span>';
        return;
      }
+
+     const desktopPositions = {
+       EPLUS: { x: 95, y: 105 }, EPLUS_IO: { x: 300, y: 105 },
+       EPLUS_ADAPTER: { x: 505, y: 105 }, STEADY: { x: 710, y: 105 },
+       CORE: { x: 925, y: 245 }, EPLUS_OUT: { x: 1145, y: 105 },
+       FMU_MASTER: { x: 95, y: 385 }, FMU_IO: { x: 300, y: 385 },
+       FMU_ADAPTER: { x: 505, y: 385 }, STEP: { x: 710, y: 385 },
+       FMU_OUT: { x: 1145, y: 385 }
+     };
+     const mobilePositions = {
+       EPLUS: { x: 95, y: 70 }, EPLUS_IO: { x: 95, y: 190 },
+       EPLUS_ADAPTER: { x: 95, y: 310 }, STEADY: { x: 95, y: 430 },
+       FMU_MASTER: { x: 320, y: 70 }, FMU_IO: { x: 320, y: 190 },
+       FMU_ADAPTER: { x: 320, y: 310 }, STEP: { x: 320, y: 430 },
+       CORE: { x: 207, y: 555 }, EPLUS_OUT: { x: 95, y: 690 },
+       FMU_OUT: { x: 320, y: 690 }
+     };
 
      const nodes = [
        {
@@ -169,7 +276,7 @@ advances it one communication step at a time.
        },
        {
          id: "STEADY", type: "seam", title: "analyze_steady()",
-         sub: "steady plant seam",
+         sub: "steady public API",
          contract: "Answers one plant-solver request from inlet water temperature, outdoor temperature, and requested heat rate.",
          code: "AirSourceHeatPumpBoiler.analyze_steady(T_tank_w, T0, Q_ref_tank)",
          api: "../models/ashpb.html"
@@ -180,6 +287,13 @@ advances it one communication step at a time.
          contract: "Solves refrigerant state points, heat exchangers, compressor work, COP, convergence, and failure_reason diagnostics.",
          code: "AirSourceHeatPumpBoiler + refrigerant/cycle helpers",
          api: "../concepts/cycle-architecture.html"
+       },
+       {
+         id: "EPLUS_OUT", type: "output", title: "EnergyPlus outputs",
+         sub: "actuators + plugin globals",
+         contract: "Writes outlet temperature, mass-flow request, timestep compressor energy, optional compressor power, and severe diagnostics back to EnergyPlus.",
+         code: "outlet temperature actuator, tmhp_E_cmp_J, tmhp_E_cmp_W",
+         api: "energyplus-python.html#input-output-boundary"
        },
        {
          id: "FMU_MASTER", type: "external", title: "FMI master",
@@ -204,32 +318,30 @@ advances it one communication step at a time.
        },
        {
          id: "STEP", type: "seam", title: "step()",
-         sub: "dynamic state seam",
+         sub: "dynamic public API",
          contract: "Advances one ASHPB state over the FMI communication step using the same public dynamic kernel as native Python simulations.",
          code: "state, result = hp.step(state, inputs, step_size)",
          api: "../getting-started/first-dynamic-simulation.html"
        },
        {
-         id: "OUTPUTS", type: "output", title: "Shared outputs",
-         sub: "power · heat · COP · diagnostics",
-         contract: "Both adapters preserve physical outputs and convergence diagnostics at the simulator boundary instead of hiding guard trips.",
-         code: "converged, failure_reason, hp_is_on",
-         api: "../concepts/failure-reason-semantics.html"
+         id: "FMU_OUT", type: "output", title: "FMU outputs",
+         sub: "power · heat · state · diagnostics",
+         contract: "Publishes FMI output variables for power, heat, tank temperature, COP, convergence, on/off state, and failure_reason.",
+         code: "E_cmp, E_tot, Q_ref_tank, cop_sys, T_tank_w, converged",
+         api: "fmu.html#input-output-boundary"
        }
      ];
      const edges = [
-       { source: "EPLUS", target: "EPLUS_IO", label: "DataExchange API" },
-       { source: "EPLUS_IO", target: "EPLUS_ADAPTER", label: "finite values" },
-       { source: "EPLUS_ADAPTER", target: "STEADY", label: "calls" },
-       { source: "STEADY", target: "CORE", label: "cycle solve" },
-       { source: "CORE", target: "EPLUS_ADAPTER", label: "E_cmp, Q_ref, diagnostics" },
-       { source: "EPLUS_ADAPTER", target: "OUTPUTS", label: "actuators + globals" },
-       { source: "FMU_MASTER", target: "FMU_IO", label: "sets FMI inputs" },
-       { source: "FMU_IO", target: "FMU_ADAPTER", label: "valid scalars" },
-       { source: "FMU_ADAPTER", target: "STEP", label: "do_step" },
-       { source: "STEP", target: "CORE", label: "state advance" },
-       { source: "CORE", target: "FMU_ADAPTER", label: "step result" },
-       { source: "FMU_ADAPTER", target: "OUTPUTS", label: "FMU outputs" }
+       { source: "EPLUS", target: "EPLUS_IO" },
+       { source: "EPLUS_IO", target: "EPLUS_ADAPTER" },
+       { source: "EPLUS_ADAPTER", target: "STEADY" },
+       { source: "STEADY", target: "CORE" },
+       { source: "CORE", target: "EPLUS_OUT" },
+       { source: "FMU_MASTER", target: "FMU_IO" },
+       { source: "FMU_IO", target: "FMU_ADAPTER" },
+       { source: "FMU_ADAPTER", target: "STEP" },
+       { source: "STEP", target: "CORE" },
+       { source: "CORE", target: "FMU_OUT" }
      ];
 
      const palette = {
@@ -253,8 +365,8 @@ advances it one communication step at a time.
              "text-valign": "center", "text-halign": "center",
              "font-size": 12, "font-weight": 600,
              "font-family": "-apple-system, BlinkMacSystemFont, Inter, sans-serif",
-             "width": 166, "height": 64,
-             "text-max-width": 148,
+             "width": 172, "height": 70,
+             "text-max-width": 154,
              "padding": "11px", "shape": "round-rectangle",
              "corner-radius": "10", "border-width": 1.5,
              "line-height": 1.35
@@ -270,26 +382,23 @@ advances it one communication step at a time.
              "border-style": "dashed" } },
          { selector: 'node[type = "core"]', style: {
              "background-color": palette.core.fill, "border-color": palette.core.border, "color": palette.core.text,
-             "border-width": 2.5 } },
+             "border-width": 2.5, "width": 184, "height": 90,
+             "text-max-width": 164 } },
          { selector: 'node[type = "output"]', style: {
-             "background-color": palette.output.fill, "border-color": palette.output.border, "color": palette.output.text } },
+             "background-color": palette.output.fill, "border-color": palette.output.border, "color": palette.output.text,
+             "width": 186, "height": 74, "text-max-width": 166 } },
          { selector: "edge", style: {
-             "width": 1.5, "line-color": "#475569",
+             "width": 1.8, "line-color": "#475569",
              "target-arrow-color": "#475569", "target-arrow-shape": "triangle",
-             "arrow-scale": 1.05, "curve-style": "bezier",
-             "label": "data(label)", "font-size": 10, "color": "#374151",
-             "text-outline-color": "#fff", "text-outline-opacity": 1, "text-outline-width": 1.5
+             "arrow-scale": 1.05, "curve-style": "straight"
          } },
          { selector: "node:selected", style: { "border-width": 3 } },
          { selector: ".faded", style: { "opacity": 0.25 } }
        ],
-       layout: { name: "preset", positions: {
-         EPLUS: { x: 90, y: 95 }, EPLUS_IO: { x: 295, y: 95 },
-         EPLUS_ADAPTER: { x: 500, y: 95 }, STEADY: { x: 700, y: 95 },
-         CORE: { x: 900, y: 225 }, OUTPUTS: { x: 1090, y: 225 },
-         FMU_MASTER: { x: 90, y: 355 }, FMU_IO: { x: 295, y: 355 },
-         FMU_ADAPTER: { x: 500, y: 355 }, STEP: { x: 700, y: 355 }
-       } },
+       layout: {
+         name: "preset",
+         positions: container.clientWidth < 560 ? mobilePositions : desktopPositions
+       },
        autoungrabify: true,
        minZoom: 0.1, maxZoom: 2.5
      });
@@ -324,8 +433,21 @@ advances it one communication step at a time.
      });
 
      let resizeTimer = null;
+     let compactLayout = container.clientWidth < 560;
+     function applyResponsiveLayout() {
+       const shouldCompact = container.clientWidth < 560;
+       if (shouldCompact !== compactLayout) {
+         compactLayout = shouldCompact;
+         cy.layout({
+           name: "preset",
+           positions: compactLayout ? mobilePositions : desktopPositions,
+           animate: false
+         }).run();
+       }
+     }
      function fitGraph() {
        cy.resize();
+       applyResponsiveLayout();
        cy.fit(undefined, 30);
      }
      document.getElementById("tmhp-integration-fit").addEventListener("click",
@@ -358,6 +480,55 @@ Use :doc:`fmu` when an FMI master should own the co-simulation schedule
 and TMHP should advance an ASHPB state across each communication step.
 This path is best for tool-to-tool coupling and for comparing the same
 dynamic kernel against native Python ``analyze_dynamic()`` runs.
+
+Examples of FMU host workflows
+==============================
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 34 38
+
+   * - Host ecosystem
+     - Why it matters
+     - Example use with TMHP
+   * - `Modelica Buildings Library
+       <https://simulationresearch.lbl.gov/modelica/>`_
+     - LBNL's Buildings library provides dynamic models for building,
+       district-energy, HVAC, storage, and control systems, and its
+       project materials explicitly cover Spawn/EnergyPlus coupling.
+     - Use a Modelica plant and controls model around a TMHP heat-pump
+       FMU, or compare TMHP against a Modelica heat-pump model in a
+       district-energy study.
+   * - `Spawn of EnergyPlus
+       <https://www.energy.gov/cmei/buildings/articles/spawn-energyplus-spawn>`_
+       and `EnergyPlusToFMU
+       <https://simulationresearch.lbl.gov/fmu/EnergyPlus/export/>`_
+     - Spawn combines EnergyPlus loads/envelope with Modelica controls
+       through FMI-based co-simulation; EnergyPlusToFMU exports
+       EnergyPlus as an FMU for co-simulation.
+     - Co-simulate an EnergyPlus envelope FMU with a TMHP heat-pump FMU
+       and a supervisory controller, keeping each domain in the tool that
+       models it best.
+   * - `OpenModelica / OMSimulator
+       <https://openmodelica.org/doc/OpenModelicaUsersGuide/v1.12.0/omsimulator.html>`_
+       and `Dymola
+       <https://www.3ds.com/products/catia/dymola/export-capabilities-interfacing-other-software>`_
+     - Modelica tools can import/export FMUs and build composite
+       co-simulation models that mix Modelica and non-Modelica
+       submodels.
+     - Put TMHP's cycle-resolved ASHPB next to Modelica hydronic loops,
+       tanks, district plants, or controllers.
+   * - `FMPy <https://github.com/CATIA-Systems/FMPy>`_
+     - FMPy is a Python library and GUI for inspecting and simulating
+       FMUs, including FMI 2.0 Co-Simulation.
+     - Run local smoke tests, parameter sweeps, notebooks, and regression
+       comparisons between FMU output and native TMHP Python output.
+   * - `Simulink FMU block
+       <https://www.mathworks.com/help/simulink/ref_extras/fmu.html>`_
+     - Simulink can import FMUs and run Co-Simulation FMUs as external
+       components in controller-oriented models.
+     - Couple TMHP to controller prototypes or hardware-in-the-loop style
+       experiments while keeping the heat-pump physics in the FMU.
 
 .. toctree::
    :maxdepth: 1

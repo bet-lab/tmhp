@@ -2,9 +2,9 @@
 
 # TMHP: Thermodynamic Models for Heat Pumps
 
-**A physics-based Python library for heat pump simulation**
+**Cycle-resolved heat-pump models for Python studies, EnergyPlus plants, and FMI co-simulation**
 
-_Refrigerant-agnostic · operating-condition-agnostic · first-principles from the cycle up_
+_Refrigerant-agnostic · condition-agnostic · integration-ready · first-principles from the cycle up_
 
 [![Python](https://img.shields.io/badge/python-≥3.10-3776AB?logo=python&logoColor=white)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#license)
@@ -12,6 +12,9 @@ _Refrigerant-agnostic · operating-condition-agnostic · first-principles from t
 [![CoolProp](https://img.shields.io/badge/powered%20by-CoolProp-orange.svg)](http://www.coolprop.org)
 
 [**Documentation**](https://bet-lab.github.io/tmhp/) ·
+[**Quick start**](https://bet-lab.github.io/tmhp/getting-started/) ·
+[**Integrations**](https://bet-lab.github.io/tmhp/integrations/) ·
+[**Validation**](https://bet-lab.github.io/tmhp/validation/) ·
 Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/enex-analysis-engine)
 
 </div>
@@ -24,7 +27,15 @@ TMHP is a Python library of **thermodynamic cycle models** for air-source, groun
 
 Every model solves the same closed refrigerant cycle from first principles at every time step — no manufacturer-specific curve fits, no per-unit recalibration. Swap the refrigerant, change the source side, or move the operating point, and the same code path produces a coherent answer.
 
-> **In one line:** a refrigerant-agnostic, condition-agnostic heat pump model — one library, many systems.
+TMHP is now also an integration package. The same cycle-resolved ASHPB model can run natively in Python, answer an EnergyPlus `PlantComponent:UserDefined` callback through a Python Plugin, or be exported as an FMI 2.0 Co-Simulation FMU for external masters.
+
+| What you need | What TMHP gives you |
+| --- | --- |
+| Physics beyond catalogue curves | Refrigerant state points, compressor work, heat exchangers, COP, and convergence diagnostics from a shared thermodynamic cycle core |
+| Refrigerant and operating-point studies | Any CoolProp-supported refrigerant can be swapped at runtime without re-fitting empirical coefficients |
+| Building-simulation coupling | EnergyPlus Python Plugin support for plant-loop surrogate modeling |
+| Tool-to-tool co-simulation | FMI 2.0 FMU export for ASHPB `step()` workflows |
+| Reproducible validation | Samsung EHS Mono HT Quiet R32 parity benchmark regenerated from source |
 
 ---
 
@@ -40,6 +51,20 @@ Most building-energy simulators (EnergyPlus, TRNSYS, and friends) model a heat p
 | Requires re-fitting for every new unit                | One model class, parameterized by geometry & components  |
 
 You pay for it with a few extra parameters and a slightly more expensive time step. What you get in return is a model you can **trust outside its calibration range** — across refrigerants, operating envelopes, and system topologies that no single catalogue covers.
+
+---
+
+## Integration-ready
+
+TMHP keeps the heat-pump thermodynamics in one reusable model boundary instead of duplicating the same component logic for every simulator.
+
+| Integration path | Use it when | TMHP boundary |
+| --- | --- | --- |
+| [Native Python](https://bet-lab.github.io/tmhp/getting-started/) | You are running design studies, validation, notebooks, or regression tests directly in Python | `analyze_steady()`, `analyze_dynamic()`, and `step()` |
+| [EnergyPlus Python Plugin](https://bet-lab.github.io/tmhp/integrations/energyplus-python.html) | EnergyPlus should keep the IDF, schedules, plant loop, tank state, meters, and reporting | TMHP answers each plant-solver request through a steady ASHPB cycle solve |
+| [FMI 2.0 FMU](https://bet-lab.github.io/tmhp/integrations/fmu.html) | A co-simulation master such as FMPy, Modelica tooling, OMSimulator, Dymola, or Simulink should drive the heat pump as an external component | TMHP exposes weather, draw, tank, power, heat, COP, and diagnostics as FMI variables |
+
+This makes TMHP useful for whole-building studies, model-based controls, refrigerant screening, heat-pump component benchmarking, and cross-tool validation while keeping the core package independent of any one simulator.
 
 ---
 

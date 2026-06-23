@@ -13,6 +13,30 @@ Use this path when you have an EnergyPlus model and want the heat pump
 to be more physical than an empirical catalogue curve fit, without
 moving the whole building simulation out of EnergyPlus.
 
+What EnergyPlus Python Plugins are
+==================================
+
+EnergyPlus Python Plugins are user-defined Python classes that inherit
+from EnergyPlus's ``EnergyPlusPlugin`` base class and override named
+methods for specific simulation calling points. In plugin mode,
+EnergyPlus is still launched as a normal EnergyPlus simulation; it
+starts an embedded Python interpreter and calls the plugin when the IDF
+declares the relevant plugin instance and calling manager (`EnergyPlus
+Python Plugin documentation
+<https://bigladdersoftware.com/epx/docs/9-3/input-output-reference/group-python-plugins.html>`_).
+
+The broader EnergyPlus Python API exposes functional, runtime, and data
+exchange interfaces. The data exchange API is the part TMHP uses here:
+it reads plant-loop values and writes actuators or plugin globals during
+runtime callback methods (`EnergyPlus Python API
+<https://energyplus.readthedocs.io/en/latest/api.html>`_).
+
+For TMHP, this is a narrow and useful boundary. EnergyPlus keeps the
+IDF, weather file, schedules, plant loop iteration, storage tank, sizing,
+and reporting. TMHP only replaces the heat-pump component response with
+a cycle-resolved steady solve, then returns outlet temperature,
+mass-flow request, electricity, and diagnostics to EnergyPlus.
+
 Runtime contract
 ================
 
@@ -36,6 +60,28 @@ Practical setup:
 3. Verify an import-only smoke plugin first. A wrong-ABI native wheel
    such as CoolProp can fail before the plant callback reaches useful
    logging.
+
+What this enables
+=================
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Workflow
+     - Why the adapter matters
+   * - Replace a catalogue curve
+     - Keep the same EnergyPlus plant model, but substitute a
+       refrigerant-cycle TMHP solve for an empirical heat-pump
+       performance curve.
+   * - Compare refrigerants in context
+     - Run the same building and plant dispatch against different
+       CoolProp-supported refrigerants without re-fitting component
+       curves for every candidate.
+   * - Preserve EnergyPlus reporting
+     - Leave EnergyPlus responsible for meters, schedules, plant loop
+       iteration, and custom output variables while TMHP exposes
+       compressor energy, power, convergence, and failure diagnostics.
 
 IDF wiring
 ==========
