@@ -92,6 +92,8 @@ class ASHPB_STC_tank(AirSourceHeatPumpBoiler):
         # Do NOT pass stc to super().__init__ — keeps self._subsystems empty.
         super().__init__(**kwargs)
         self._stc: SolarThermalCollector = stc
+        # 펌프 전력 배제 (상수도 수압 활용 및 STC 모델 간 일관성 유지)
+        self._stc.E_stc_pump = 0.0
         # Expose as self.stc so analyze_dynamic() enables I_DN/I_dH schedules.
         self.stc = stc
 
@@ -158,6 +160,13 @@ class ASHPB_STC_tank(AirSourceHeatPumpBoiler):
             Q_flow: float = c_w * rho_w * (dV_in * T_tank_w_in_K_n - dV_out * T_cand_K)
             Q_loss: float = self.UA_tank_wall * (T_cand_K - self.T_sur_K)
 
+            # Prevent radiator effect: if the tank is hotter than STC, STC controller turns off pump.
+            if Q_stc_net < 0.0:
+                Q_stc_net = 0.0
+                current_E_pump = 0.0
+            else:
+                current_E_pump = E_pump
+
             C_curr: float = self.C_tank * max(0.001, ctx.tank_level)
             C_next: float = self.C_tank * max(0.001, tank_level)
 
@@ -165,7 +174,7 @@ class ASHPB_STC_tank(AirSourceHeatPumpBoiler):
             r: float = (
                 C_next * T_cand_K
                 - C_curr * ctx.T_tank_w_K
-                - dt_s * (ctrl.Q_heat_source + E_pump + Q_stc_net + Q_flow - Q_loss)
+                - dt_s * (ctrl.Q_heat_source + current_E_pump + Q_stc_net + Q_flow - Q_loss)
             )
             return r / self.C_tank
 
