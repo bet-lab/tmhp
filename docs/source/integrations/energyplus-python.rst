@@ -83,6 +83,33 @@ What this enables
        iteration, and custom output variables while TMHP exposes
        compressor energy, power, convergence, and failure diagnostics.
 
+The payoff is concrete: the whole EnergyPlus building stays exactly as it is,
+and the empirical catalogue curve in the plant slot is replaced by a
+refrigerant-cycle solve — so you can compare refrigerants in the same building
+and dispatch without re-fitting a performance curve for each candidate.
+
+.. raw:: html
+
+   <div class="tmhp-diagram" data-diagram="ep-example"></div>
+
+How one plant call works
+========================
+
+EnergyPlus owns the plant loop, the storage tank, and the timestep. On each
+plant-solver call it hands the plugin the loop boundary values, and the plugin
+answers with a single steady cycle solve. (A one-shot sizing call runs once
+before the simulation to size the plant connection.) Walk through one call
+step by step:
+
+.. raw:: html
+
+   <div class="tmhp-diagram" data-diagram="ep-seq"></div>
+
+The plugin memoizes the solve on rounded inputs, because the plant solver
+re-calls it with identical inputs many times per timestep, and it converts the
+delivered heat into the outlet-temperature actuator with
+``T_out = T_in + Q_ref_tank / (mdot * cp)``.
+
 IDF wiring
 ==========
 

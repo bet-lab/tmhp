@@ -45,6 +45,14 @@ ships two adapters over the same ASHPB ``step()`` seam:
   expose clocks, Scheduled Execution, or arrays because the current TMHP
   boundary is a scalar one-step heat-pump component.
 
+Both adapters wrap the identical ``step()`` kernel and expose the same scalar
+boundary — four parameters, three inputs, and eight outputs. Only the
+FMI-version mechanics differ, as the diagram makes concrete:
+
+.. raw:: html
+
+   <div class="tmhp-diagram" data-diagram="fmi-compare"></div>
+
 The practical benefit is tool reach. The FMI project maintains a tools
 catalog across importers, exporters, platforms, and FMI versions (`FMI
 tools <https://fmi-standard.org/tools/>`_). A 2025 FMI project note
@@ -67,6 +75,14 @@ co-simulation component. That enables:
   the TMHP cycle model for every host tool;
 - keeping thermal physics, plant control, building loads, and
   post-processing in the tools that already model each part best.
+
+A concrete example: wire an EnergyPlus envelope FMU, the TMHP heat-pump FMU,
+and a supervisory controller together under one FMI master, and each domain
+stays in the tool that models it best.
+
+.. raw:: html
+
+   <div class="tmhp-diagram" data-diagram="fmu-example"></div>
 
 Install the optional FMU tooling
 ================================
@@ -126,6 +142,25 @@ supports the FMU's FMI major version:
            "failure_reason",
        ],
    )
+
+How one communication step works
+================================
+
+The master owns the schedule; the FMU owns the ASHPB state. On each
+communication step the master sets the input variables, calls ``do_step``,
+and reads the outputs, while the adapter advances the cycle-resolved core by
+exactly one ``step()`` call. Walk through it one message at a time:
+
+.. raw:: html
+
+   <div class="tmhp-diagram" data-diagram="fmu-seq"></div>
+
+The headline difference between the two adapters lives in that ``do_step``
+return: the FMI 2.0 slave returns a bare ``bool``, while the FMI 3.0 slave
+returns an ``Fmi3StepResult`` and can signal an invalid input as a discarded
+step with early return. Either way, ``step()`` is the only TMHP call per
+communication step, which is what keeps the FMU output aligned with a native
+``analyze_dynamic()`` run.
 
 Runtime contract
 ================
