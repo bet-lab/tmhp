@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import tomllib
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -34,3 +36,13 @@ def test_coverage_is_collected_once_on_canonical_python() -> None:
     assert "if: matrix.python-version != '3.12'" in text
     assert "name: coverage-3.12" in text
     assert "coverage-${{ matrix.python-version }}" not in text
+
+
+def test_test_matrix_runs_pytest_with_xdist_workers() -> None:
+    workflow = _read(".github/workflows/tests.yml")
+    pyproject = tomllib.loads(_read("pyproject.toml"))
+    dev_dependencies = pyproject["dependency-groups"]["dev"]
+
+    assert any(dependency.startswith("pytest-xdist") for dependency in dev_dependencies)
+    assert workflow.count("uv run pytest -q -n auto") == 2
+    assert "uv run pytest -q -n auto \\\n            --cov=tmhp" in workflow
