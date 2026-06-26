@@ -110,7 +110,7 @@ html_theme_options = {
     # Social-card image shown when the docs are linked on GitHub, Slack, etc.
     "og_image_url": (
         "https://bet-lab.github.io/tmhp/"
-        "_static/system_schematic.png"
+        "_static/source_sink_matrix.svg"
     ),
 }
 
@@ -174,9 +174,9 @@ ogp_site_url = "https://bet-lab.github.io/tmhp/"
 ogp_site_name = "Thermodynamic Models for Heat Pumps"
 ogp_image = (
     "https://bet-lab.github.io/tmhp/"
-    "_static/system_schematic.png"
+    "_static/source_sink_matrix.svg"
 )
-ogp_image_alt = "ASHPB refrigerant cycle schematic"
+ogp_image_alt = "TMHP source and sink family matrix"
 ogp_use_first_image = True
 
 # -- Sitemap ------------------------------------------------------------------

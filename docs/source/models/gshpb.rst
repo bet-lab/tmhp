@@ -7,8 +7,8 @@ Ground-source heat pump boiler (GSHPB)
    <span class="glossary" data-term="gshpb">GSHPB</span>
 
 The ``GSHPB`` family pairs the shared refrigerant cycle with a
-ground-loop source side (vertical borehole field) and the same DHW
-tank sink as ASHPB.
+ground-loop source side (vertical borehole field) and a DHW tank
+sink.
 
 Overview
 ========
@@ -69,15 +69,17 @@ constant whether the field is one borehole or a hundred.
 Sink-side mechanics
 ===================
 
-Same as ASHPB — single-node DHW tank, implicit per-step solve.
+Single-node DHW tank, implicit per-step solve — the same demand-side
+sink used by the air-source and water-source boiler families.
 
 Composed variants
 =================
 
-Usage patterns for the tank-side variants are identical to ASHPB's —
-see :doc:`ashpb` for full STC preheat and PV + ESS examples. The
-ground-side STC variants route collected solar heat into the borehole
-field instead of, or in exclusive alternation with, the tank.
+Usage patterns for the tank-side variants follow the same demand-side
+composition pattern as the air-source boiler family — see :doc:`ashpb`
+for full STC preheat and PV + ESS examples. The ground-side STC
+variants route collected solar heat into the borehole field instead
+of, or in exclusive alternation with, the tank.
 
 .. tab-set::
    :class: composition-tabs

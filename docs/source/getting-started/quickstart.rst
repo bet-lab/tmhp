@@ -8,6 +8,14 @@ against the library, and the fastest way to confirm your install
 works. Once this runs, move on to the time-stepping flow in
 :doc:`first-dynamic-simulation`.
 
+The example uses ASHPB because it is the validated reference case and
+its inputs are easy to inspect: tank temperature, outdoor air
+temperature, and condenser duty. The same refrigerant argument, COP
+fields, and diagnostic semantics carry over to the other cycle-resolved
+source/sink model families. The load inputs and heat-duty output names
+are model-specific: boilers use tank charge, while ASHP/GSHP use the
+indoor-unit load ``Q_r_iu``.
+
 A single steady-state operating point
 =====================================
 

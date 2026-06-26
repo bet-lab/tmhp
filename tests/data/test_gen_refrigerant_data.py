@@ -34,6 +34,17 @@ def test_supported_refrigerants() -> None:
     assert gen.REFRIGERANTS == ["R410A", "R134a", "R32", "R290"]
 
 
+def test_ci_profile_uses_reduced_cycle_grid() -> None:
+    full_axes = dict(gen.profile_param_axes("full"))
+    ci_axes = dict(gen.profile_param_axes("ci"))
+
+    assert ci_axes["refrigerant"] == full_axes["refrigerant"]
+    assert len(ci_axes["T_source"]) < len(full_axes["T_source"])
+    assert len(ci_axes["T_sink"]) < len(full_axes["T_sink"])
+    assert ci_axes["dT_subcool"] == [3.0]
+    assert ci_axes["dT_superheat"] == [5.0]
+
+
 def test_saturation_curves_are_monotonic_in_pressure(monkeypatch) -> None:
     monkeypatch.setattr(gen, "SAT_CURVE_POINTS", 64)
 
@@ -83,6 +94,7 @@ def test_writes_cycle_widget_payload(tmp_path, monkeypatch) -> None:
         "4",
     ]
     assert payload["meta"]["n_total"] == 1
+    assert payload["meta"]["profile"] == "full"
     assert payload["params"]["refrigerant"] == ["R32"]
     assert payload["saturation"]["R32"]["p_sat"]
 
@@ -102,3 +114,11 @@ def test_cli_accepts_optional_output_path(monkeypatch) -> None:
     args = gen._parse_args()
 
     assert args.out_path == "out/cycle_data.json"
+
+
+def test_cli_accepts_data_profile(monkeypatch) -> None:
+    monkeypatch.setattr("sys.argv", ["gen_refrigerant_data", "--profile", "ci"])
+
+    args = gen._parse_args()
+
+    assert args.profile == "ci"

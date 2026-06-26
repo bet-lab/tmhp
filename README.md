@@ -23,18 +23,18 @@ Sister project: [**Energy-Exergy Analysis Engine**](https://github.com/bet-lab/e
 
 ## Overview
 
-TMHP is a Python library of **thermodynamic cycle models** for air-source, ground-source, and water-source heat pumps. The models cover domestic hot water (DHW), space heating, and space cooling.
+TMHP is a Python library of **thermodynamic cycle models** for heat pumps. The released public model families currently cover air-, ground-, and water-source DHW boilers plus air- and ground-source space-conditioning heat pumps for heating and cooling.
 
-Every model solves the same closed refrigerant cycle from first principles at every time step — no manufacturer-specific curve fits, no per-unit recalibration. Swap the refrigerant, change the source side, or move the operating point, and the same code path produces a coherent answer.
+Each released cycle-resolved model family solves the same closed refrigerant cycle from first principles — no manufacturer-specific curve fits, no per-unit recalibration. Swap the refrigerant, change the source side, or move the operating point, and the shared core produces a coherent answer.
 
-TMHP is now also an integration package. The same cycle-resolved ASHPB model can run natively in Python, answer an EnergyPlus `PlantComponent:UserDefined` callback through a Python Plugin, or be exported as FMI 2.0 and FMI 3.0 Co-Simulation FMUs for external masters.
+TMHP is now also an integration package. The same cycle-resolved heat-pump core can run natively in Python, answer a building-simulator plant callback, or be exported as FMI 2.0 and FMI 3.0 Co-Simulation FMUs. The current EnergyPlus and FMI adapters wrap the validated ASHPB reference implementation, while the documentation keeps that adapter scope separate from the broader refrigerant-cycle model family.
 
 | What you need | What TMHP gives you |
 | --- | --- |
 | Physics beyond catalogue curves | Refrigerant state points, compressor work, heat exchangers, COP, and convergence diagnostics from a shared thermodynamic cycle core |
 | Refrigerant and operating-point studies | Any CoolProp-supported refrigerant can be swapped at runtime without re-fitting empirical coefficients |
 | Building-simulation coupling | EnergyPlus Python Plugin support for plant-loop surrogate modeling |
-| Tool-to-tool co-simulation | FMI 2.0 and FMI 3.0 FMU export for ASHPB `step()` workflows |
+| Tool-to-tool co-simulation | FMI 2.0 and FMI 3.0 FMU export for the current ASHPB `step()` adapter, aligned with the shared cycle core |
 | Reproducible validation | Samsung EHS Mono HT Quiet R32 parity benchmark regenerated from source |
 
 ---
@@ -60,9 +60,9 @@ TMHP keeps the heat-pump thermodynamics in one reusable model boundary instead o
 
 | Integration path | Use it when | TMHP boundary |
 | --- | --- | --- |
-| [Native Python](https://bet-lab.github.io/tmhp/getting-started/) | You are running design studies, validation, notebooks, or regression tests directly in Python | `analyze_steady()`, `analyze_dynamic()`, and `step()` |
-| [EnergyPlus Python Plugin](https://bet-lab.github.io/tmhp/integrations/energyplus-python.html) | EnergyPlus should keep the IDF, schedules, plant loop, tank state, meters, and reporting | TMHP answers each plant-solver request through a steady ASHPB cycle solve |
-| [FMI FMU](https://bet-lab.github.io/tmhp/integrations/fmu.html) | A co-simulation master such as FMPy, Modelica tooling, OMSimulator, Dymola, or Simulink should drive the heat pump as an external component | TMHP provides separate FMI 2.0 and FMI 3.0 adapters over the same weather, draw, tank, power, heat, COP, and diagnostic variables |
+| [Native Python](https://bet-lab.github.io/tmhp/getting-started/) | You are running design studies, validation, notebooks, or regression tests directly in Python | `analyze_steady()` and `analyze_dynamic()` across released model families; `step()` for the current ASHPB dynamic adapter boundary |
+| [EnergyPlus Python Plugin](https://bet-lab.github.io/tmhp/integrations/energyplus-python.html) | EnergyPlus should keep the IDF, schedules, plant loop, tank state, meters, and reporting | TMHP answers each plant-solver request through the current steady ASHPB reference adapter |
+| [FMI FMU](https://bet-lab.github.io/tmhp/integrations/fmu.html) | A co-simulation master such as FMPy, Modelica tooling, OMSimulator, Dymola, or Simulink should drive the heat pump as an external component | TMHP provides separate FMI 2.0 and FMI 3.0 adapters over the current ASHPB dynamic boundary: weather, draw, tank, power, heat, COP, and diagnostics |
 
 This makes TMHP useful for whole-building studies, model-based controls, refrigerant screening, heat-pump component benchmarking, and cross-tool validation while keeping the core package independent of any one simulator.
 
@@ -72,21 +72,21 @@ This makes TMHP useful for whole-building studies, model-based controls, refrige
 
 <div align="center">
 
+<img src="docs/source/_static/source_sink_matrix.svg" alt="TMHP released source/sink family matrix: ASHPB, GSHPB, and WSHPB serve DHW tanks, while ASHP and GSHP serve space-conditioning loads with the same refrigerant-cycle core" width="900">
+
+<sub><i>Released model-family view — the refrigerant-cycle core stays fixed while the public class boundary changes.</i></sub>
+
+<br/><br/>
+
 <a href="https://bet-lab.github.io/tmhp/concepts/cycle-architecture.html">
   <img src="docs/source/_static/cycle-architecture.svg" alt="Cycle architecture: source → evaporator → compressor → condenser → expander, with a cycle-closure solver optimizing the evaporating-side approach temperature and compressor speed" width="900">
 </a>
 
 <sub><i>Shared cycle architecture — bold blocks are reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP. <a href="https://bet-lab.github.io/tmhp/concepts/cycle-architecture.html">Open the interactive version →</a></i></sub>
 
-<br/><br/>
-
-![ASHPB system schematic](docs/source/_static/system_schematic.png)
-
-<sub><i>Reference ASHPB topology — outdoor unit, refrigerant loop, hot water tank, mixing valve.</i></sub>
-
 </div>
 
-Each time step solves a closed refrigerant cycle coupled to the surrounding system (tank, building, ground loop, …). The condenser duty is given; the evaporating temperature is the free variable, picked by minimizing compressor power. The cycle closes on a physical optimum, not on fitted coefficients.
+Each time step solves a closed refrigerant cycle coupled to the surrounding system (tank, building, ground loop, …). The active demand boundary supplies the target duty — tank charge for boiler families or indoor-unit load for space-conditioning families — and the cycle solver selects a feasible minimum-power operating point. The cycle closes on a physical optimum, not on fitted coefficients.
 
 | Sub-model                | Method                                                                                                |
 | ------------------------ | ----------------------------------------------------------------------------------------------------- |
@@ -99,13 +99,13 @@ Each time step solves a closed refrigerant cycle coupled to the surrounding syst
 | Cycle closure            | Internal minimization → optimal evaporating temperature                                               |
 | Plotting backend         | [dartwork-mpl](https://github.com/dartworklabs/dartwork-mpl) — thin matplotlib utility layer          |
 
-The same refrigerant cycle is reused across every system model. What varies between models is composed along three independent axes:
+The same refrigerant cycle is reused across the released cycle-resolved families. What varies between models is composed along three independent axes:
 
-- **Environmental medium** — air, ground, or water. Acts as the heat _source_ in heating mode and the heat _sink_ in cooling mode; the same loop, with the direction of heat flow reversed.
-- **Demand side** — what the system has to deliver: a domestic-hot-water tank, a space-heating load, or a space-cooling load.
+- **Environmental medium** — air, ground, or water in the released families. Water is currently exposed as a DHW-boiler family; air and ground also have space-conditioning classes.
+- **Demand side** — the released public boundaries are a domestic-hot-water tank or a building load. `AirSourceHeatPump` and `GroundSourceHeatPump` use `Q_r_iu > 0` for cooling and `Q_r_iu < 0` for heating.
 - **Auxiliary subsystems** — parallel energy contributors that augment (not replace) the cycle: solar thermal collectors (STC) preheat the tank, photovoltaics (PV) offset compressor and fan electricity, and an energy storage system (ESS) buffers surplus PV generation.
 
-Each concrete model in the [next section](#models) is a fixed combination of these three axes.
+Each concrete model in the [next section](#models) is a fixed, code-backed combination of these axes.
 
 ---
 
@@ -149,6 +149,8 @@ See the [installation guide](https://bet-lab.github.io/tmhp/getting-started/inst
 ## Quick start
 
 ### Steady-state operating point
+
+The first runnable example uses `AirSourceHeatPumpBoiler` because it is the quantitatively validated reference case and has the smallest input surface. The same refrigerant argument and diagnostic pattern carry over to the other cycle-resolved source/sink families documented below; load inputs and heat-duty output names are model-specific.
 
 ```python
 from tmhp import AirSourceHeatPumpBoiler
@@ -211,6 +213,11 @@ df = ashpb.analyze_dynamic(
 
 ## Models
 
+The core public families below are code-backed combinations of source
+boundary and demand boundary. ASHPB also exposes the current dynamic
+`step()` boundary used by the FMI adapters; the other families use
+`analyze_steady()` and `analyze_dynamic()`.
+
 <details open>
 <summary><b>Air-source heat pump boilers (ASHPB)</b></summary>
 
@@ -242,7 +249,7 @@ df = ashpb.analyze_dynamic(
 
 | Class                       | Description         |
 | --------------------------- | ------------------- |
-| `WaterSourceHeatPumpBoiler` | Dynamic WSHPB model |
+| `WaterSourceHeatPumpBoiler` | Water-loop source + DHW tank |
 
 </details>
 
@@ -251,9 +258,9 @@ df = ashpb.analyze_dynamic(
 
 | Class                  | Description              |
 | ---------------------- | ------------------------ |
-| `AirSourceHeatPump`    | ASHP — heating & cooling |
-| `GroundSourceHeatPump` | GSHP — heating & cooling |
-| `GroundSourceHeatPumpEmpirical` | GSHP — EnergyPlus EquationFit COP model |
+| `AirSourceHeatPump`    | Air source + building load; `Q_r_iu > 0` cooling, `< 0` heating |
+| `GroundSourceHeatPump` | Ground source + building load; `Q_r_iu > 0` cooling, `< 0` heating |
+| `GroundSourceHeatPumpEmpirical` | GSHP EquationFit shortcut; not a refrigerant-cycle-core family |
 
 </details>
 
@@ -280,9 +287,9 @@ df = ashpb.analyze_dynamic(
 | `simulation_summary.py` | Stdout summary tables                                          |
 | `visualization.py`      | Plotting facade                                                |
 | `mollier_diagram.py`    | T-h / P-h / T-s plots                                          |
-| `integrations/fmu.py`   | FMI 2.0 co-simulation adapter for ASHPB `step()`               |
-| `integrations/fmu3.py`  | FMI 3.0 co-simulation adapter for ASHPB `step()`               |
-| `integrations/energyplus_plugin.py` | EnergyPlus Python Plugin adapter for ASHPB steady-state coupling |
+| `integrations/fmu.py`   | FMI 2.0 co-simulation adapter for the current ASHPB `step()` boundary |
+| `integrations/fmu3.py`  | FMI 3.0 co-simulation adapter for the current ASHPB `step()` boundary |
+| `integrations/energyplus_plugin.py` | EnergyPlus Python Plugin adapter for the current ASHPB steady-state boundary |
 | `uv_treatment.py`       | UV treatment subsystem                                         |
 | `calc_util.py`          | Unit conversions                                               |
 | `constants.py`          | Physical constants                                             |

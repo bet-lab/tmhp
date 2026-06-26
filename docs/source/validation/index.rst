@@ -11,8 +11,9 @@ has been benchmarked against the **Samsung EHS Mono HT Quiet R32
 14 kW** catalogue across 15 operating points — :math:`T_{\mathrm{LWT}}
 \in \{40, 50, 65\}` °C paired with outdoor air temperatures from −10
 to 30 °C. The model tracks the catalogue COP to a mean absolute error
-of 0.35 (MAPE 10.1 %), with no unit-specific calibration — the same
-code path applies to any CoolProp refrigerant.
+of 0.35 (MAPE 10.1 %), with no unit-specific calibration. Within this
+ASHPB reference boundary, the same cycle code path can be rerun with
+any CoolProp refrigerant.
 
 Parity plot
 ===========
@@ -247,10 +248,13 @@ Scope
     operating points, but they have not yet been benchmarked
     against unit-specific data.
 
-Because the shared cycle is what's being validated here — not a fit
-to one machine — the same accuracy budget is expected to carry across
-the rest of the family. Per-family catalogue comparisons will be
-added as the relevant data becomes available.
+This benchmark validates the released first-principles ASHPB reference
+path against one real catalogue rather than tuning a curve fit to that
+catalogue. It supports confidence in the shared refrigerant-cycle
+implementation, but it is not yet a quantitative validation claim for
+the ground-source, water-source, or space-conditioning families.
+Per-family catalogue comparisons will be added as the relevant data
+becomes available.
 
 Citations
 =========

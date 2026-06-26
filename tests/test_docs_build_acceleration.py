@@ -1,0 +1,40 @@
+"""Guards for keeping the docs data build fast in local and CI runs."""
+
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _read(relative: str) -> str:
+    return (REPO_ROOT / relative).read_text(encoding="utf-8")
+
+
+def test_docs_makefile_tracks_generated_json_as_file_targets() -> None:
+    makefile = _read("docs/Makefile")
+
+    assert "DATA_TARGETS" in makefile
+    assert "data: $(DATA_TARGETS)" in makefile
+    assert "$(CYCLE_DATA_JSON):" in makefile
+    assert "$(GLOSSARY_DATA_JSON):" in makefile
+    assert "$(VALIDATION_DATA_JSON):" in makefile
+    assert "$(TIMESERIES_DATA_JSON):" in makefile
+    assert "DOCS_DATA_PROFILE ?= full" in makefile
+    assert "CYCLE_DATA_STAMP" in makefile
+    assert "gen_refrigerant_data --profile" in makefile
+
+
+def test_github_workflows_cache_generated_docs_data() -> None:
+    for workflow in (
+        ".github/workflows/tests.yml",
+        ".github/workflows/docs.yml",
+    ):
+        text = _read(workflow)
+
+        assert "id: docs-data-cache" in text, workflow
+        assert "actions/cache@" in text, workflow
+        assert "docs/source/_static/widgets/cycle_data.json" in text, workflow
+        assert "docs/source/_static/widgets/cycle_data.*.stamp" in text, workflow
+        assert "docs/source/_static/data/*.json" in text, workflow
+        assert "hashFiles(" in text and "scripts/data/**" in text, workflow
+        assert "Refresh cached docs data mtimes" in text, workflow
+        assert "steps.docs-data-cache.outputs.cache-hit == 'true'" in text, workflow
