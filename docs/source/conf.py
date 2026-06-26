@@ -67,7 +67,7 @@ html_theme = "shibuya"
 html_title = "TMHP"
 html_short_title = "TMHP"
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css"]
+html_css_files = ["css/custom.css", "css/integration-diagrams.css"]
 
 # Interactive-layer JS modules. Registered here (rather than injected via
 # `_templates/page.html`) so Sphinx adds a content-hash `?v=` to each URL —
@@ -81,6 +81,7 @@ html_js_files = [
     ("js/core/reading-progress.js", _DEFER),
     ("js/core/scroll-spy.js", _DEFER),
     ("js/core/global.js", _DEFER),
+    ("js/widgets/integration-diagrams.js", _DEFER),
 ]
 html_baseurl = "https://bet-lab.github.io/tmhp/"
 
