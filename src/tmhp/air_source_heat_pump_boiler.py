@@ -39,6 +39,7 @@ configured through constructor parameters.
 """
 
 import contextlib
+import inspect
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -46,7 +47,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize_scalar
+from scipy.optimize import brentq, minimize_scalar
 from tqdm import tqdm
 
 from . import calc_util as cu
@@ -457,7 +458,6 @@ class AirSourceHeatPumpBoiler:
         actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_tank - self.dT_hx_min))
         actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_ou - self.dT_hx_min))
 
-        import inspect
         def _eval_eff(eff, r_p, rps):
             if eff is None:
                 return 1.0
@@ -539,7 +539,6 @@ class AirSourceHeatPumpBoiler:
             m_dot = self.V_cmp_ref * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * rps
             return (m_dot * dh_cond_local) - Q_ref_tank
 
-        from scipy.optimize import brentq
         try:
             cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
             converged_rps = True

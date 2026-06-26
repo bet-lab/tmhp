@@ -17,11 +17,12 @@ heat exchange at the indoor unit.
 """
 
 import contextlib
+import inspect
 from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
+from scipy.optimize import brentq, minimize
 from tqdm import tqdm
 
 from . import calc_util as cu
@@ -361,7 +362,6 @@ class AirSourceHeatPump:
         actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - self.dT_hx_min))
         actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - self.dT_hx_min))
 
-        import inspect
         def _eval_eff(eff, r_p, rps) -> float:
             if eff is None:
                 return 1.0
@@ -454,7 +454,6 @@ class AirSourceHeatPump:
             else:
                 return (m_dot * dh_cond_local) - abs(Q_r_iu)
 
-        from scipy.optimize import brentq
         try:
             cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
             converged_rps = True
