@@ -54,3 +54,21 @@ def test_pages_workflow_cancels_stale_deploys() -> None:
 
     assert "group: pages" in pages_workflow
     assert "cancel-in-progress: true" in pages_workflow
+
+
+def test_pages_workflow_skips_ci_only_pushes() -> None:
+    pages_workflow = _read(".github/workflows/docs.yml")
+
+    assert "paths:" in pages_workflow
+    for deploy_relevant_path in (
+        "docs/**",
+        "src/tmhp/**",
+        "scripts/data/**",
+        "scripts/validation/**",
+        "pyproject.toml",
+        "uv.lock",
+        ".github/workflows/docs.yml",
+    ):
+        assert f"      - {deploy_relevant_path}" in pages_workflow
+
+    assert "      - .github/workflows/tests.yml" not in pages_workflow

@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - docs/**
+      - src/tmhp/**
+      - scripts/data/**
+      - scripts/validation/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/docs.yml
 
 permissions:
   contents: write
