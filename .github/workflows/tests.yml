@@ -50,13 +50,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
+          else
+            base_sha="${{ github.event.before }}"
+            head_sha="${{ github.event.after }}"
+          fi
+
+          if [[ "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
             echo "run-matrix=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          base_sha="${{ github.event.pull_request.base.sha }}"
-          head_sha="${{ github.event.pull_request.head.sha }}"
           changed_files="$(git diff --name-only "$base_sha" "$head_sha")"
 
           if printf '%s\n' "$changed_files" | grep -E '^src/|^tests/|^scripts/|^pyproject\.toml$|^uv\.lock$|^\.github/workflows/tests\.yml$' >/dev/null; then
