@@ -11,6 +11,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-type:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install project (dev group, lockfile pinned)
+        run: uv sync --group dev --locked
+
+      - name: Ruff lint
+        run: uv run ruff check src/tmhp tests
+
+      - name: Mypy
+        run: uv run mypy src/tmhp
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -31,13 +54,12 @@ jobs:
       - name: Install project (dev group + integrations extra, lockfile pinned)
         run: uv sync --group dev --extra integrations --locked
 
-      - name: Ruff lint
-        run: uv run ruff check src/tmhp tests
-
-      - name: Mypy
-        run: uv run mypy src/tmhp
+      - name: Pytest
+        if: matrix.python-version != '3.12'
+        run: uv run pytest -q
 
       - name: Pytest with coverage
+        if: matrix.python-version == '3.12'
         run: |
           uv run pytest -q \
             --cov=tmhp \
@@ -45,9 +67,10 @@ jobs:
             --cov-report=xml
 
       - name: Upload coverage XML
+        if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.python-version }}
+          name: coverage-3.12
           path: coverage.xml
           if-no-files-found: error
 
