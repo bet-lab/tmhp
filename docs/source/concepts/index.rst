@@ -22,8 +22,8 @@ interpret the diagnostic fields each call returns.
         :link-type: doc
 
         How source side, refrigerant cycle, and sink side connect,
-        and how the same core cycle is reused across every system
-        model.
+        and how the same core cycle is reused across released
+        cycle-resolved families.
 
     .. grid-item-card:: ``failure_reason`` semantics
         :link: failure-reason-semantics

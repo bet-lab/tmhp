@@ -4,8 +4,8 @@ Refrigerants and CoolProp
 
 "Refrigerant-agnostic" is one of the headline properties of
 TMHP — and this is the page that makes it concrete. The
-refrigerant is a constructor argument on every model
-(``ref="<name>"``); state queries route through
+refrigerant is a constructor argument on every released
+cycle-resolved model family (``ref="<name>"``); state queries route through
 `CoolProp <http://www.coolprop.org>`_, which carries the
 equation-of-state heavy lifting. Below: which refrigerants work
 out of the box, where the cycle assumptions break, and how to read
@@ -38,10 +38,9 @@ out of the box:
    AirSourceHeatPumpBoiler(ref="R744")       # CO₂ (see below)
    AirSourceHeatPumpBoiler(ref="R600a")      # isobutane
 
-CoolProp returns REFPROP-grade equation-of-state values, so the
-result is competitive with a calibrated catalogue model
-*regardless* of which refrigerant you pick — no per-refrigerant
-re-tuning required.
+CoolProp returns REFPROP-grade equation-of-state values, so the same
+first-principles cycle calculation can be rerun with a different
+working fluid without per-refrigerant curve refitting.
 
 Subcritical operation (R32, R290, R410A, R134a, …)
 ==================================================

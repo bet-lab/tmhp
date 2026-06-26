@@ -7,7 +7,8 @@ Water-source heat pump boiler (WSHPB)
    <span class="glossary" data-term="wshpb">WSHPB</span>
 
 Source side is a water loop with a prescribed inlet temperature;
-sink side is the same DHW tank used by ASHPB / GSHPB.
+sink side is the shared DHW tank demand model used by the boiler
+families.
 
 Overview
 ========
@@ -42,7 +43,7 @@ inlet temperature is whatever the user supplies.
 Sink-side mechanics
 ===================
 
-Same DHW tank as ASHPB / GSHPB.
+Shared DHW tank sink with an implicit per-step energy balance.
 
 API reference
 =============

@@ -8,8 +8,8 @@ Air-source heat pump (ASHP — space conditioning)
 
 |ashp| conditions a building zone (heating + cooling) rather than
 charging a DHW tank. The refrigerant cycle and outdoor-coil source
-side are shared with ASHPB; what differs is the load side — a zone
-energy balance instead of a tank.
+side are shared with the air-source boiler family; what differs is
+the demand side — a zone energy balance instead of a tank.
 
 Overview
 ========
@@ -32,15 +32,16 @@ Base usage
 Source-side mechanics
 =====================
 
-Identical to ASHPB — outdoor coil with variable-speed fan, ε-NTU
-air-side heat exchanger.
+Outdoor coil with variable-speed fan and an ε-NTU air-side heat
+exchanger — the shared air-source environmental-side model.
 
 Sink-side mechanics
 ===================
 
 A zone temperature / load proxy stands in for the building. The
-heat pump's condenser duty serves whatever space-heating or
-cooling load the caller supplies; there is no tank energy balance.
+caller supplies indoor-unit load as ``Q_r_iu``: positive values
+select cooling, negative values select heating, and zero values
+represent off operation. There is no tank energy balance.
 
 API reference
 =============

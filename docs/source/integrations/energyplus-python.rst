@@ -2,7 +2,7 @@
 EnergyPlus Python Plugin
 ========================
 
-TMHP's EnergyPlus adapter exposes
+TMHP's current EnergyPlus adapter exposes
 :class:`~tmhp.AirSourceHeatPumpBoiler` as a
 ``PlantComponent:UserDefined`` surrogate. EnergyPlus still owns the
 plant loop, timestep, load dispatch, and storage-tank objects; TMHP
@@ -11,7 +11,9 @@ state through :meth:`~tmhp.AirSourceHeatPumpBoiler.analyze_steady`.
 
 Use this path when you have an EnergyPlus model and want the heat pump
 to be more physical than an empirical catalogue curve fit, without
-moving the whole building simulation out of EnergyPlus.
+moving the whole building simulation out of EnergyPlus. This page is
+specific to the ASHPB reference adapter that exists today; it should not
+be read as a limit on TMHP's shared refrigerant-cycle core.
 
 What EnergyPlus Python Plugins are
 ==================================
@@ -33,9 +35,10 @@ runtime callback methods (`EnergyPlus Python API
 
 For TMHP, this is a narrow and useful boundary. EnergyPlus keeps the
 IDF, weather file, schedules, plant loop iteration, storage tank, sizing,
-and reporting. TMHP only replaces the heat-pump component response with
-a cycle-resolved steady solve, then returns outlet temperature,
-mass-flow request, electricity, and diagnostics to EnergyPlus.
+and reporting. The current ASHPB adapter only replaces the heat-pump
+component response with a cycle-resolved steady solve, then returns
+outlet temperature, mass-flow request, electricity, and diagnostics to
+EnergyPlus.
 
 Runtime contract
 ================
@@ -84,9 +87,10 @@ What this enables
        compressor energy, power, convergence, and failure diagnostics.
 
 The payoff is concrete: the whole EnergyPlus building stays exactly as it is,
-and the empirical catalogue curve in the plant slot is replaced by a
-refrigerant-cycle solve — so you can compare refrigerants in the same building
-and dispatch without re-fitting a performance curve for each candidate.
+and the empirical catalogue curve in the plant slot is replaced by the current
+ASHPB refrigerant-cycle solve — so you can compare refrigerants in the same
+building and dispatch without re-fitting a performance curve for each
+candidate.
 
 .. raw:: html
 

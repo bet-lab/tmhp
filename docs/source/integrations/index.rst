@@ -8,41 +8,47 @@ adapters are optional, so the core heat-pump package stays lightweight:
 ``import tmhp`` for native Python simulation, then opt into the one adapter
 that matches the tool on the other side of the boundary.
 
-The whole idea is **model reuse**. TMHP keeps one cycle-resolved heat-pump
-model in a single place, while each external tool keeps doing what it is
+The whole idea is **model reuse**. TMHP keeps the cycle-resolved heat-pump
+physics in one package, while each external tool keeps doing what it is
 already good at: EnergyPlus owns whole-building loads and plant dispatch,
 Modelica tools own equation-based HVAC and controls, and FMI masters own
-tool-to-tool scheduling.
+tool-to-tool scheduling. The adapters on this page currently expose the
+ASHPB reference boundary; the broader model family remains available
+natively in Python.
 
-One core, three drivers
-=======================
+Model core and adapter seams
+============================
 
-The same TMHP heat-pump core can be driven in three ways. A Python study
-calls it directly; EnergyPlus drives it as a steady plant component; and an
-FMI master drives it as a dynamic co-simulation FMU. The two
-building-simulation adapters reach the **same** model — they just enter
-through **different public seams**, and that single choice is what makes one
-*steady* and the other *dynamic*.
+There are two layers to keep separate. The released cycle-resolved model
+families can be used directly in Python through their public
+``analyze_steady()`` and ``analyze_dynamic()`` methods. The optional
+external adapters currently expose the ASHPB reference boundary:
+EnergyPlus enters through a steady plant-component seam, and FMI enters
+through the ASHPB dynamic ``step()`` seam.
 
 .. raw:: html
 
    <div class="tmhp-diagram" data-diagram="hero"></div>
 
-Read the diagram left to right. Each driver hands TMHP a small set of
-boundary variables, those variables cross a public seam, and the shared core
-solves one refrigerant cycle behind that seam before returning heat, power,
-COP, tank temperature, and step diagnostics. The seam is the important part:
+Read the diagram left to right as an adapter view of ASHPB. Each external
+driver hands TMHP a small set of boundary variables, those variables cross
+a public seam, and the shared core solves one refrigerant cycle behind that
+seam before returning heat, power, COP, tank temperature, and diagnostics.
+The seam is the important part:
 
 - The **EnergyPlus** path enters through :meth:`~tmhp.AirSourceHeatPumpBoiler.analyze_steady`.
   EnergyPlus already owns the plant loop, the storage tank, the timestep, and
-  the meters, so it only needs a *steady* answer for the current conditions.
+  the meters, so the current ASHPB reference adapter only needs a *steady*
+  answer for the current conditions.
 - The **FMI** path enters through :meth:`~tmhp.AirSourceHeatPumpBoiler.step`.
   Here the FMU owns the dynamic tank state and advances it one communication
-  step at a time, while the master owns the schedule.
+  step at a time, while the master owns the schedule. This is the current
+  ASHPB dynamic adapter, not a statement that the refrigerant-cycle core is
+  ASHPB-only.
 
 Keeping those seams separate is deliberate: it stops an EnergyPlus tank and an
-FMU tank from ever being mistaken for one another, and it lets future
-heat-pump families reuse the very same integration boundary.
+FMU tank from ever being mistaken for one another, and it leaves a clear path
+for future heat-pump families to reuse the same kind of integration boundary.
 
 What integrations enable
 ========================
@@ -58,15 +64,15 @@ What integrations enable
 
     .. grid-item-card:: Export the heat pump as a reusable FMU
 
-        Package the dynamic ASHPB ``step()`` kernel behind FMI variables
-        so a co-simulation master can set weather and DHW draw inputs and
-        read power, heat, COP, tank temperature, and diagnostics.
+        Package the current ASHPB dynamic ``step()`` boundary behind FMI
+        variables so a co-simulation master can set weather and DHW draw
+        inputs and read power, heat, COP, tank temperature, and diagnostics.
 
     .. grid-item-card:: Connect to other simulation ecosystems
 
-        Use the same TMHP model in Python smoke tests, Modelica-based
+        Use the current ASHPB adapter in Python smoke tests, Modelica-based
         plant and controls studies, Simulink controller workflows, or
-        composite FMU co-simulation.
+        composite FMU co-simulation while keeping the cycle physics in TMHP.
 
 Two adapter paths are currently supported:
 
@@ -85,8 +91,8 @@ Two adapter paths are currently supported:
         :link: fmu
         :link-type: doc
 
-        Export the ASHPB dynamic ``step()`` kernel as a co-simulation FMU
-        with explicit input, output, unit, and diagnostic boundaries.
+        Export the current ASHPB dynamic ``step()`` boundary as a
+        co-simulation FMU with explicit input, output, unit, and diagnostic boundaries.
         TMHP provides separate FMI 2.0 and FMI 3.0 artifacts.
 
 Integration vocabulary
@@ -113,7 +119,7 @@ calls ``do_step``, and reads scalar outputs (`FMI specification
 includes FMI 2.0. The 3.0 specification adds features such as Scheduled
 Execution, clocks, early return, and array variables (`FMI 3.0.2 specification
 <https://fmi-standard.org/docs/3.0.2/>`_). TMHP therefore ships two adapters
-over the same ASHPB ``step()`` kernel — see :doc:`fmu` for how they differ.
+over the current ASHPB ``step()`` boundary — see :doc:`fmu` for how they differ.
 
 The reason this matters is reach. The FMI project's tools catalog covers
 hundreds of FMI-capable tools (`FMI tools <https://fmi-standard.org/tools/>`_),
@@ -132,9 +138,9 @@ schedule, and tank objects, and you want TMHP to replace an empirical
 heat-pump curve with a refrigerant-cycle-resolved answer.
 
 Use :doc:`fmu` when an FMI master should own the co-simulation schedule and
-TMHP should advance an ASHPB state across each communication step. This path
-is best for tool-to-tool coupling, and for comparing the same dynamic kernel
-against native Python ``analyze_dynamic()`` runs.
+TMHP should advance the current ASHPB reference state across each communication
+step. This path is best for tool-to-tool coupling, and for comparing the same
+dynamic boundary against native Python ``analyze_dynamic()`` runs.
 
 Examples of FMU host workflows
 ==============================
@@ -171,7 +177,7 @@ Examples of FMU host workflows
      - Modelica tools can import/export FMUs and build composite
        co-simulation models that mix Modelica and non-Modelica
        submodels.
-     - Put TMHP's cycle-resolved ASHPB next to Modelica hydronic loops,
+     - Put TMHP's cycle-resolved ASHPB reference FMU next to Modelica hydronic loops,
        tanks, district plants, or controllers.
    * - `FMPy <https://github.com/CATIA-Systems/FMPy>`_
      - FMPy is a Python library and GUI for inspecting and simulating

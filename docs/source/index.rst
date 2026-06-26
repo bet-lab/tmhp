@@ -8,15 +8,15 @@ A physics-based Python library for heat pump simulation.
 
 .. rst-class:: lead
 
-   First-principles dynamic models for air-source, ground-source, and
-   water-source heat pumps — covering DHW, space heating, and space
-   cooling.
+   First-principles dynamic models for heat pumps: air-, ground-,
+   and water-source DHW boilers plus air- and ground-source
+   space-conditioning heat pumps for heating and cooling.
 
-TMHP solves the closed refrigerant cycle at every time step using
-`CoolProp <http://www.coolprop.org>`_ as the equation-of-state
-backend. The same model code applies across refrigerants and
-operating envelopes, with no manufacturer-specific curve fits and no
-per-unit recalibration.
+TMHP's released cycle-resolved families solve the closed refrigerant
+cycle at every time step using `CoolProp <http://www.coolprop.org>`_
+as the equation-of-state backend. The shared core applies across
+refrigerants and operating envelopes, with no manufacturer-specific
+curve fits and no per-unit recalibration.
 
 .. container:: hero-badges
 
@@ -61,9 +61,8 @@ per-unit recalibration.
         :link: models/index
         :link-type: doc
 
-        ASHPB / GSHPB / WSHPB plus the space-conditioning ASHP /
-        GSHP — each one a 1-stop page with source-side mechanics,
-        composed subsystem variants, and API reference.
+        Released source/sink model families: ASHPB, GSHPB, and
+        WSHPB for DHW; ASHP and GSHP for space heating/cooling.
 
     .. grid-item-card:: Tutorials
         :link: tutorials/index
@@ -77,7 +76,8 @@ per-unit recalibration.
         :link-type: doc
 
         Couple TMHP to EnergyPlus Python Plugins or export the
-        ASHPB dynamic kernel as FMI 2.0 / FMI 3.0 co-simulation FMUs.
+        current ASHPB reference adapter as FMI 2.0 / FMI 3.0
+        co-simulation FMUs.
 
     .. grid-item-card:: API Reference
         :link: api/index
@@ -91,8 +91,9 @@ per-unit recalibration.
         :link: validation/index
         :link-type: doc
 
-        ASHPB benchmarked against 15 Samsung EHS catalogue
-        points — parity plot, per-point table, reproducibility.
+        The ASHPB reference case benchmarked against 15 Samsung
+        EHS catalogue points — parity plot, per-point table,
+        reproducibility.
 
     .. grid-item-card:: Visualize
         :link: tutorials/visualize-the-cycle

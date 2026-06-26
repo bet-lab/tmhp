@@ -46,7 +46,9 @@ Sink-side mechanics
 ===================
 
 A zone temperature / load proxy stands in for the building, as in
-:doc:`ashp`.
+:doc:`ashp`. The indoor-unit load ``Q_r_iu`` selects operating mode:
+positive values are cooling, negative values are heating, and zero
+values are off operation.
 
 Empirical alternative
 =====================

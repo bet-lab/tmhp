@@ -2,15 +2,19 @@
 FMI FMU export
 ==============
 
-TMHP's FMU adapter wraps
+TMHP's current FMU adapter wraps
 :class:`~tmhp.AirSourceHeatPumpBoiler` as an FMI Co-Simulation
 component. The FMI master owns the communication schedule; the FMU owns
-the ASHPB dynamic state and advances it through
+the ASHPB reference dynamic state and advances it through
 :meth:`~tmhp.AirSourceHeatPumpBoiler.step` at each ``do_step`` call.
 
 Use this path when TMHP needs to participate in a tool-level
 co-simulation workflow, or when a non-Python master should drive a
-cycle-resolved ASHPB component with explicit FMI variables.
+cycle-resolved ASHPB reference component with explicit FMI variables.
+This page documents the adapter that exists today; the broader TMHP
+model family still shares the same refrigerant-cycle core across the
+released DHW-boiler families and the air/ground space-conditioning
+families.
 
 FMI and FMU in one minute
 =========================
@@ -36,7 +40,7 @@ features such as Scheduled Execution, clocks, early return, event mode,
 intermediate update, array variables, and additional scalar types
 (`FMI 3.0.2 specification
 <https://fmi-standard.org/docs/3.0.2/>`_). For tool reach, TMHP therefore
-ships two adapters over the same ASHPB ``step()`` seam:
+ships two adapters over the same ASHPB reference ``step()`` seam:
 
 - :mod:`tmhp.integrations.fmu` builds an FMI 2.0 Co-Simulation FMU with
   ``pythonfmu``. This is the conservative compatibility path.
@@ -63,10 +67,10 @@ Co-Simulation exporters (`FMI tools milestone
 What becomes possible
 =====================
 
-The FMU adapter turns TMHP from a Python-only model into a reusable
-co-simulation component. That enables:
+The FMU adapter turns the current ASHPB reference boundary from a
+Python-only model into a reusable co-simulation component. That enables:
 
-- putting the same heat-pump model behind a Modelica plant loop, an
+- putting the same cycle-resolved heat-pump boundary behind a Modelica plant loop, an
   EnergyPlus envelope FMU, a Python regression harness, or a controller
   model;
 - comparing native Python ``analyze_dynamic()`` results against the FMU
@@ -146,10 +150,11 @@ supports the FMU's FMI major version:
 How one communication step works
 ================================
 
-The master owns the schedule; the FMU owns the ASHPB state. On each
-communication step the master sets the input variables, calls ``do_step``,
-and reads the outputs, while the adapter advances the cycle-resolved core by
-exactly one ``step()`` call. Walk through it one message at a time:
+The master owns the schedule; the FMU owns the ASHPB reference state. On
+each communication step the master sets the input variables, calls
+``do_step``, and reads the outputs, while the adapter advances the
+cycle-resolved core by exactly one ``step()`` call. Walk through it one
+message at a time:
 
 .. raw:: html
 
@@ -173,7 +178,7 @@ target operating system, architecture, and Python ABI.
 Both adapters intentionally target Co-Simulation only:
 
 - TMHP exposes no continuous state derivatives for FMI model exchange.
-- The ASHPB state is advanced in one pass for each communication step.
+- The ASHPB reference state is advanced in one pass for each communication step.
 - Save-state and rollback support are outside the current adapter scope.
 - FMI outputs are sanitized so NaN or infinity does not cross the
   importer boundary.
@@ -207,7 +212,7 @@ well-established ecosystems:
        and documents use cases such as rapid prototyping, integrated
        energy-system testing, controls development, and Spawn/EnergyPlus
        coupling.
-     - Place a TMHP ASHPB FMU inside a Modelica hydronic plant, compare
+     - Place a TMHP ASHPB reference FMU inside a Modelica hydronic plant, compare
        it with Modelica-native heat-pump models, or study refrigerant
        choices in a district-energy controls scenario.
    * - `Spawn of EnergyPlus

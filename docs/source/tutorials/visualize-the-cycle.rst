@@ -17,15 +17,16 @@ The output
 ==========
 
 .. figure:: ../_static/mollier_cycle_R32.svg
-    :alt: Two-panel cycle diagram for R32 ASHPB at T_tank = 60 °C,
-        T_0 = 12 °C, Q_cond = 8 kW. Panel (a) shows the cycle on a
-        P–h chart, panel (b) on a T–h chart with horizontal
-        reference lines marking the tank-water and outdoor-air
-        temperatures.
+    :alt: Two-panel refrigerant-cycle diagram for R32 through the
+        ASHPB reference boundary at T_tank = 60 °C, T_0 = 12 °C,
+        Q_cond = 8 kW. Panel (a) shows the cycle on a P–h chart,
+        panel (b) on a T–h chart with horizontal reference lines
+        marking the tank-water and outdoor-air temperatures.
     :align: center
     :width: 100%
 
-    R32 cycle at a realistic DHW operating point —
+    R32 refrigerant cycle through the ASHPB reference boundary at a
+    realistic DHW operating point —
     :math:`T_{\mathrm{tank}}=60\,^{\circ}\mathrm{C}`,
     :math:`T_{0}=12\,^{\circ}\mathrm{C}`,
     :math:`\dot{Q}_{\mathrm{cond}}=8\,\mathrm{kW}`.

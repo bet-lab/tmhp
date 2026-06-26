@@ -123,6 +123,25 @@ def test_gshp_heating_analyze_steady():
     }
 
 
+def test_gshp_cooling_analyze_steady():
+    gshp = GroundSourceHeatPump(
+        ref="R32",
+        dT_cycle_min=3.0,
+        dT_hx_min=0.5,
+        UA_evap=6000.0,
+        UA_cond=6000.0,
+        dV_iu_fan_a_rated=1.2,
+        A_cross_iu=0.5,
+    )
+    result = gshp.analyze_steady(Q_r_iu=3_000.0, T0=30.0, T_a_room=26.0)
+    assert isinstance(result, dict)
+    assert result["mode"] == "cooling"
+    assert result["E_cmp [W]"] > 0
+    assert result["cop_sys [-]"] > 1.0
+    assert abs(float(result["Q_ref_iu [W]"]) - 3000.0) < 1e-6
+    assert result["failure_reason"] == "none"
+
+
 def test_ashp_off_mode_failure_reason_is_diagnostic():
     # Deliberately tiny UA so the inner HX optimisation cannot converge.
     # The model is expected to fall back to off-mode AND surface a
