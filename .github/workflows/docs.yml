@@ -32,13 +32,29 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Restore generated docs data cache
+        id: docs-data-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            docs/source/_static/widgets/cycle_data.json
+            docs/source/_static/widgets/cycle_data.*.stamp
+            docs/source/_static/data/*.json
+          key: docs-data-${{ runner.os }}-full-${{ hashFiles('uv.lock', 'pyproject.toml', 'docs/Makefile', 'scripts/data/**', 'scripts/validation/**', 'src/tmhp/**') }}
+
       - name: Install dependencies
         run: uv sync --all-groups --locked
+
+      - name: Refresh cached docs data mtimes
+        if: steps.docs-data-cache.outputs.cache-hit == 'true'
+        run: |
+          find docs/source/_static/widgets -maxdepth 1 \( -name 'cycle_data.json' -o -name 'cycle_data.*.stamp' \) -exec touch {} +
+          find docs/source/_static/data -maxdepth 1 -name '*.json' -exec touch {} +
 
       - name: Build Sphinx Documentation
         run: |
           cd docs
-          uv run make html
+          uv run make html DOCS_DATA_PROFILE=full
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
