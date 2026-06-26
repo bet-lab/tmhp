@@ -43,3 +43,24 @@ def test_test_matrix_runs_pytest_with_xdist_workers() -> None:
     assert '"pytest-xdist>=' in pyproject
     assert workflow.count("uv run pytest -q -n auto") == 2
     assert "uv run pytest -q -n auto \\\n            --cov=tmhp" in workflow
+
+
+def test_pytest_matrix_skips_docs_only_pull_requests() -> None:
+    workflow = _read(".github/workflows/tests.yml")
+    test_job = _job_block(workflow, "test", "docs")
+
+    assert "  test-scope:\n" in workflow
+    assert "run-matrix: ${{ steps.changed-files.outputs.run-matrix }}" in workflow
+    assert "github.event.pull_request.base.sha" in workflow
+    assert "github.event.pull_request.head.sha" in workflow
+    assert "needs: test-scope" in test_job
+    assert "if: needs.test-scope.outputs.run-matrix == 'true'" in test_job
+    for matrix_trigger in (
+        "^src/",
+        "^tests/",
+        "^scripts/",
+        "^pyproject\\.toml$",
+        "^uv\\.lock$",
+        "^\\.github/workflows/tests\\.yml$",
+    ):
+        assert matrix_trigger in workflow
