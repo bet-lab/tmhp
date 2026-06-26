@@ -16,14 +16,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-import numpy as np
-
 from . import calc_util as cu
 from . import g_function as gf
 from .constants import c_a, c_w, k_w, rho_a, rho_w
 from .cop import calc_GSHP_COP
-from .hx_fan import calc_fan_power_from_dV_fan
 from .g_function import precompute_gfunction
+from .hx_fan import calc_fan_power_from_dV_fan
 
 # Aliases to match the borehole-fluid naming convention in the original code
 c_f = c_w
@@ -138,29 +136,29 @@ class GroundSourceHeatPumpEmpirical:
         # Determine mode based on load sign
         if self.Q_r_iu > 0:
             mode = "cooling"
-            self.T_a_room = 27  # Room air temperature [°C]
-            self.dT_r_ghx = 3  # GHX refrigerant - GHX outlet water [K]
-            self.dT_r_iu = -15  # Indoor unit refrigerant - Indoor unit inlet air [K]
+            self.T_a_room = 27.0  # Room air temperature [°C]
+            self.dT_r_ghx = 3.0  # GHX refrigerant - GHX outlet water [K]
+            self.dT_r_iu = -15.0  # Indoor unit refrigerant - Indoor unit inlet air [K]
             self.T_r_iu = self.T_a_room + self.dT_r_iu  # Indoor unit refrigerant [°C]
-            dT_a_iu = -10  # Indoor unit outlet air - Room air [K]
+            dT_a_iu = -10.0  # Indoor unit outlet air - Room air [K]
             dV_f_m3s_active = dV_f_m3s
             E_pmp_active = self.E_pmp  # Pump power input [W]
         elif self.Q_r_iu < 0:
             mode = "heating"
-            self.T_a_room = 21  # Room air temperature [°C]
-            self.dT_r_ghx = -3  # GHX refrigerant - GHX outlet water [K]
-            self.dT_r_iu = 15  # Indoor unit refrigerant - Indoor unit inlet air [K]
+            self.T_a_room = 21.0  # Room air temperature [°C]
+            self.dT_r_ghx = -3.0  # GHX refrigerant - GHX outlet water [K]
+            self.dT_r_iu = 15.0  # Indoor unit refrigerant - Indoor unit inlet air [K]
             self.T_r_iu = self.T_a_room + self.dT_r_iu  # Indoor unit refrigerant [°C]
-            dT_a_iu = 10  # Indoor unit outlet air - Room air [K]
+            dT_a_iu = 10.0  # Indoor unit outlet air - Room air [K]
             dV_f_m3s_active = dV_f_m3s
             E_pmp_active = self.E_pmp  # Pump power input [W]
         else:
             mode = "off"
-            self.T_a_room = 22  # Room air temperature [°C]
-            self.dT_r_ghx = 0
+            self.T_a_room = 22.0  # Room air temperature [°C]
+            self.dT_r_ghx = 0.0
             self.T_r_ghx = self.T0
             self.T_r_iu = self.T0
-            dT_a_iu = 0
+            dT_a_iu = 0.0
             dV_f_m3s_active = 0.0
             E_pmp_active = 0.0
 
@@ -249,10 +247,11 @@ class GroundSourceHeatPumpEmpirical:
             # -----------------------------------------------------------------
 
             self.T_f = self.T_b + self.q_b * self.R_b
-            if dV_f_m3s_active > 0:
-                delta_T_fluid = self.q_b * self.H_b / (2 * c_f * rho_f * dV_f_m3s_active)
-            else:
-                delta_T_fluid = 0.0
+            delta_T_fluid = (
+                self.q_b * self.H_b / (2 * c_f * rho_f * dV_f_m3s_active)
+                if dV_f_m3s_active > 0
+                else 0.0
+            )
 
             self.T_f_in = self.T_f + delta_T_fluid
             self.T_f_out = self.T_f - delta_T_fluid

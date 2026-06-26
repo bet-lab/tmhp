@@ -83,7 +83,10 @@ class GroundSourceHeatPump:
         # 5. System capacity / room ----------------------
         hp_capacity: float = 4000.0,
         T_a_room: float = 27.0,
-        # 6. Simulation scope ----------------------------
+        # 6. Cycle guard ---------------------------------
+        dT_cycle_min: float | None = None,
+        dT_hx_min: float = 0.5,
+        # 7. Simulation scope ----------------------------
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
         # Deprecated:
@@ -123,7 +126,11 @@ class GroundSourceHeatPump:
         self.eta_cmp_isen: float | Callable = eta_cmp_isen
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
-        self.min_lift_K: float = self.dT_subcool
+        if dT_cycle_min is None:
+            self.dT_cycle_min: float = self.dT_subcool
+        else:
+            self.dT_cycle_min = float(dT_cycle_min)
+        self.dT_hx_min: float = dT_hx_min
         self.hp_capacity: float = hp_capacity
 
         # --- 2. Heat exchanger UA ---
@@ -261,8 +268,11 @@ class GroundSourceHeatPump:
             T_cond_sat_K = self.Ts_K
             Q_ref_iu = 0.0
 
-        if is_active and (T_cond_sat_K - T_evap_sat_K) < self.min_lift_K:
+        if is_active and (T_cond_sat_K - T_evap_sat_K) < self.dT_cycle_min:
             return None
+
+        actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - self.dT_hx_min))
+        actual_dT_superheat: float = min(self.dT_superheat, max(0.0, dT_ref_evap - self.dT_hx_min))
 
         # Always mode="heating" for calc_ref_state (avoids key swap)
         cycle_states = calc_ref_state(
@@ -271,8 +281,8 @@ class GroundSourceHeatPump:
             refrigerant=self.ref,
             eta_cmp_isen=self.eta_cmp_isen,
             mode=mode,
-            dT_superheat=self.dT_superheat,
-            dT_subcool=self.dT_subcool,
+            dT_superheat=actual_dT_superheat,
+            dT_subcool=actual_dT_subcool,
             is_active=is_active,
         )
 
@@ -323,8 +333,8 @@ class GroundSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_evap_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_evap,
-                dV_fan_design=self.dV_iu_fan_a_rated,
+                UA_rated=self.UA_evap,
+                dV_fan_rated=self.dV_iu_fan_a_rated,
                 is_active=is_active,
             )
         elif mode == "heating":
@@ -333,8 +343,8 @@ class GroundSourceHeatPump:
                 T_a_in_C=T_a_room,
                 T_ref_sat_K=T_cond_sat_K,
                 A_cross=self.A_cross_iu,
-                UA_design=self.UA_cond,
-                dV_fan_design=self.dV_iu_fan_a_rated,
+                UA_rated=self.UA_cond,
+                dV_fan_rated=self.dV_iu_fan_a_rated,
                 is_active=is_active,
             )
         else:
@@ -407,15 +417,26 @@ class GroundSourceHeatPump:
             # Energy rates [W]
             "E_iu_fan [W]": E_iu_fan,
             "E_pmp [W]": E_pmp_active,
-            "Q_ref_evap [W]": Q_ref_evap,
-            "Q_ref_cond [W]": Q_ref_cond,
+            # Heat duties by physical location (mode-mapped): in heating the indoor
+            # unit is the condenser and the ground loop the evaporator; in cooling
+            # the roles swap. Reported by location so the labels are mode-independent
+            # and the consumer never sees the cond/evap bookkeeping (the
+            # refrigerant-perspective cond/evap remain only in the refrigerant-state
+            # keys T/P/h/s_ref_*_sat and in refrigerant.py).
+            "Q_ref_iu [W]": Q_ref_cond if mode == "heating" else Q_ref_evap,
+            "Q_ref_ground [W]": Q_ref_evap if mode == "heating" else Q_ref_cond,
             "Q_bhe [W]": Q_bhe,
-            "Q_r_iu [W]": Q_r_iu,
             "E_cmp [W]": E_cmp,
             "E_tot [W]": E_tot,
-            # COP
-            "cop_ref [-]": abs(Q_r_iu) / E_cmp if (is_active and E_cmp > 0) else np.nan,
-            "cop_sys [-]": abs(Q_r_iu) / E_tot if (is_active and E_tot > 0) else np.nan,
+            # COP (indoor-unit duty basis; == |Q_r_iu| at convergence)
+            "cop_ref [-]": (
+                (Q_ref_cond if mode == "heating" else Q_ref_evap) / E_cmp
+                if (is_active and E_cmp > 0) else np.nan
+            ),
+            "cop_sys [-]": (
+                (Q_ref_cond if mode == "heating" else Q_ref_evap) / E_tot
+                if (is_active and E_tot > 0) else np.nan
+            ),
         })
         return result
 
@@ -543,7 +564,8 @@ class GroundSourceHeatPump:
                     "hp_is_on": False,
                     "converged": False,
                     "failure_reason": "cycle_invalid",
-                    "Q_r_iu [W]": 0.0,
+                    "Q_ref_iu [W]": 0.0,
+                    "Q_ref_ground [W]": 0.0,
                     "T0 [°C]": T0,
                     "T_a_room [°C]": T_a_room,
                 }
@@ -576,7 +598,7 @@ class GroundSourceHeatPump:
                     f"opt_success={opt_success}, "
                     f"opt_x=({opt.x[0]:.2f}, {opt.x[1]:.2f}), "
                     f"opt_fun={float(getattr(opt, 'fun', float('nan'))):.3g}). "
-                    "Consider increasing UA_design or fan-flow design.",
+                    "Consider increasing UA_rated or fan-flow rated.",
                     RuntimeWarning,
                     stacklevel=2,
                 )
@@ -586,7 +608,8 @@ class GroundSourceHeatPump:
                         "hp_is_on": False,
                         "converged": False,
                         "failure_reason": failure_reason,
-                        "Q_r_iu [W]": Q_r_iu,
+                        "Q_ref_iu [W]": 0.0,
+                        "Q_ref_ground [W]": 0.0,
                         "T0 [°C]": T0,
                         "T_a_room [°C]": T_a_room,
                     }
@@ -744,15 +767,21 @@ class GroundSourceHeatPump:
             T_evap_in_K = T_evap_in_K.fillna(T_bhe_f_out_K)
             df["X_evap_in [W]"] = calc_exergy_flow(G_b, T_evap_in_K, T0_K)
 
-        # ── 4. Carnot exergy ──
-        if "T_ref_cond_sat_v [°C]" in df.columns:
-            df["X_ref_cond [W]"] = df["Q_ref_cond [W]"] * (
-                1 - T0_K / cu.C2K(df["T_ref_cond_sat_v [°C]"])
+        # ── 4. Carnot exergy (by physical location, mode-aware) ──
+        # The Carnot factor for each location uses the saturation temperature of
+        # the refrigerant role it plays: heating -> IU=condenser, ground=evaporator;
+        # cooling -> roles swap. Output exergy is labelled by location
+        # (X_ref_iu / X_ref_ground); refrigerant-state saturation keys stay cond/evap.
+        if {"T_ref_cond_sat_v [°C]", "T_ref_evap_sat [°C]", "mode"} <= set(df.columns):
+            is_heating = df["mode"] == "heating"
+            T_iu_sat_K = cu.C2K(
+                df["T_ref_cond_sat_v [°C]"].where(is_heating, df["T_ref_evap_sat [°C]"])
             )
-        if "T_ref_evap_sat [°C]" in df.columns:
-            df["X_ref_evap [W]"] = df["Q_ref_evap [W]"] * (
-                1 - T0_K / cu.C2K(df["T_ref_evap_sat [°C]"])
+            T_ground_sat_K = cu.C2K(
+                df["T_ref_evap_sat [°C]"].where(is_heating, df["T_ref_cond_sat_v [°C]"])
             )
+            df["X_ref_iu [W]"] = df["Q_ref_iu [W]"] * (1 - T0_K / T_iu_sat_K)
+            df["X_ref_ground [W]"] = df["Q_ref_ground [W]"] * (1 - T0_K / T_ground_sat_K)
 
         # ── 5. Total exergy input ──
         X_tot = df["E_cmp [W]"] + df["E_pmp [W]"].fillna(0) + df["E_iu_fan [W]"].fillna(0)

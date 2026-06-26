@@ -5,8 +5,6 @@ Provides:
 - Air dynamic viscosity (Sutherland's formula) and Prandtl number
 """
 
-from typing import Any
-
 import numpy as np
 from scipy import integrate
 from scipy.interpolate import interp1d
@@ -69,10 +67,11 @@ def chi(s, rb, H, z0=0):
     return temp * Is
 
 
-_g_func_cache: dict[str, Any] = {}
+_GFuncCacheKey = tuple[float, float, float, float, float]
+_g_func_cache: dict[_GFuncCacheKey, float | np.ndarray] = {}
 
 
-def G_FLS(t, ks, as_, rb, H):
+def G_FLS(t: float | np.ndarray, ks: float, as_: float, rb: float, H: float) -> float | np.ndarray:
     """
     Calculate the g-function for finite line source (FLS) model.
 
@@ -98,16 +97,24 @@ def G_FLS(t, ks, as_, rb, H):
         g-function value [mK/W]. Returns scalar for single time value,
         array for multiple time values.
     """
-    key = (round(t, 0), round(ks, 2), round(as_, 6), round(rb, 2), round(H, 0))
-    if key in _g_func_cache:
-        return _g_func_cache[key]
+    t_arr = np.asarray(t, dtype=float)
+    single = t_arr.ndim == 0
+    key: _GFuncCacheKey | None = None
+    if single:
+        key = (
+            float(round(float(t_arr), 0)),
+            float(round(ks, 2)),
+            float(round(as_, 6)),
+            float(round(rb, 2)),
+            float(round(H, 0)),
+        )
+        if key in _g_func_cache:
+            return _g_func_cache[key]
 
     factor = 1 / (4 * np.pi * ks)
 
-    lbs = 1 / np.sqrt(4 * as_ * t)
+    lbs = 1 / np.sqrt(4 * as_ * t_arr)
 
-    # Handle scalar case: shape == (,)
-    single = len(lbs.shape) == 0
     # Reshape to 1D array
     lbs = lbs.reshape(-1)
 
@@ -120,14 +127,13 @@ def G_FLS(t, ks, as_, rb, H):
     def func(y, s):
         return chi(s, rb, H, z0=0)
 
-    values = total - integrate.odeint(func, first, lbs)[:, 0]
-
-    # For single time value, return first value as float
+    values = np.asarray(total - integrate.odeint(func, first, lbs)[:, 0], dtype=float)
     if single:
-        values = values[0]
-
-    result = factor * values
-    _g_func_cache[key] = result
+        result: float | np.ndarray = float(factor * values[0])
+    else:
+        result = factor * values
+    if key is not None:
+        _g_func_cache[key] = result
     return result
 
 
@@ -577,13 +583,15 @@ def calc_borehole_thermal_resistance(
 
     Stage 2 — 2D cross-section (Local R_b via multipole method):
         SingleUTube solves the steady-state 2D Laplace equation in the grout
-        cross-section using Hellström's multipole expansion (default order J=10).
+        cross-section using Hellström's multipole expansion (default order
+        J=10); see Javed and Spitler (2016) for an accuracy benchmark of this
+        method.
         Boundary conditions: R_fp at each pipe surface, T=const at borehole wall.
         Outputs: Local R_b (fluid → borehole wall, cross-section only).
 
     Stage 3 — Axial short-circuit correction (Effective R_b*):
-        pipe.effective_borehole_thermal_resistance() applies the Cimmino / Hellström
-        (1991) analytical solution for axial fluid temperature variation and
+        pipe.effective_borehole_thermal_resistance() applies the Cimmino /
+        Hellström analytical solution for axial fluid temperature variation and
         thermal short-circuiting between the two U-tube legs.
 
     For a Single U-tube (series flow), each pipe leg carries the full borehole
@@ -626,14 +634,17 @@ def calc_borehole_thermal_resistance(
 
     References
     ----------
-    .. [1] Hellström, G. (1991). Ground Heat Storage: Thermal Analyses of Duct Storage Systems
-           (Ph.D. thesis). University of Lund, Sweden.
-    .. [2] Claesson, J., & Hellström, G. (2011). Multipole method to calculate borehole
-           thermal resistances in a borehole heat exchanger. HVAC&R Research, 17(6), 895-911.
-           DOI: 10.1080/10789669.2011.609927
-    .. [3] Javed, S., & Spitler, J. D. (2016). Accuracy of borehole thermal resistance
-           calculation methods for grouted single U-tube ground heat exchangers.
-           Applied Energy, 182, 161-176. DOI: 10.1016/j.apenergy.2016.08.054
+    Hellström, G. (1991). Ground Heat Storage: Thermal Analyses of Duct
+    Storage Systems (Ph.D. thesis). University of Lund, Sweden.
+
+    Claesson, J., & Hellström, G. (2011). Multipole method to calculate
+    borehole thermal resistances in a borehole heat exchanger. HVAC&R
+    Research, 17(6), 895-911. DOI: 10.1080/10789669.2011.609927
+
+    Javed, S., & Spitler, J. D. (2016). Accuracy of borehole thermal
+    resistance calculation methods for grouted single U-tube ground heat
+    exchangers. Applied Energy, 182, 161-176. DOI:
+    10.1016/j.apenergy.2016.08.054
     """
     if not HAS_PYGFUNCTION:
         raise ImportError("pygfunction is not installed.")
@@ -657,7 +668,7 @@ def calc_borehole_thermal_resistance(
     # pygfunction public API: internally applies Cimmino/Hellström axial correction
     R_b_eff = pipe.effective_borehole_thermal_resistance(m_flow_borehole, cp_f)
 
-    return R_b_eff
+    return float(R_b_eff)
 
 
 def calc_submerged_coil_thermal_resistance(

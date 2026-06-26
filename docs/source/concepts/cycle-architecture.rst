@@ -10,18 +10,22 @@ Thermodynamic cycle architecture
 
    <span class="glossary" data-term="cop">COP</span>
 
-Every model in ``tmhp`` is the same closed refrigerant cycle wrapped
-in a different source / sink pairing. That single piece of shared
-machinery is what lets one library cover ASHPB, GSHPB, WSHPB, ASHP,
-GSHP, and every subsystem variant on top — without rewriting the
-thermodynamics each time. This page sketches the shared structure
-and shows where each system family plugs into it.
+Every released cycle-resolved model family in TMHP wraps the same
+closed refrigerant cycle with a different source / sink boundary. That
+single piece of shared machinery is what lets one library cover ASHPB,
+GSHPB, WSHPB, ASHP, GSHP, and subsystem variants on top — without
+rewriting the thermodynamics each time. This page sketches the shared
+structure and shows where each system family plugs into it.
 
 The shared core
 ===============
 
-Every system reuses the same closed cycle — only the blocks marked
-*source side* and *sink side* swap out per family.
+Every cycle-resolved family reuses the same closed cycle — only the
+blocks marked *source side* and *sink side* swap out per family. The
+interactive diagram is drawn in heating / DHW orientation. For ASHP and
+GSHP cooling, ``Q_r_iu > 0`` maps the indoor unit to the evaporator and
+the environmental side to the condenser; output columns stay labelled by
+physical location.
 
 .. raw:: html
 
@@ -29,7 +33,7 @@ Every system reuses the same closed cycle — only the blocks marked
      .cycle-arch-card {
        margin: 1.25em auto;
        border: 1px solid var(--sy-c-border, #e5e7eb);
-       border-radius: 10px;
+       border-radius: 8px;
        background: var(--sy-c-bg, #fff);
        padding: 16px 18px;
        position: relative;
@@ -46,7 +50,6 @@ Every system reuses the same closed cycle — only the blocks marked
        background: rgba(255,255,255,0.9);
        border: 1px solid #e5e7eb; border-radius: 8px;
        padding: 4px; z-index: 5;
-       backdrop-filter: blur(4px);
      }
      .cycle-arch-toolbar button {
        background: transparent; border: 0;
@@ -100,8 +103,9 @@ Every system reuses the same closed cycle — only the blocks marked
    </div>
 
    <p class="cycle-arch-caption">
-     Data flow shared by every <code>tmhp</code> model.  Bold blocks are
-     reused across ASHPB, GSHPB, WSHPB, ASHP, and GSHP.
+     Heating / DHW orientation of the data flow shared by cycle-resolved
+     <strong>TMHP</strong> families. Bold blocks are reused across ASHPB,
+     GSHPB, WSHPB, ASHP, and GSHP.
    </p>
 
    <script src="../_static/js/lib/cytoscape.min.js"></script>
@@ -109,21 +113,21 @@ Every system reuses the same closed cycle — only the blocks marked
    (function () {
      if (!document.getElementById("cy-arch")) return;
 
-     // ─── Data extracted from tmhp source ───────────────────────
+     // ─── Data extracted from TMHP source ───────────────────────
      //   ASHPB._calc_state, refrigerant.calc_ref_state, heat_transfer.py,
-     //   _opt_utils.py (scalar minimizer over dT_ref_evap).
+     //   _opt_utils.py (scalar minimizer over dT_ref_ou).
      const nodes = [
        { id: "SRC",  type: "src",    title: "Source side",      sub: "air · ground · water",
-         code: "ashpb.py / gshpb.py / wshpb.py — outdoor coil, borehole g-function, prescribed water inlet",
+         code: "air_source_heat_pump*.py / ground_source_heat_pump*.py / water_source_heat_pump_boiler.py — outdoor coil, borehole g-function, prescribed water inlet",
          api:  "../models/index.html" },
        { id: "EVAP", type: "cycle",  title: "Evaporator HX",    sub: "ε-NTU",
-         code: "_calc_state: T_evap_sat_K = T0_K − dT_ref_evap",
+         code: "_calc_state: evaporating saturation temperature and ε-NTU heat transfer",
          api:  "../api/support/heat-transfer.html" },
        { id: "CMP",  type: "cycle",  title: "Compressor",       sub: "η_is · η_vol · η_mech",
          code: "_calc_state lines 410–471: h_cmp_out via η_isen, m_dot = V_disp·ρ·η_vol·rps",
          api:  "../models/ashpb.html" },
        { id: "COND", type: "cycle",  title: "Condenser HX",     sub: "ε-NTU",
-         code: "_calc_state: T_cond_sat_K = T_tank_w_K + dT_ref_cond, UA_cond_design",
+         code: "_calc_state: condensing saturation temperature and ε-NTU heat transfer",
          api:  "../api/support/heat-transfer.html" },
        { id: "EXP",  type: "cycle",  title: "Expander",         sub: "isenthalpic",
          code: "refrigerant.py:calc_ref_state (h_exp_out = h_exp_in throttle)",
@@ -131,8 +135,8 @@ Every system reuses the same closed cycle — only the blocks marked
        { id: "SINK", type: "sink",   title: "Sink side",        sub: "DHW tank · building load",
          code: "dhw.py (tank energy balance) / air_source_heat_pump.py (building load)",
          api:  "../api/support/subsystems.html" },
-       { id: "OPT",  type: "solver", title: "Cycle closure",    sub: "min E_cmp(ΔT_evap)",
-         code: "_opt_utils.py — scalar minimizer over dT_ref_evap that minimizes compressor power",
+       { id: "OPT",  type: "solver", title: "Cycle closure",    sub: "min electrical input",
+         code: "_optimize_operation — choose heat-exchanger approach temperatures / speed for a feasible low-power operating point",
          api:  "cycle-architecture.html#the-shared-core" },
      ];
      const edges = [
@@ -141,7 +145,7 @@ Every system reuses the same closed cycle — only the blocks marked
        { source: "CMP",  target: "COND", label: "high-P vapor" },
        { source: "COND", target: "EXP",  label: "liquid" },
        { source: "EXP",  target: "EVAP", label: "two-phase" },
-       { source: "COND", target: "SINK", label: "Q_cond" },
+       { source: "COND", target: "SINK", label: "demand duty" },
        { source: "OPT",  target: "EVAP", label: "optimizes", kind: "dashed" },
        { source: "OPT",  target: "CMP",  label: "optimizes", kind: "dashed" },
      ];
@@ -241,16 +245,16 @@ Every system reuses the same closed cycle — only the blocks marked
    })();
    </script>
 
-.. figure:: ../_static/system_schematic.png
-    :alt: ASHPB system schematic — refrigerant cycle, condenser HX,
-        evaporator HX with outdoor fan, expander, and tank-side
-        flow connections.
+.. figure:: ../_static/source_sink_matrix.svg
+    :alt: TMHP released source and sink matrix showing DHW boiler
+        families for air, ground, and water and space-conditioning
+        families for air and ground.
     :align: center
     :width: 90%
 
-    Physical wiring view of the ASHPB. The compressor / expander
-    cycle-closure block in the centre reappears identically in the
-    GSHPB, WSHPB, ASHP, and GSHP models.
+    Model-family view of TMHP. The refrigerant-cycle core stays fixed;
+    released model families swap the environmental medium, demand
+    boundary, and optional subsystems around that core.
 
 The cycle solves four refrigerant state points (compressor in /
 out, expander in / out) plus the evaporator and condenser
@@ -260,10 +264,10 @@ free parameter and chosen by minimizing compressor power, so the
 cycle closes on a physical optimum rather than on a fitted
 coefficient.
 
-Per-source mechanics — the outdoor coil for ASHP, the g-function
-borehole for GSHP, the prescribed water inlet for WSHP — live on
-each model's page under :doc:`../models/index`. The sink side
-(DHW tank or building load) is documented the same way.
+Per-source mechanics — the outdoor coil for ASHP/ASHPB, the g-function
+borehole for GSHP/GSHPB, and the prescribed water inlet for WSHPB —
+live on each model's page under :doc:`../models/index`. The released
+demand boundary (DHW tank or building load) is documented the same way.
 
 Composed subsystems
 ===================
@@ -285,12 +289,12 @@ These are documented under :doc:`../api/support/subsystems`.
 Why the structure matters
 =========================
 
-Because the cycle is the same code path for every system, a parameter
-sweep across refrigerants, source types, or subsystem combinations
-doesn't require re-implementing the model — it requires picking a
-different class and a different schedule. The cycle-level invariants
-(energy balance, |cop| definitions,
+Because the refrigerant-cycle core is reused across the cycle-resolved
+families, a parameter sweep across refrigerants, source types, or
+subsystem combinations doesn't require re-implementing the
+thermodynamics — it requires picking the appropriate released class and
+schedule. The cycle-level invariants (energy balance, |cop| definitions,
 :doc:`failure_reason semantics <failure-reason-semantics>`) therefore
-hold identically across the family, so a result from ASHPB is
-directly comparable to a result from GSHPB or WSHPB at the same
-operating point.
+hold identically across the family. Results from ASHPB, GSHPB, WSHPB,
+ASHP, and GSHP remain comparable when the operating point and
+source/sink boundary are matched.

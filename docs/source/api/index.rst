@@ -2,7 +2,7 @@
 API Reference
 =============
 
-Reference for the ``tmhp`` package's support modules — the
+Reference for the TMHP package's support modules — the
 lower-level building blocks the system models compose internally.
 For the system-level models you instantiate directly (ASHPB, GSHPB,
 WSHPB, ASHP, GSHP), see :doc:`../models/index`.
@@ -49,6 +49,14 @@ Lower-level building blocks used by the system models.
 
         Per-step dynamic context, energy / exergy helpers,
         and stdout summary tables.
+
+    .. grid-item-card:: Integrations
+        :link: support/integrations
+        :link-type: doc
+
+        Implementation reference for the FMI co-simulation and
+        EnergyPlus Python Plugin adapters. For usage guides, see
+        :doc:`../integrations/index`.
 
     .. grid-item-card:: Visualization
         :link: support/visualization

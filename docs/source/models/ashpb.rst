@@ -8,7 +8,7 @@ Air-source heat pump boiler (ASHPB)
 
 The ``ASHPB`` family pairs the shared refrigerant cycle with an
 outdoor-coil source side and a DHW tank sink side. This is the
-default first stop and the model the Getting Started flow uses.
+validated reference example used by the Getting Started flow.
 
 Overview
 ========
@@ -25,6 +25,17 @@ variants extend it with subsystems:
 - :class:`tmhp.ASHPB_PV_ESS` — PV generation + battery storage routes
   electricity to the compressor and auxiliaries before drawing grid.
 
+.. figure:: ../_static/system_schematic.png
+    :alt: Reference ASHPB instantiation with outdoor unit,
+        refrigerant loop, hot-water tank, and mixing valve.
+    :align: center
+    :width: 100%
+
+    Reference ASHPB instantiation. This physical wiring view is useful
+    for the validated air-source DHW case, while the shared compressor /
+    expander / heat-exchanger cycle core is reused by the other TMHP
+    source and demand-side families.
+
 Base usage
 ==========
 
@@ -38,7 +49,7 @@ Base usage
    result = ashpb.analyze_steady(
        T_tank_w=55.0,    # tank water [°C]
        T0=7.0,           # outdoor air [°C]
-       Q_ref_cond=8_000, # target condenser duty [W]
+       Q_ref_tank=8_000, # target condenser duty [W]
    )
 
    # Time-stepping dynamic run — see Getting Started for full schedule
@@ -80,7 +91,7 @@ Composed variants
          result = ashpb.analyze_steady(
              T_tank_w=55.0,
              T0=7.0,
-             Q_ref_cond=8_000,
+             Q_ref_tank=8_000,
          )
 
    .. tab-item:: + STC preheat

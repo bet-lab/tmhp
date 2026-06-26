@@ -3,7 +3,8 @@ Refrigerant & thermodynamics
 ============================
 
 CoolProp-backed state-point helpers, cycle-level analysis (compression
-ratio, isentropic efficiency, COP), and COP correlations.
+ratio, isentropic efficiency, COP), compressor operating-envelope
+guards, and COP correlations.
 
 Refrigerant state points
 ========================
@@ -25,6 +26,14 @@ COP correlations
 ================
 
 .. automodule:: tmhp.cop
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Compressor envelope
+===================
+
+.. automodule:: tmhp.compressor_envelope
     :members:
     :undoc-members:
     :show-inheritance:

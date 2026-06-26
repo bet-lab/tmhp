@@ -94,6 +94,8 @@ class ASHPB_STC_preheat(AirSourceHeatPumpBoiler):
         # Do NOT pass stc to super().__init__ — keeps self._subsystems empty.
         super().__init__(**kwargs)
         self._stc: SolarThermalCollector = stc
+        # 상수도 수압 활용 가정: STC 펌프 전력 배제
+        self._stc.E_stc_pump = 0.0
         # Expose as self.stc so analyze_dynamic() enables I_DN/I_dH schedules.
         self.stc = stc
 

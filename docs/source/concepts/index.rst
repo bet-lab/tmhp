@@ -2,7 +2,7 @@
 Concepts
 ========
 
-Background reading for ``tmhp``. These pages cover *why* the library
+Background reading for TMHP. These pages cover *why* the library
 is built the way it is — what physics-based cycle solving buys you,
 how the model pieces fit together across system families, and how to
 interpret the diagnostic fields each call returns.
@@ -22,8 +22,8 @@ interpret the diagnostic fields each call returns.
         :link-type: doc
 
         How source side, refrigerant cycle, and sink side connect,
-        and how the same core cycle is reused across every system
-        model.
+        and how the same core cycle is reused across released
+        cycle-resolved families.
 
     .. grid-item-card:: ``failure_reason`` semantics
         :link: failure-reason-semantics

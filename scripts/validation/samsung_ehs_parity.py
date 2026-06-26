@@ -76,18 +76,23 @@ def build_model() -> AirSourceHeatPumpBoiler:
 
     return AirSourceHeatPumpBoiler(
         ref="R32",
-        V_disp_cmp=33.0e-6,
+        V_cmp_ref=33.0e-6,
         eta_cmp_isen=eta_isen,
         eta_cmp_vol=eta_vol,
-        eta_cmp_mech=eta_mech,
+        eta_cmp=eta_mech,
         dT_superheat=5.0,
         dT_subcool=5.0,
-        UA_cond_design=2500.0,
-        UA_evap_design=2000.0,
-        n_evap=0.65,
-        dV_ou_fan_a_design=1.5,
-        dP_ou_fan_design=60.0,
-        eta_ou_fan_design=0.6,
+        # The Samsung EHS Mono HT unit is a high-temperature heat pump that
+        # reaches LWT 65 °C at -10 °C ambient (catalogue point 11, PR ~ 16) via
+        # vapour injection, well beyond a single-stage envelope. Raise the
+        # pressure-ratio ceiling so the guard does not clip catalogue points.
+        PR_cycle_max=20.0,
+        UA_tank_hx=2500.0,
+        UA_ou_rated=2000.0,
+        n_ou=0.65,
+        dV_fan_a_rated=1.5,
+        dP_fan_rated=60.0,
+        eta_fan_rated=0.6,
     )
 
 
@@ -98,7 +103,7 @@ def run_validation() -> list[tuple[OperatingPoint, float]]:
         result = model.analyze_steady(
             T_tank_w=op.t_tank_c,
             T0=op.t0_c,
-            Q_ref_cond=op.q_cond_kw * 1000.0,
+            Q_ref_tank=op.q_cond_kw * 1000.0,
             return_dict=True,
         )
         assert isinstance(result, dict)

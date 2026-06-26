@@ -4,13 +4,13 @@
 import os
 import sys
 
-# Add the src directory to sys.path so autodoc can find the tmhp package.
+# Add the src directory to sys.path so autodoc can find the TMHP package.
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 sys.path.insert(0, src_path)
 
 # -- Project information -------------------------------------------------------
 
-project = "Thermodynamic Models for Heat Pumps"
+project = "TMHP"
 copyright = "2025, betlab"
 author = "Habin Jo, Wonjun Choi"
 release = "0.1.0"
@@ -65,8 +65,9 @@ myst_enable_extensions = [
 
 html_theme = "shibuya"
 html_title = "TMHP"
+html_short_title = "TMHP"
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css"]
+html_css_files = ["css/custom.css", "css/integration-diagrams.css"]
 
 # Interactive-layer JS modules. Registered here (rather than injected via
 # `_templates/page.html`) so Sphinx adds a content-hash `?v=` to each URL —
@@ -80,6 +81,7 @@ html_js_files = [
     ("js/core/reading-progress.js", _DEFER),
     ("js/core/scroll-spy.js", _DEFER),
     ("js/core/global.js", _DEFER),
+    ("js/widgets/integration-diagrams.js", _DEFER),
 ]
 html_baseurl = "https://bet-lab.github.io/tmhp/"
 
@@ -93,22 +95,22 @@ html_theme_options = {
     # keeps headings, links, and the active-nav indicator on one consistent hue.
     "accent_color": "iris",
     "github_url": "https://github.com/bet-lab/tmhp",
-    # Expand top-level toctree captions in the sidebar by default so the six
-    # planned sections (Getting Started, Concepts, Models, Tutorials, API,
-    # Validation) are visible without the reader hunting for them.
+    # Expand top-level toctree captions in the sidebar by default so the main
+    # sections are visible without the reader hunting for them.
     "globaltoc_expand_depth": 1,
     "nav_links": [
-        {"title": "Getting Started", "url": "getting-started/index"},
+        {"title": "Start", "url": "getting-started/index"},
         {"title": "Concepts", "url": "concepts/index"},
         {"title": "Models", "url": "models/index"},
         {"title": "Tutorials", "url": "tutorials/index"},
-        {"title": "API Reference", "url": "api/index"},
+        {"title": "Integrations", "url": "integrations/index"},
+        {"title": "API", "url": "api/index"},
         {"title": "Validation", "url": "validation/index"},
     ],
     # Social-card image shown when the docs are linked on GitHub, Slack, etc.
     "og_image_url": (
         "https://bet-lab.github.io/tmhp/"
-        "_static/system_schematic.png"
+        "_static/source_sink_matrix.svg"
     ),
 }
 
@@ -121,6 +123,11 @@ autodoc_default_options = {
     "undoc-members": True,
     "exclude-members": "__weakref__",
 }
+
+# Optional co-simulation adapters depend on packages that are not part of the
+# docs dependency group. Mock them so the API reference can document the adapter
+# modules without forcing every docs build to install PythonFMU or EnergyPlus.
+autodoc_mock_imports = ["pythonfmu", "pythonfmu3", "pyenergyplus"]
 
 # -- Napoleon -----------------------------------------------------------------
 
@@ -167,9 +174,9 @@ ogp_site_url = "https://bet-lab.github.io/tmhp/"
 ogp_site_name = "Thermodynamic Models for Heat Pumps"
 ogp_image = (
     "https://bet-lab.github.io/tmhp/"
-    "_static/system_schematic.png"
+    "_static/source_sink_matrix.svg"
 )
-ogp_image_alt = "ASHPB refrigerant cycle schematic"
+ogp_image_alt = "TMHP source and sink family matrix"
 ogp_use_first_image = True
 
 # -- Sitemap ------------------------------------------------------------------

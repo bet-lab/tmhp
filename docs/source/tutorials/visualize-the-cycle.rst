@@ -2,7 +2,7 @@
 Visualize thermodynamic cycle
 =============================
 
-Because ``tmhp`` solves the cycle from first principles, every
+Because TMHP solves the cycle from first principles, every
 ``analyze_steady`` call returns the full thermodynamic state at each
 cycle node (compressor in / out, expander in / out, evaporator /
 condenser saturation). Plotting those points on a
@@ -17,15 +17,16 @@ The output
 ==========
 
 .. figure:: ../_static/mollier_cycle_R32.svg
-    :alt: Two-panel cycle diagram for R32 ASHPB at T_tank = 60 °C,
-        T_0 = 12 °C, Q_cond = 8 kW. Panel (a) shows the cycle on a
-        P–h chart, panel (b) on a T–h chart with horizontal
-        reference lines marking the tank-water and outdoor-air
-        temperatures.
+    :alt: Two-panel refrigerant-cycle diagram for R32 through the
+        ASHPB reference boundary at T_tank = 60 °C, T_0 = 12 °C,
+        Q_cond = 8 kW. Panel (a) shows the cycle on a P–h chart,
+        panel (b) on a T–h chart with horizontal reference lines
+        marking the tank-water and outdoor-air temperatures.
     :align: center
     :width: 100%
 
-    R32 cycle at a realistic DHW operating point —
+    R32 refrigerant cycle through the ASHPB reference boundary at a
+    realistic DHW operating point —
     :math:`T_{\mathrm{tank}}=60\,^{\circ}\mathrm{C}`,
     :math:`T_{0}=12\,^{\circ}\mathrm{C}`,
     :math:`\dot{Q}_{\mathrm{cond}}=8\,\mathrm{kW}`.
@@ -94,7 +95,7 @@ plus a dashed connector through the seven cycle points returned by
 
    REF = "R32"
    ashpb = AirSourceHeatPumpBoiler(ref=REF)
-   r = ashpb.analyze_steady(T_tank_w=60.0, T0=12.0, Q_ref_cond=8_000.0)
+   r = ashpb.analyze_steady(T_tank_w=60.0, T0=12.0, Q_ref_tank=8_000.0)
 
    # Saturation envelope for the P-h panel (kJ/kg, kPa).
    T_crit = CP.PropsSI("Tcrit", REF)

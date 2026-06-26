@@ -5,7 +5,7 @@ panels for R32, R290 (propane), and R134a — all at the same DHW
 operating point. The shared y-axis lets the reader read off the
 operating-pressure shift between refrigerants at a glance.
 
-Operating point: ``T_tank_w = 55 °C``, ``T0 = 7 °C``, ``Q_ref_cond =
+Operating point: ``T_tank_w = 55 °C``, ``T0 = 7 °C``, ``Q_ref_tank =
 8 kW``. R290 in particular has much lower operating pressures than
 R32 / R134a — useful intuition for refrigerant swap discussions.
 """
@@ -78,7 +78,7 @@ def main() -> None:
         ax.plot(h_vap, p_sat, color=COLORS["hot"],  linewidth=dm.lw(1))
 
         ashpb = AirSourceHeatPumpBoiler(ref=ref)
-        res = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=T0, Q_ref_cond=Q_COND)
+        res = ashpb.analyze_steady(T_tank_w=T_TANK_W, T0=T0, Q_ref_tank=Q_COND)
         assert isinstance(res, dict)
         pts = _cycle_points(res)
 

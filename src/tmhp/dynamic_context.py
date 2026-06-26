@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ControlState",
+    "DynamicState",
     "StepContext",
     "Subsystem",
     "SubsystemExergy",
@@ -116,6 +117,46 @@ class ControlState:
     Q_heat_source: float
     dV_tank_w_in_ctrl: float | None
     result: dict = field(default_factory=dict)
+
+
+# ------------------------------------------------------------------
+# Carried state for a re-entrant single-timestep advance (step())
+# ------------------------------------------------------------------
+
+
+@dataclass
+class DynamicState:
+    """Carried state threaded across ``step()`` calls (#165 P0).
+
+    This is exactly the state that ``analyze_dynamic`` used to hold in
+    loop-locals (``T_tank_w_K``, ``tank_level``, ``is_refilling``,
+    ``hp_is_on_prev``) plus the one cross-step coupling that previously lived
+    as a ``self.dV_tank_w_out`` side-effect (``dV_tank_w_out_prev`` here).
+
+    ``step()`` returns a fresh ``DynamicState`` each call and reads none of
+    these from ``self``, so a model can be advanced one timestep at a time by
+    an external co-simulation master (FMI/EnergyPlus) and re-run independently.
+
+    Attributes
+    ----------
+    T_tank_w_K : float
+        Tank water temperature carried into the next step [K].
+    tank_level : float
+        Fractional tank fill level (0–1).
+    is_refilling : bool
+        Refill hysteresis latch.
+    hp_is_on_prev : bool
+        Heat-pump on/off state from the previous step (cycling hysteresis).
+    dV_tank_w_out_prev : float
+        Previous step's tank draw-off flow [m³/s]; consumed by the next
+        step's refill decision.
+    """
+
+    T_tank_w_K: float
+    tank_level: float
+    is_refilling: bool
+    hp_is_on_prev: bool
+    dV_tank_w_out_prev: float
 
 
 # ------------------------------------------------------------------
@@ -399,7 +440,7 @@ def tank_mass_energy_residual(
     T_sup_w_K: float,
     T_mix_w_out_K: float,
     C_tank: float,
-    UA_tank: float,
+    UA_tank_wall: float,
     V_tank_full: float,
     subsystems: dict[str, Subsystem],
     sub_states: dict[str, dict],
@@ -431,8 +472,8 @@ def tank_mass_energy_residual(
         Target mixing-valve outlet temperature [K].
     C_tank : float
         Tank thermal capacitance [J/K].
-    UA_tank : float
-        Tank overall heat-loss coefficient [W/K].
+    UA_tank_wall : float
+        Tank overall heat-loss coefficient [W/K] (shell/insulation envelope).
     V_tank_full : float
         Tank full volume [m³].
     subsystems : dict[str, Subsystem]
@@ -463,7 +504,7 @@ def tank_mass_energy_residual(
     C_curr: float = C_tank * max(0.001, ctx.tank_level)
     C_next: float = C_tank * max(0.001, level_next)
     T_sur_K = T_sur_K if T_sur_K is not None else ctx.T0_K
-    Q_loss: float = UA_tank * (T_next - T_sur_K)
+    Q_loss: float = UA_tank_wall * (T_next - T_sur_K)
 
     # Effective tank inlet temperature
     # (subsystems may override, e.g. mains preheat)

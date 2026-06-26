@@ -40,6 +40,13 @@ dependencies = [
     "dartwork-mpl",
 ]
 
+[project.optional-dependencies]
+integrations = [
+    "fmpy>=0.3.21",
+    "pythonfmu>=0.7.0,<0.8",
+    "pythonfmu3>=0.3.4,<0.4",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -53,6 +60,7 @@ dev = [
     "mypy>=1.19.1",
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.15.5",
 ]
 docs = [

@@ -33,6 +33,7 @@ Output
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 
@@ -58,6 +59,8 @@ def ETA_CMP_ISEN(r_p: float) -> float:
     return max(0.2, 0.9 - 0.02 * r_p)
 
 SAT_CURVE_POINTS = 10000
+CI_SAT_CURVE_POINTS = 512
+DATA_PROFILES = ("full", "ci")
 
 # Ordered axis lists; the per-state key encodes the index into each axis.
 PARAM_AXES = [
@@ -66,6 +69,17 @@ PARAM_AXES = [
     ("T_sink", T_SINKS_C),
     ("dT_subcool", DT_SUBCOOL_K),
     ("dT_superheat", DT_SUPERHEAT_K),
+    ("Q_cond", Q_COND_W),
+    ("UA_cond", UA_COND_WK),
+    ("UA_evap", UA_EVAP_WK),
+]
+
+CI_PARAM_AXES = [
+    ("refrigerant", REFRIGERANTS),
+    ("T_source", [-10.0, 0.0, 10.0, 20.0, 30.0]),
+    ("T_sink", [40.0, 50.0, 65.0]),
+    ("dT_subcool", [3.0]),
+    ("dT_superheat", [5.0]),
     ("Q_cond", Q_COND_W),
     ("UA_cond", UA_COND_WK),
     ("UA_evap", UA_EVAP_WK),
@@ -83,11 +97,30 @@ _POINT_SPEC = [
 ]
 
 
-def build_saturation_curves(refrigerant: str) -> dict[str, list[float]]:
+def profile_param_axes(profile: str) -> list[tuple[str, list[float] | list[str]]]:
+    """Return the parameter grid for a docs data generation profile."""
+    if profile == "full":
+        return PARAM_AXES
+    if profile == "ci":
+        return CI_PARAM_AXES
+    msg = f"unknown docs data profile {profile!r}; expected one of {DATA_PROFILES}"
+    raise ValueError(msg)
+
+
+def _profile_saturation_points(profile: str) -> int:
+    if profile == "full":
+        return SAT_CURVE_POINTS
+    if profile == "ci":
+        return CI_SAT_CURVE_POINTS
+    msg = f"unknown docs data profile {profile!r}; expected one of {DATA_PROFILES}"
+    raise ValueError(msg)
+
+
+def build_saturation_curves(refrigerant: str, *, points: int | None = None) -> dict[str, list[float]]:
     """Return down-sampled saturation dome curves in display units."""
     t_min = CP.PropsSI("Tmin", refrigerant)
     t_crit = CP.PropsSI("Tcrit", refrigerant)
-    temps_k = np.linspace(t_min + 1.0, t_crit - 0.5, SAT_CURVE_POINTS)
+    temps_k = np.linspace(t_min + 1.0, t_crit - 0.5, points or SAT_CURVE_POINTS)
 
     temp_c, h_liq, h_vap, p_sat, s_liq, s_vap = [], [], [], [], [], []
     for t_k in temps_k:
@@ -227,26 +260,47 @@ def worker(task: tuple) -> tuple[str, list[list[float]] | None]:
     return key, res
 
 
-def main() -> None:
-    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    out_dir = os.path.join(repo_root, "docs", "source", "_static", "widgets")
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "cycle_data.json")
+def main(out_path: str | os.PathLike[str] | None = None, *, profile: str = "full") -> None:
+    """Build the cycle-widget JSON payload.
 
-    saturation = {ref: build_saturation_curves(ref) for ref in REFRIGERANTS}
+    Parameters
+    ----------
+    out_path:
+        Optional output path. When omitted, the generated asset is written to
+        ``docs/source/_static/widgets/cycle_data.json`` for the Sphinx build.
+    profile:
+        ``"full"`` preserves the deployed high-resolution grid. ``"ci"`` keeps
+        every refrigerant but uses a coarser grid for fast PR docs checks.
+    """
+    if out_path is None:
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        out_dir = os.path.join(repo_root, "docs", "source", "_static", "widgets")
+        out_path_str = os.path.join(out_dir, "cycle_data.json")
+    else:
+        out_path_str = os.fspath(out_path)
+        out_dir = os.path.dirname(out_path_str)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
 
-    crit = {ref: CP.PropsSI("Tcrit", ref) for ref in REFRIGERANTS}
-    tmin = {ref: CP.PropsSI("Tmin", ref) for ref in REFRIGERANTS}
+    param_axes = profile_param_axes(profile)
+    axis = dict(param_axes)
+    refrigerants = axis["refrigerant"]
+    saturation_points = _profile_saturation_points(profile)
+
+    saturation = {ref: build_saturation_curves(ref, points=saturation_points) for ref in refrigerants}
+
+    crit = {ref: CP.PropsSI("Tcrit", ref) for ref in refrigerants}
+    tmin = {ref: CP.PropsSI("Tmin", ref) for ref in refrigerants}
 
     tasks = []
-    for i0, ref in enumerate(REFRIGERANTS):
-        for i1, t_source in enumerate(T_SOURCES_C):
-            for i2, t_sink in enumerate(T_SINKS_C):
-                for i3, dt_sub in enumerate(DT_SUBCOOL_K):
-                    for i4, dt_sup in enumerate(DT_SUPERHEAT_K):
-                        for i5, q_cond in enumerate(Q_COND_W):
-                            for i6, ua_cond in enumerate(UA_COND_WK):
-                                for i7, ua_evap in enumerate(UA_EVAP_WK):
+    for i0, ref in enumerate(axis["refrigerant"]):
+        for i1, t_source in enumerate(axis["T_source"]):
+            for i2, t_sink in enumerate(axis["T_sink"]):
+                for i3, dt_sub in enumerate(axis["dT_subcool"]):
+                    for i4, dt_sup in enumerate(axis["dT_superheat"]):
+                        for i5, q_cond in enumerate(axis["Q_cond"]):
+                            for i6, ua_cond in enumerate(axis["UA_cond"]):
+                                for i7, ua_evap in enumerate(axis["UA_evap"]):
                                     tasks.append((
                                         ref, t_source, t_sink, dt_sub, dt_sup,
                                         q_cond, ua_cond, ua_evap,
@@ -270,6 +324,7 @@ def main() -> None:
 
     data = {
         "meta": {
+            "profile": profile,
             "eta_cmp_isen": "max(0.2, 0.9 - 0.02 * r_p)",
             "point_order": [name for name, *_ in _POINT_SPEC],
             "point_labels": {
@@ -278,24 +333,48 @@ def main() -> None:
             "value_order": ["h", "T", "P", "s"],
             "units": {"h": "kJ/kg", "T": "°C", "P": "kPa", "s": "kJ/(kg·K)"},
             "state_format": "states[key] is a list of 7 points; each point is [h, T, P, s]",
-            "key_axes": [name for name, _ in PARAM_AXES],
+            "key_axes": [name for name, _ in param_axes],
+            "saturation_curve_points": saturation_points,
             "n_valid": len(states),
             "n_total": total,
         },
-        "params": {name: axis for name, axis in PARAM_AXES},
+        "params": {name: values for name, values in param_axes},
         "limits": REF_LIMITS,
         "saturation": saturation,
         "states": states,
     }
 
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(out_path_str, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
 
-    size_mb = os.path.getsize(out_path) / (1024 * 1024)
-    print(f"Wrote {out_path}")
+    size_mb = os.path.getsize(out_path_str) / (1024 * 1024)
+    print(f"Wrote {out_path_str}")
     print(f"Valid states: {len(states)} / {total}  ({100 * len(states) / total:.1f}%)")
     print(f"File size: {size_mb:.2f} MB")
 
 
+def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the data generator."""
+    parser = argparse.ArgumentParser(
+        description="Generate the JSON payload used by cycle_widget.html.",
+    )
+    parser.add_argument(
+        "--profile",
+        choices=DATA_PROFILES,
+        default=os.environ.get("TMHP_DOCS_DATA_PROFILE", "full"),
+        help="docs data profile: full for deployed docs, ci for fast PR checks",
+    )
+    parser.add_argument(
+        "out_path",
+        nargs="?",
+        help=(
+            "optional output path; defaults to "
+            "docs/source/_static/widgets/cycle_data.json"
+        ),
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    args = _parse_args()
+    main(args.out_path, profile=args.profile)

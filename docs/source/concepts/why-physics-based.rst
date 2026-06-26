@@ -11,7 +11,7 @@ Why physics-based?
    <span class="glossary" data-term="epsilon-ntu">ε-NTU</span>
 
 The name "Thermodynamic Models for Heat Pumps" describes *what*
-``tmhp`` is — a library of thermodynamic cycle models. *How* those
+TMHP is — a library of thermodynamic cycle models. *How* those
 models are written is the part this page is about: every cycle is
 solved from first principles, not fitted against catalogue data.
 
@@ -31,7 +31,7 @@ The three structural limits of curve fits
 
     * -
       - Curve-fit models
-      - ``tmhp``
+      - TMHP
     * - **Operating range**
       - Tied to the manufacturer's test points; extrapolation is
         unreliable.
@@ -74,11 +74,12 @@ the EOS through the compressor and heat-exchanger models.
 What gets solved at every time step
 ====================================
 
-Each call to ``analyze_steady`` (and each step of ``analyze_dynamic``)
-solves a closed refrigerant cycle coupled to the surrounding system.
-The condenser duty is the target; the evaporating temperature is
-found by internally minimising compressor power, so the cycle closes
-on a physical optimum rather than on fitted coefficients.
+Each released cycle-resolved family couples a closed refrigerant cycle
+to its surrounding system. Boiler families target tank charge; ASHP and
+GSHP target indoor-unit load, with positive ``Q_r_iu`` selecting cooling
+and negative ``Q_r_iu`` selecting heating. The cycle solver then finds a
+feasible low-power operating point rather than evaluating fitted
+coefficients.
 
 .. list-table::
     :header-rows: 1
@@ -103,20 +104,21 @@ on a physical optimum rather than on fitted coefficients.
     * - Cycle closure
       - Internal minimisation → optimal evaporating temperature.
 
-The same core cycle is reused across every system model — what
-changes is the source side (air / ground / water) and the sink
-side (DHW tank, building load, or hybrid PV / STC / ESS).
+The same core cycle is reused across the released cycle-resolved
+families — what changes is the source boundary (air / ground / water),
+the demand boundary (DHW tank or building load), and optional PV / STC /
+ESS subsystems.
 
 The compute trade-off
 =====================
 
 Solving an EOS state at every cycle node is more expensive than
 evaluating a polynomial. In practice it lands around a few hundred
-steps per second on a single core for a vanilla ASHPB — fast enough
-that a year-long minute-resolution run takes hours, not minutes.
+steps per second on a single core for the ASHPB reference case — fast
+enough that a year-long minute-resolution run takes hours, not minutes.
 
 If that is still too slow for your use case, a fitted surrogate is
-the right escape hatch. ``tmhp`` tracks commercial catalogue data
+the right escape hatch. TMHP tracks commercial catalogue data
 well enough (see :doc:`../validation/index`) that you can train the
 surrogate against this library itself, without collecting fresh
 bench data.
