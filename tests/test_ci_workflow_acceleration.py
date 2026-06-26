@@ -66,11 +66,11 @@ def test_pytest_matrix_skips_docs_only_pull_requests() -> None:
         assert matrix_trigger in workflow
 
 
-def test_pytest_matrix_skips_docs_only_main_pushes() -> None:
+def test_pytest_matrix_skips_all_main_pushes_after_pr_gate() -> None:
     workflow = _read(".github/workflows/tests.yml")
 
-    assert "github.event.before" in workflow
-    assert "github.event.after" in workflow
-    assert '"${{ github.event_name }}" == "pull_request"' in workflow
-    assert '"${{ github.event_name }}" != "pull_request"' not in workflow
-    assert "0000000000000000000000000000000000000000" in workflow
+    assert '"${{ github.event_name }}" != "pull_request"' in workflow
+    assert 'echo "run-matrix=false" >> "$GITHUB_OUTPUT"' in workflow
+    assert "github.event.before" not in workflow
+    assert "github.event.after" not in workflow
+    assert "0000000000000000000000000000000000000000" not in workflow
