@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import tomllib
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -40,9 +38,8 @@ def test_coverage_is_collected_once_on_canonical_python() -> None:
 
 def test_test_matrix_runs_pytest_with_xdist_workers() -> None:
     workflow = _read(".github/workflows/tests.yml")
-    pyproject = tomllib.loads(_read("pyproject.toml"))
-    dev_dependencies = pyproject["dependency-groups"]["dev"]
+    pyproject = _read("pyproject.toml")
 
-    assert any(dependency.startswith("pytest-xdist") for dependency in dev_dependencies)
+    assert '"pytest-xdist>=' in pyproject
     assert workflow.count("uv run pytest -q -n auto") == 2
     assert "uv run pytest -q -n auto \\\n            --cov=tmhp" in workflow
