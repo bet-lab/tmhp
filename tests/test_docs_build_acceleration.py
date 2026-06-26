@@ -38,3 +38,12 @@ def test_github_workflows_cache_generated_docs_data() -> None:
         assert "hashFiles(" in text and "scripts/data/**" in text, workflow
         assert "Refresh cached docs data mtimes" in text, workflow
         assert "steps.docs-data-cache.outputs.cache-hit == 'true'" in text, workflow
+
+
+def test_tests_workflow_uses_ci_docs_profile_on_push() -> None:
+    tests_workflow = _read(".github/workflows/tests.yml")
+    pages_workflow = _read(".github/workflows/docs.yml")
+
+    assert 'DOCS_DATA_PROFILE="ci"' in tests_workflow
+    assert "github.event_name == 'pull_request' && 'ci' || 'full'" not in tests_workflow
+    assert "DOCS_DATA_PROFILE=full" in pages_workflow

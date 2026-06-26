@@ -101,7 +101,7 @@ jobs:
             docs/source/_static/widgets/cycle_data.json
             docs/source/_static/widgets/cycle_data.*.stamp
             docs/source/_static/data/*.json
-          key: docs-data-${{ runner.os }}-${{ github.event_name == 'pull_request' && 'ci' || 'full' }}-${{ hashFiles('uv.lock', 'pyproject.toml', 'docs/Makefile', 'scripts/data/**', 'scripts/validation/**', 'src/tmhp/**') }}
+          key: docs-data-${{ runner.os }}-ci-${{ hashFiles('uv.lock', 'pyproject.toml', 'docs/Makefile', 'scripts/data/**', 'scripts/validation/**', 'src/tmhp/**') }}
 
       - name: Install project (dev + docs groups, lockfile pinned)
         run: uv sync --all-groups --locked
@@ -113,4 +113,4 @@ jobs:
           find docs/source/_static/data -maxdepth 1 -name '*.json' -exec touch {} +
 
       - name: Build docs with interactive data (warnings-as-errors)
-        run: make -C docs html SPHINXOPTS="-W --keep-going" DOCS_DATA_PROFILE="${{ github.event_name == 'pull_request' && 'ci' || 'full' }}"
+        run: make -C docs html SPHINXOPTS="-W --keep-going" DOCS_DATA_PROFILE="ci"
