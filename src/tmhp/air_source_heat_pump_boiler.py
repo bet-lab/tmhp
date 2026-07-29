@@ -47,12 +47,13 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import brentq, minimize_scalar
+from scipy.optimize import minimize_scalar
 from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import safe_float_attr
 from .compressor_envelope import check_pr_envelope
+from .compressor_speed import default_displacement, solve_compressor_speed
 from .constants import c_a, c_w, rho_a, rho_w
 from .dynamic_context import (
     ControlState,
@@ -152,7 +153,7 @@ class AirSourceHeatPumpBoiler:
         PR_cycle_min: float = 1.5,
         PR_cycle_max: float = 20.0,
         # Compressor speed search bounds [rev/s]
-        rps_min: float = 10.0,
+        rps_min: float = 15.0,
         rps_max: float = 150.0,
         # Deprecated compat arguments:
         V_disp_cmp: float | None = None,
@@ -168,7 +169,7 @@ class AirSourceHeatPumpBoiler:
     ):
         # Resolve deprecated mapping
         if V_cmp_ref is None:
-            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0002
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else default_displacement(hp_capacity)
         if eta_cmp is None:
             eta_cmp = (
                 eta_cmp_electro_mech
@@ -439,6 +440,8 @@ class AirSourceHeatPumpBoiler:
                     "hp_is_on": False,
                     "converged": True,
                     "converged_rps": True,
+                    "capacity_clamped": None,
+                    "pr_clamped": False,
                     "fan_flow_min_limit": False,
                     "fan_flow_max_limit": False,
                     # Temperatures [°C]
@@ -519,6 +522,7 @@ class AirSourceHeatPumpBoiler:
         # analyze_steady hint; no print here (runs inside the optimiser loop).
         self._last_pr_event = None
         pr_event = check_pr_envelope(ratio_P_cmp, self.PR_cycle_min, self.PR_cycle_max)
+        pr_clamped = pr_event == "pr_below_min"
         if pr_event == "pr_above_max":
             self._last_pr_event = ("pr_above_max", ratio_P_cmp, self.PR_cycle_max)
             return None
@@ -573,14 +577,7 @@ class AirSourceHeatPumpBoiler:
             m_dot = self.V_cmp_ref * cs["rho_ref_cmp_in [kg/m3]"] * val_eta_vol * rps
             return (m_dot * dh_cond_local) - Q_ref_tank
 
-        try:
-            cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
-            converged_rps = True
-        except ValueError:
-            res_min = _residual_rps(self.rps_min)
-            res_max = _residual_rps(self.rps_max)
-            cmp_rps = self.rps_min if abs(res_min) < abs(res_max) else self.rps_max
-            converged_rps = False
+        cmp_rps, converged_rps, capacity_clamped = solve_compressor_speed(_residual_rps, self.rps_min, self.rps_max)
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
         val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
@@ -621,6 +618,8 @@ class AirSourceHeatPumpBoiler:
                 "converged": False,
                 "_hx_diag": HX_perf_ou,
                 "converged_rps": bool(converged_rps),
+                "capacity_clamped": capacity_clamped,
+                "pr_clamped": pr_clamped,
                 "fan_flow_min_limit": HX_perf_ou.get("min_limit", False),
                 "fan_flow_max_limit": HX_perf_ou.get("max_limit", False),
             }
@@ -674,6 +673,9 @@ class AirSourceHeatPumpBoiler:
                 "hp_is_on": True,
                 "converged": bool(converged_rps),
                 "converged_rps": bool(converged_rps),
+                "capacity_clamped": capacity_clamped,
+                "pr_clamped": pr_clamped,
+                "Q_ref_tank_request [W]": Q_ref_tank,
                 "fan_flow_min_limit": HX_perf_ou.get("min_limit", False),
                 "fan_flow_max_limit": HX_perf_ou.get("max_limit", False),
                 # Temperatures [°C]
@@ -806,13 +808,22 @@ class AirSourceHeatPumpBoiler:
         dict | pd.DataFrame
             Cycle state plus diagnostic flags.
 
-            Two keys are useful for branching:
+            Three keys are useful for branching:
 
             - ``"converged"`` (bool) — True only when the HX optimisation and
               the SciPy optimiser both succeeded.
             - ``"failure_reason"`` (str) — one of ``"none"``,
               ``"cycle_invalid"``, ``"t_cond_below_t_in"``,
               ``"hx_not_converged"``, or ``"optimizer_failed"``.
+            - ``"capacity_clamped"`` (str | None) — ``"min"`` when the
+              requested duty was below what the compressor delivers at
+              ``rps_min`` and the cycle was solved at that floor instead,
+              ``"max"`` for the corresponding ceiling case, ``None`` when the
+              request was met exactly. A clamped point is **converged**: the
+              request simply lay outside the machine's deliverable band, which
+              a real inverter unit answers by running at its limit and cycling.
+              Compare ``"Q_ref_tank [W]"`` against ``"Q_ref_tank_request [W]"``
+              to recover the shortfall or excess.
 
             ASHPB returns the cycle numbers (``E_cmp``, ``Q_ref_tank``, ...)
             whenever ``_calc_state`` produced a dict at all. A
@@ -1133,6 +1144,11 @@ class AirSourceHeatPumpBoiler:
 
         if not self.tank_always_full or (self.tank_always_full and self.prevent_simultaneous_flow):
             r["tank_level [-]"] = level_solved
+
+        # Diagnostic of the steady solve, not a time-series quantity: keep it on
+        # the analyze_steady dict and out of the dynamic frame (an object column
+        # of None/str breaks numeric frame comparisons downstream).
+        r.pop("capacity_clamped", None)
 
         return r
 
