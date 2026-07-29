@@ -49,6 +49,7 @@ from tqdm import tqdm
 from . import calc_util as cu
 from ._opt_utils import ignore_minpack_progress_warning, safe_float_attr
 from .compressor_envelope import check_pr_envelope
+from .compressor_speed import default_displacement, solve_compressor_speed
 from .constants import c_w, k_w, mu_w, rho_w
 from .dynamic_context import (
     ControlState,
@@ -166,7 +167,7 @@ class GroundSourceHeatPumpBoiler:
         PR_cycle_min: float = 1.5,
         PR_cycle_max: float = 20.0,
         # Compressor speed search bounds [rev/s]
-        rps_min: float = 10.0,
+        rps_min: float = 15.0,
         rps_max: float = 150.0,
         *,
         # Deprecated:
@@ -189,7 +190,7 @@ class GroundSourceHeatPumpBoiler:
 
         # Resolve deprecated mapping
         if V_cmp_ref is None:
-            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0005
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else default_displacement(hp_capacity)
         if eta_cmp is None:
             eta_cmp = eta_cmp_mech if eta_cmp_mech is not None else 0.855
         if UA_tank_hx is None:
@@ -437,6 +438,7 @@ class GroundSourceHeatPumpBoiler:
                     "hp_is_on": False,
                     "converged": True,
                     "converged_rps": True,
+                    "capacity_clamped": None,
                     "_penalty": 0.0,
                     "err_Q_ground [W]": 0.0,
                     # Temperatures [°C]
@@ -560,16 +562,7 @@ class GroundSourceHeatPumpBoiler:
             m_dot = self.V_cmp_ref * rho_ref_cmp_in * val_eta_vol * rps
             return (m_dot * dh_cond_local) - Q_tank_load
 
-        from scipy.optimize import brentq
-
-        try:
-            cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
-            converged_rps = True
-        except ValueError:
-            res_min = _residual_rps(self.rps_min)
-            res_max = _residual_rps(self.rps_max)
-            cmp_rps = self.rps_min if abs(res_min) < abs(res_max) else self.rps_max
-            converged_rps = False
+        cmp_rps, converged_rps, capacity_clamped = solve_compressor_speed(_residual_rps, self.rps_min, self.rps_max)
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
         val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
@@ -620,6 +613,7 @@ class GroundSourceHeatPumpBoiler:
                 "hp_is_on": True,
                 "converged": converged_rps,
                 "converged_rps": converged_rps,
+                "capacity_clamped": capacity_clamped,
                 "_penalty": penalty,
                 "err_Q_ground [W]": 0.0,
                 "T_ref_evap_sat [°C]": cu.K2C(cs.get("T_ref_evap_sat_K", np.nan)),
@@ -850,6 +844,10 @@ class GroundSourceHeatPumpBoiler:
             r["tank_level [-]"] = level_solved
 
         r.pop("_penalty", None)
+        # Diagnostic of the steady solve, not a time-series quantity: keep it on
+        # the analyze_steady dict and out of the dynamic frame (an object column
+        # of None/str breaks numeric frame comparisons downstream).
+        r.pop("capacity_clamped", None)
 
         return r
 
