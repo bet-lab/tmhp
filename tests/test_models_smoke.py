@@ -156,10 +156,13 @@ def test_ashp_off_mode_failure_reason_is_diagnostic():
     # Deliberately tiny UA so the inner HX optimisation cannot converge.
     # The model is expected to fall back to off-mode AND surface a
     # specific failure_reason so callers can branch on it.
+    # Tightened from 2000 to 200 W/K: with the capacity-derived default
+    # displacement the 2000 W/K case now converges, so it no longer exercises
+    # the fallback this test is about.
     ashp = AirSourceHeatPump(
         ref="R32",
-        UA_iu_rated=2000.0,
-        UA_ou_rated=2000.0,
+        UA_iu_rated=200.0,
+        UA_ou_rated=200.0,
         dV_iu_fan_a_design=0.5,
         dV_ou_fan_a_design=0.5,
         A_cross_iu=0.5,
@@ -288,7 +291,7 @@ def test_ashp_default_pr_and_rps():
     ashp = AirSourceHeatPump(ref="R32", UA_ou_rated=3000.0, UA_iu_rated=3000.0)
     assert ashp.PR_cycle_min == 1.5
     assert ashp.PR_cycle_max == 5.0
-    assert ashp.rps_min == 10.0
+    assert ashp.rps_min == 15.0
     assert ashp.rps_max == 150.0
 
 
@@ -322,7 +325,7 @@ def test_ashpb_default_pr_and_rps():
     ashpb = AirSourceHeatPumpBoiler(ref="R32")
     assert ashpb.PR_cycle_min == 1.5
     assert ashpb.PR_cycle_max == 20.0
-    assert ashpb.rps_min == 10.0
+    assert ashpb.rps_min == 15.0
     assert ashpb.rps_max == 150.0
 
 
@@ -330,7 +333,7 @@ def test_gshpb_default_pr_and_rps():
     gshpb = GroundSourceHeatPumpBoiler(ref="R32")
     assert gshpb.PR_cycle_min == 1.5
     assert gshpb.PR_cycle_max == 20.0
-    assert gshpb.rps_min == 10.0
+    assert gshpb.rps_min == 15.0
     assert gshpb.rps_max == 150.0
 
 
@@ -352,7 +355,7 @@ def test_wshpb_default_pr_and_rps():
     wshpb = WaterSourceHeatPumpBoiler(ref="R32")
     assert wshpb.PR_cycle_min == 1.5
     assert wshpb.PR_cycle_max == 20.0
-    assert wshpb.rps_min == 10.0
+    assert wshpb.rps_min == 15.0
     assert wshpb.rps_max == 150.0
 
 

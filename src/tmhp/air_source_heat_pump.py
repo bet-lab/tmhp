@@ -22,12 +22,13 @@ from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import brentq, minimize
+from scipy.optimize import minimize
 from tqdm import tqdm
 
 from . import calc_util as cu
 from ._opt_utils import safe_float_attr
 from .compressor_envelope import check_pr_envelope
+from .compressor_speed import default_displacement, solve_compressor_speed
 from .constants import c_a, rho_a
 from .enex_functions import (
     calc_fan_power_from_dV_fan,
@@ -82,7 +83,7 @@ class AirSourceHeatPump:
         PR_cycle_min: float = 1.5,
         PR_cycle_max: float = 5.0,
         # Compressor speed search bounds [rev/s]
-        rps_min: float = 10.0,
+        rps_min: float = 15.0,
         rps_max: float = 150.0,
         # ASHRAE 90.1-2022 VSD coefficients
         vsd_coeffs_ou: dict | None = None,
@@ -107,7 +108,7 @@ class AirSourceHeatPump:
 
         # Resolve deprecated mapping
         if V_cmp_ref is None:
-            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else 0.0001
+            V_cmp_ref = V_disp_cmp if V_disp_cmp is not None else default_displacement(hp_capacity)
         if eta_cmp is None:
             eta_cmp = eta_cmp_mech if eta_cmp_mech is not None else 0.855
         # UA_cond/evap_design → UA_cond/evap_rated (oldest names, two hops)
@@ -301,6 +302,7 @@ class AirSourceHeatPump:
                     "hp_is_on": False,
                     "converged": True,
                     "converged_rps": True,
+                    "capacity_clamped": None,
                     "ou_fan_flow_min_limit": False,
                     "ou_fan_flow_max_limit": False,
                     "iu_fan_flow_min_limit": False,
@@ -448,14 +450,7 @@ class AirSourceHeatPump:
             else:
                 return (m_dot * dh_cond_local) - abs(Q_r_iu)
 
-        try:
-            cmp_rps = brentq(_residual_rps, self.rps_min, self.rps_max)
-            converged_rps = True
-        except ValueError:
-            res_min = _residual_rps(self.rps_min)
-            res_max = _residual_rps(self.rps_max)
-            cmp_rps = self.rps_min if abs(res_min) < abs(res_max) else self.rps_max
-            converged_rps = False
+        cmp_rps, converged_rps, capacity_clamped = solve_compressor_speed(_residual_rps, self.rps_min, self.rps_max)
 
         val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
         val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
@@ -571,6 +566,7 @@ class AirSourceHeatPump:
                 "_ou_diag": ou_hx,
                 "_iu_diag": iu_hx,
                 "converged_rps": bool(converged_rps),
+                "capacity_clamped": capacity_clamped,
                 "ou_fan_flow_min_limit": ou_hx.get("min_limit", False),
                 "ou_fan_flow_max_limit": ou_hx.get("max_limit", False),
                 "iu_fan_flow_min_limit": iu_hx.get("min_limit", False),
@@ -590,6 +586,7 @@ class AirSourceHeatPump:
                 "mode": mode,
                 "converged": bool(is_converged),
                 "converged_rps": bool(converged_rps),
+                "capacity_clamped": capacity_clamped,
                 "ou_fan_flow_min_limit": ou_hx.get("min_limit", False),
                 "ou_fan_flow_max_limit": ou_hx.get("max_limit", False),
                 "iu_fan_flow_min_limit": iu_hx.get("min_limit", False),
