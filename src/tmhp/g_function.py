@@ -148,12 +148,27 @@ def precompute_gfunction(
     k_s: float,
     t_max_s: float,
     dt_s: float,
+    boundary_condition: str = "UBWT",
 ) -> interp1d:
     """Precompute g-function using pygfunction and return an interpolator.
 
     Creates a rectangular borehole field and computes the g-function
     for log-spaced time steps up to t_max_s (plus an extra margin).
     Returns a callable `interp1d` object predicting the g-function [mK/W].
+
+    The g-function is built from the finite line source (FLS) solution
+    of Claesson and Javed (2011), extended to boreholes at different
+    vertical positions by Cimmino and Bernier (2014).  Because a
+    borehole has finite length, the wall temperature is not uniform
+    along its depth, so an axial boundary condition must be assumed:
+
+    - ``'UHTR'`` (uniform heat transfer rate): every depth exchanges the
+      same heat per unit length; the wall temperature then varies with
+      depth and the g-function is its depth-average.
+    - ``'UBWT'`` (uniform borehole wall temperature): the wall is at a
+      single temperature over the whole depth and the heat flux varies
+      instead.  This is Eskilson's original definition and is the more
+      realistic of the two for a circulated borehole.
 
     Parameters
     ----------
@@ -177,17 +192,35 @@ def precompute_gfunction(
         Maximum simulation time [s].
     dt_s : float
         Simulation timestep [s].
+    boundary_condition : str, optional
+        Axial boundary condition along the borehole. Either ``'UBWT'``
+        (uniform borehole wall temperature) or ``'UHTR'`` (uniform heat
+        transfer rate). Default is ``'UBWT'``.
 
     Returns
     -------
     scipy.interpolate.interp1d
         Interpolator function mapping `time [s]` to `g-function [mK/W]`.
+
+    References
+    ----------
+    Claesson, J., & Javed, S. (2011). An analytical method to calculate
+    borehole fluid temperatures for time scales from minutes to decades.
+    ASHRAE Transactions, 117(2), 279-288.
+
+    Cimmino, M., & Bernier, M. (2014). A semi-analytical method to
+    generate g-functions for geothermal bore fields. International
+    Journal of Heat and Mass Transfer, 70, 641-650.
     """
 
     if not HAS_PYGFUNCTION:
         raise ImportError(
             "pygfunction is not installed. Run `uv pip install pygfunction` to use multi-borehole features."
         )
+
+    bc = boundary_condition.upper()
+    if bc not in ("UBWT", "UHTR"):
+        raise ValueError(f"boundary_condition must be 'UBWT' or 'UHTR', got {boundary_condition!r}")
 
     # Evaluate from 1 hour to bypass the short-term numerical noise (Fo < 0.1)
     # of the finite line source BEM discretization.
@@ -197,9 +230,7 @@ def precompute_gfunction(
 
     boreField = gt.borefield.Borefield.rectangle_field(N_1=N_1, N_2=N_2, B_1=B, B_2=B, H=H_b, D=D_b, r_b=r_b)
 
-    # Use uniform_heat_flux to ensure stability and compatibility with fundamental FLS assumptions
-    options = {"method": "uniform_heat_flux"}
-    gfunc_obj = gt.gfunction.gFunction(boreField, alpha_s, time=times, options=options)
+    gfunc_obj = gt.gfunction.gFunction(boreField, alpha_s, time=times, boundary_condition=bc)
     g_vals_dim = gfunc_obj.gFunc / (2 * np.pi * k_s)
 
     # Prepend 0.0 for t=0.

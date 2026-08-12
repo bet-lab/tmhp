@@ -74,6 +74,8 @@ class GroundSourceHeatPumpEmpirical:
     # 6. Simulation Control
     dt_hours: int = 1
     sim_hours: int = 8760
+    # Axial boundary condition for the g-function: 'UBWT' or 'UHTR'
+    gfunc_boundary_condition: str = "UBWT"
 
     # 7. Runtime Inputs (per-timestep)
     Q_r_iu: float = 0.0
@@ -134,6 +136,7 @@ class GroundSourceHeatPumpEmpirical:
             k_s=self.k_g,
             t_max_s=self.sim_hours * 3600.0,
             dt_s=self.dt_sec,
+            boundary_condition=self.gfunc_boundary_condition,
         )
 
     def system_update(self):
