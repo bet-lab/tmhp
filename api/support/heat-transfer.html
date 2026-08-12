@@ -33,7 +33,7 @@
 <meta property="og:image:alt" content="TMHP source and sink family matrix" />
 <meta name="description" content="ε-NTU heat exchanger calculations, the air-side fan + heat-exchanger model used by ASHP/ASHPB, and the borehole g-function and coupling abstractions used by GSHP/GSHPB. ε-NTU heat exchanger: Heat t..." />
 
-    <meta property="article:modified_time" content="2026-07-17T17:12:52+09:00" />
+    <meta property="article:modified_time" content="2026-08-12T20:40:22+09:00" />
   </head>
 <body><div class="sy-head">
   <div class="sy-head-blur"></div>
@@ -528,11 +528,25 @@ array for multiple time values.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="tmhp.g_function.precompute_gfunction">
-<span class="sig-prename descclassname"><span class="pre">tmhp.g_function.</span></span><span class="sig-name descname"><span class="pre">precompute_gfunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tmhp/g_function.html#precompute_gfunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tmhp.g_function.precompute_gfunction" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">tmhp.g_function.</span></span><span class="sig-name descname"><span class="pre">precompute_gfunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary_condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'UBWT'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tmhp/g_function.html#precompute_gfunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tmhp.g_function.precompute_gfunction" title="Link to this definition">¶</a></dt>
 <dd><p>Precompute g-function using pygfunction and return an interpolator.</p>
 <p>Creates a rectangular borehole field and computes the g-function
 for log-spaced time steps up to t_max_s (plus an extra margin).
 Returns a callable <cite>interp1d</cite> object predicting the g-function [mK/W].</p>
+<p>The g-function is built from the finite line source (FLS) solution
+of Claesson and Javed (2011), extended to boreholes at different
+vertical positions by Cimmino and Bernier (2014).  Because a
+borehole has finite length, the wall temperature is not uniform
+along its depth, so an axial boundary condition must be assumed:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'UHTR'</span></code> (uniform heat transfer rate): every depth exchanges the
+same heat per unit length; the wall temperature then varies with
+depth and the g-function is its depth-average.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'UBWT'</span></code> (uniform borehole wall temperature): the wall is at a
+single temperature over the whole depth and the heat flux varies
+instead.  This is Eskilson’s original definition and is the more
+realistic of the two for a circulated borehole.</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -546,6 +560,9 @@ Returns a callable <cite>interp1d</cite> object predicting the g-function [mK/W]
 <li><p><strong>k_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Ground thermal conductivity [W/mK].</p></li>
 <li><p><strong>t_max_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Maximum simulation time [s].</p></li>
 <li><p><strong>dt_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Simulation timestep [s].</p></li>
+<li><p><strong>boundary_condition</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Axial boundary condition along the borehole. Either <code class="docutils literal notranslate"><span class="pre">'UBWT'</span></code>
+(uniform borehole wall temperature) or <code class="docutils literal notranslate"><span class="pre">'UHTR'</span></code> (uniform heat
+transfer rate). Default is <code class="docutils literal notranslate"><span class="pre">'UBWT'</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -555,6 +572,13 @@ Returns a callable <cite>interp1d</cite> object predicting the g-function [mK/W]
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">interp1d</span></code></span></p>
 </dd>
 </dl>
+<p class="rubric">References</p>
+<p>Claesson, J., &amp; Javed, S. (2011). An analytical method to calculate
+borehole fluid temperatures for time scales from minutes to decades.
+ASHRAE Transactions, 117(2), 279-288.</p>
+<p>Cimmino, M., &amp; Bernier, M. (2014). A semi-analytical method to
+generate g-functions for geothermal bore fields. International
+Journal of Heat and Mass Transfer, 70, 641-650.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -977,7 +1001,7 @@ the dimensional response <code class="docutils literal notranslate"><span class=
 </section>
 
 <div class="git-last-updated" role="contentinfo">
-  Last updated Jul 17, 2026
+  Last updated Aug 12, 2026
 </div>
         </article><button class="back-to-top" type="button">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
