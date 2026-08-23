@@ -122,6 +122,7 @@ def apply_style(preset: str = "report", *, hashsalt: str | None = None) -> None:
     figure.
     """
     dm.style.use(preset)
+    mpl.rcParams["svg.fonttype"] = "none"
     if hashsalt is not None:
         mpl.rcParams["svg.hashsalt"] = hashsalt
 
